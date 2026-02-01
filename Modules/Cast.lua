@@ -22,6 +22,10 @@ local castStartTime, castEndTime, castDuration
 local castLatency = 0
 local castSent = 0
 local currentSpellName = ""
+local currentSpellID
+local currentSpellTexture
+local spellIconEnabled = false
+local pendingVisuals = false
 
 local GetTime = GetTime
 local UnitCastingInfo = UnitCastingInfo
@@ -38,6 +42,88 @@ local EL = CreateFrame("Frame")
 --------------------------------------------------------------------------------
 local Cast = {}
 addon.Modules.CastObj = Cast
+
+function Cast:GetFrame()
+    return castFrame
+end
+
+function Cast:SetSpellIconEnabled(enabled)
+    spellIconEnabled = enabled == true
+    if castFrame and castFrame.iconFrame then
+        if spellIconEnabled and isCasting then
+            castFrame.iconFrame:Show()
+        else
+            castFrame.iconFrame:Hide()
+        end
+    end
+end
+
+function Cast:ApplyPendingVisuals()
+    if not pendingVisuals then return end
+
+    if GetDBBool("cast_spellTextEnabled") and castFrame.spellText then
+        castFrame.spellText:SetText(currentSpellName)
+        castFrame.spellText:Show()
+    elseif castFrame.spellText then
+        castFrame.spellText:Hide()
+    end
+
+    self:UpdateSpellIcon()
+    pendingVisuals = false
+end
+
+function Cast:ApplyIconOptions()
+    if not castFrame or not castFrame.iconFrame then return end
+
+    local size = GetDBValue("spellicon_size")
+    local offsetX = GetDBValue("spellicon_offsetX")
+    local offsetY = GetDBValue("spellicon_offsetY")
+    local showCooldown = GetDBBool("spellicon_showCooldown")
+
+    castFrame.iconFrame:SetSize(size, size)
+    castFrame.iconFrame:ClearAllPoints()
+    castFrame.iconFrame:SetPoint("CENTER", castFrame, "CENTER", offsetX, offsetY)
+
+    castFrame.iconFrame.icon:SetSize(size - 4, size - 4)
+
+    if showCooldown then
+        if not castFrame.iconFrame.cooldown then
+            castFrame.iconFrame.cooldown = CreateFrame("Cooldown", nil, castFrame.iconFrame, "CooldownFrameTemplate")
+            castFrame.iconFrame.cooldown:SetAllPoints(castFrame.iconFrame.icon)
+            castFrame.iconFrame.cooldown:SetDrawEdge(false)
+            castFrame.iconFrame.cooldown:SetHideCountdownNumbers(true)
+        end
+        castFrame.iconFrame.cooldown:Show()
+    elseif castFrame.iconFrame.cooldown then
+        castFrame.iconFrame.cooldown:Hide()
+    end
+end
+
+function Cast:UpdateSpellIcon()
+    if not castFrame or not castFrame.iconFrame then return end
+    if not spellIconEnabled and addon.GetDBBool("moduleEnabled_SpellIcon") then
+        spellIconEnabled = true
+    end
+    if not spellIconEnabled then
+        castFrame.iconFrame:Hide()
+        return
+    end
+    if not currentSpellTexture and currentSpellID and C_Spell and C_Spell.GetSpellInfo then
+        local info = C_Spell.GetSpellInfo(currentSpellID)
+        currentSpellTexture = info and info.iconID or currentSpellTexture
+    end
+    if not currentSpellTexture then
+        castFrame.iconFrame:Hide()
+        return
+    end
+    local texture = currentSpellTexture
+    if type(texture) ~= "number" and type(texture) ~= "string" then
+        texture = 134400 -- Interface\\Icons\\INV_Misc_QuestionMark
+    end
+    castFrame.iconFrame.icon:SetTexture(texture)
+    castFrame.iconFrame.icon:Show()
+    castFrame.iconFrame:Show()
+end
 
 --------------------------------------------------------------------------------
 -- OnUpdate Handler
@@ -96,7 +182,6 @@ function Cast:Show()
 
     isCasting = true
     AnchorFrame:Show("cast")
-    castFrame:Show()
 
     -- Show latency indicator
     if not GetDBBool("cast_sparkOnly") and latencyDonut then
@@ -111,29 +196,22 @@ function Cast:Show()
         end
     end
 
-    -- Show spell text if enabled
-    if GetDBBool("cast_spellTextEnabled") and castFrame.spellText then
-        castFrame.spellText:SetText(currentSpellName)
-        castFrame.spellText:Show()
-    elseif castFrame.spellText then
-        castFrame.spellText:Hide()
-    end
+    pendingVisuals = true
+    self:ApplyPendingVisuals()
 
     -- Notify Ring module to show
     if addon.Modules.RingObj and addon.Modules.RingObj.Show then
         addon.Modules.RingObj:Show("cast")
     end
 
-    -- Notify SpellIcon module
-    if addon.Modules.SpellIconObj and addon.Modules.SpellIconObj.OnCastStart then
-        addon.Modules.SpellIconObj:OnCastStart(currentSpellName)
-    end
+    castFrame:Show()
 end
 
 function Cast:Hide()
     if not castFrame then return end
 
     isCasting = false
+    pendingVisuals = false
     if castDonut then
         castDonut:Hide()
     end
@@ -151,9 +229,8 @@ function Cast:Hide()
         addon.Modules.RingObj:Hide("cast")
     end
 
-    -- Notify SpellIcon module
-    if addon.Modules.SpellIconObj and addon.Modules.SpellIconObj.OnCastEnd then
-        addon.Modules.SpellIconObj:OnCastEnd()
+    if castFrame.iconFrame then
+        castFrame.iconFrame:Hide()
     end
 end
 
@@ -174,7 +251,15 @@ function Cast:UNIT_SPELLCAST_START(event, unit, castGUID, spellID)
     castStartTime = startTimeMS
     castEndTime = endTimeMS
     castDuration = castEndTime - castStartTime
-    currentSpellName = text or name
+    currentSpellID = spellID
+    currentSpellTexture = texture
+    if spellID and C_Spell and C_Spell.GetSpellInfo then
+        local info = C_Spell.GetSpellInfo(spellID)
+        currentSpellName = (info and info.name) or text or name
+        currentSpellTexture = (info and info.iconID) or currentSpellTexture
+    else
+        currentSpellName = text or name
+    end
 
     -- Calculate latency
     local sendLag = (castSent > 0) and (GetTime() * 1000 - castSent) or 0
@@ -224,7 +309,15 @@ function Cast:UNIT_SPELLCAST_CHANNEL_START(event, unit, castGUID, spellID)
     castStartTime = startTimeMS
     castEndTime = endTimeMS
     castDuration = castEndTime - castStartTime
-    currentSpellName = text or name
+    currentSpellID = spellID
+    currentSpellTexture = texture
+    if spellID and C_Spell and C_Spell.GetSpellInfo then
+        local info = C_Spell.GetSpellInfo(spellID)
+        currentSpellName = (info and info.name) or text or name
+        currentSpellTexture = (info and info.iconID) or currentSpellTexture
+    else
+        currentSpellName = text or name
+    end
 
     -- Calculate latency
     local sendLag = (castSent > 0) and (GetTime() * 1000 - castSent) or 0
@@ -329,7 +422,12 @@ function Cast:ApplyOptions()
         local offsetY = GetDBValue("cast_spellTextOffsetY")
         castFrame.spellText:ClearAllPoints()
         castFrame.spellText:SetPoint("BOTTOM", castFrame, "CENTER", offsetX, radius + 5 + offsetY)
+        -- Warm text rendering after font is set
+        castFrame.spellText:SetText(" ")
+        castFrame.spellText:Hide()
     end
+
+    -- No frame-level pinning; rely on natural draw order.
 end
 
 --------------------------------------------------------------------------------
@@ -353,10 +451,42 @@ function Cast:Initialize()
     castFrame.spellText = castFrame:CreateFontString(nil, "OVERLAY")
     castFrame.spellText:Hide()
 
-    -- Set OnUpdate
-    castFrame:SetScript("OnUpdate", OnUpdate)
+    -- Create spell icon frame (rendered with cast frame)
+    castFrame.iconFrame = CreateFrame("Frame", nil, castFrame)
+    castFrame.iconFrame:SetSize(32, 32)
+    castFrame.iconFrame:SetPoint("CENTER", castFrame, "CENTER", 0, -40)
+    castFrame.iconFrame:Hide()
 
+    castFrame.iconFrame.border = castFrame.iconFrame:CreateTexture(nil, "OVERLAY")
+    castFrame.iconFrame.border:SetAllPoints()
+    castFrame.iconFrame.border:SetTexture("Interface\\Buttons\\UI-Quickslot2")
+    castFrame.iconFrame.border:SetTexCoord(0.2, 0.8, 0.2, 0.8)
+
+    castFrame.iconFrame.icon = castFrame.iconFrame:CreateTexture(nil, "ARTWORK")
+    castFrame.iconFrame.icon:SetPoint("CENTER")
+    castFrame.iconFrame.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+
+    -- Preload assets to avoid first-use stutter (font must be set before text)
+    castFrame.iconFrame.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+    castFrame.iconFrame.icon:Hide()
+
+    if not castFrame.iconFrame.cooldown then
+        castFrame.iconFrame.cooldown = CreateFrame("Cooldown", nil, castFrame.iconFrame, "CooldownFrameTemplate")
+        castFrame.iconFrame.cooldown:SetAllPoints(castFrame.iconFrame.icon)
+        castFrame.iconFrame.cooldown:SetDrawEdge(false)
+        castFrame.iconFrame.cooldown:SetHideCountdownNumbers(true)
+        castFrame.iconFrame.cooldown:Hide()
+    end
+
+    -- Set scripts
+    castFrame:SetScript("OnUpdate", OnUpdate)
+    castFrame:SetScript("OnShow", function()
+        Cast:ApplyPendingVisuals()
+    end)
+
+    spellIconEnabled = addon.GetDBBool("moduleEnabled_SpellIcon")
     self:ApplyOptions()
+    self:ApplyIconOptions()
 end
 
 --------------------------------------------------------------------------------
@@ -411,13 +541,14 @@ end)
 --------------------------------------------------------------------------------
 -- Register Setting Callbacks
 --------------------------------------------------------------------------------
-local settingKeys = {
-    "cast_radius", "cast_thickness", "cast_barColor", "cast_backgroundColor",
-    "cast_sparkColor", "cast_latencyColor", "cast_sparkOnly",
-    "cast_spellTextEnabled", "cast_spellTextFont", "cast_spellTextSize",
-    "cast_spellTextOutline", "cast_spellTextColor",
-    "cast_spellTextOffsetX", "cast_spellTextOffsetY"
-}
+    local settingKeys = {
+        "cast_radius", "cast_thickness", "cast_barColor", "cast_backgroundColor",
+        "cast_sparkColor", "cast_latencyColor", "cast_sparkOnly",
+        "cast_spellTextEnabled", "cast_spellTextFont", "cast_spellTextSize",
+        "cast_spellTextOutline", "cast_spellTextColor",
+        "cast_spellTextOffsetX", "cast_spellTextOffsetY",
+        "spellicon_size", "spellicon_offsetX", "spellicon_offsetY", "spellicon_showCooldown"
+    }
 
 for _, key in ipairs(settingKeys) do
     CallbackRegistry:RegisterSettingCallback(key, function()
