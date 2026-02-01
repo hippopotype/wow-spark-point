@@ -12,6 +12,11 @@ local GetDBBool = addon.GetDBBool
 local GetDBColor = addon.GetDBColor
 local GetDBColorTable = addon.GetDBColorTable
 
+local Masque
+local masqueGroup
+local masqueLoader
+local Cast
+
 --------------------------------------------------------------------------------
 -- Module State
 --------------------------------------------------------------------------------
@@ -32,6 +37,32 @@ local UnitCastingInfo = UnitCastingInfo
 local UnitChannelInfo = UnitChannelInfo
 local cos, sin, rad = math.cos, math.sin, math.rad
 
+local function GetMasqueGroup()
+    if not Masque and LibStub then
+        Masque = LibStub("Masque", true)
+    end
+    if not Masque then return nil end
+    if not masqueGroup then
+        masqueGroup = Masque:Group(addonName, L["Spell Icon"] or "Spell Icon", "SpellIcon")
+    end
+    return masqueGroup
+end
+
+local function EnsureMasqueLoader()
+    if masqueLoader then return end
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("ADDON_LOADED")
+    frame:SetScript("OnEvent", function(_, event, name)
+        if event == "ADDON_LOADED" and name == "Masque" then
+            if Cast and Cast.RegisterMasqueButtons then
+                Cast:RegisterMasqueButtons()
+                Cast:ReskinMasque()
+            end
+        end
+    end)
+    masqueLoader = frame
+end
+
 --------------------------------------------------------------------------------
 -- Event Frame
 --------------------------------------------------------------------------------
@@ -40,11 +71,34 @@ local EL = CreateFrame("Frame")
 --------------------------------------------------------------------------------
 -- Cast Module Object
 --------------------------------------------------------------------------------
-local Cast = {}
+Cast = {}
 addon.Modules.CastObj = Cast
 
 function Cast:GetFrame()
     return castFrame
+end
+
+function Cast:RegisterMasqueButtons()
+    local group = GetMasqueGroup()
+    if not group or not castFrame or not castFrame.iconFrame then return end
+    local iconFrame = castFrame.iconFrame
+    if iconFrame._sparkMasqueAdded then return end
+
+    local regions = {
+        Icon = iconFrame.icon,
+        Cooldown = iconFrame.cooldown,
+        Normal = iconFrame.border,
+    }
+
+    group:AddButton(iconFrame, regions, "Action", true)
+    iconFrame._sparkMasqueAdded = true
+end
+
+function Cast:ReskinMasque()
+    local group = GetMasqueGroup()
+    if group and group.ReSkin then
+        group:ReSkin()
+    end
 end
 
 function Cast:SetSpellIconEnabled(enabled)
@@ -99,6 +153,7 @@ function Cast:ApplyIconOptions()
     end
 
     self:UpdateIconCooldown()
+    self:ReskinMasque()
 end
 
 function Cast:UpdateSpellIcon()
@@ -500,6 +555,10 @@ function Cast:Initialize()
         castFrame.iconFrame.cooldown:SetHideCountdownNumbers(true)
         castFrame.iconFrame.cooldown:Hide()
     end
+
+    self:RegisterMasqueButtons()
+    self:ReskinMasque()
+    EnsureMasqueLoader()
 
     -- Set scripts
     castFrame:SetScript("OnUpdate", OnUpdate)
