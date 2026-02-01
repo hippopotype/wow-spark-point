@@ -296,6 +296,13 @@ local function BuildSettingsPanel()
         { value = "MONOCHROME,THICKOUTLINE", label = "Mono + Thick Outline" },
     })
     AddColor(cpCategory, "classpower_fontColor", L["Class Power Font Color"] or "Class Power Font Color")
+    AddDropdown(cpCategory, "classpower_visibility", L["Class Power Visibility"] or "Class Power Visibility", {
+        { value = "ALWAYS", label = L["Visibility Always"] or "Always" },
+        { value = "IN_COMBAT", label = L["Visibility In Combat"] or "In Combat" },
+        { value = "OUT_OF_COMBAT", label = L["Visibility Out of Combat"] or "Out of Combat" },
+        { value = "HAS_TARGET", label = L["Visibility Has Target"] or "Has Target" },
+        { value = "CASTING", label = L["Visibility While Casting"] or "While Casting" },
+    }, L["Class Power Visibility Tooltip"] or "When to show class power text")
 
     ------------------------------------------------------------------------
     -- Ring Settings Subcategory

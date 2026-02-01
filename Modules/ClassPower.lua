@@ -20,9 +20,13 @@ local UPDATE_INTERVAL = 0.1  -- Throttle updates to 10 per second
 
 local UnitPower = UnitPower
 local UnitPowerMax = UnitPowerMax
+local UnitCastingInfo = UnitCastingInfo
+local UnitChannelInfo = UnitChannelInfo
 local GetSpecialization = GetSpecialization
 local UnitClass = UnitClass
 local tostring = tostring
+local InCombatLockdown = InCombatLockdown
+local UnitExists = UnitExists
 
 --------------------------------------------------------------------------------
 -- Event Frame
@@ -34,6 +38,28 @@ local EL = CreateFrame("Frame")
 --------------------------------------------------------------------------------
 local ClassPower = {}
 addon.Modules.ClassPowerObj = ClassPower
+
+local VISIBILITY_OPTIONS = {
+    ALWAYS = "ALWAYS",
+    IN_COMBAT = "IN_COMBAT",
+    OUT_OF_COMBAT = "OUT_OF_COMBAT",
+    HAS_TARGET = "HAS_TARGET",
+    CASTING = "CASTING",
+}
+
+function ClassPower:ShouldBeVisible()
+    local setting = GetDBValue("classpower_visibility") or VISIBILITY_OPTIONS.ALWAYS
+    if setting == VISIBILITY_OPTIONS.IN_COMBAT then
+        return InCombatLockdown()
+    elseif setting == VISIBILITY_OPTIONS.OUT_OF_COMBAT then
+        return not InCombatLockdown()
+    elseif setting == VISIBILITY_OPTIONS.HAS_TARGET then
+        return UnitExists("target")
+    elseif setting == VISIBILITY_OPTIONS.CASTING then
+        return UnitCastingInfo("player") ~= nil or UnitChannelInfo("player") ~= nil
+    end
+    return true
+end
 
 --------------------------------------------------------------------------------
 -- Power Type Detection
@@ -107,6 +133,12 @@ function ClassPower:UpdatePower()
         return
     end
 
+    if not self:ShouldBeVisible() then
+        classPowerFrame:Hide()
+        AnchorFrame:Hide("classpower")
+        return
+    end
+
     local power = UnitPower("player", currentPowerType)
     -- Convert to string to handle WoW "secret values"
     local powerString = tostring(power or 0)
@@ -165,6 +197,58 @@ function ClassPower:UNIT_MAXPOWER(event, unit, powerType)
     self:UpdatePower()
 end
 
+function ClassPower:PLAYER_REGEN_DISABLED()
+    self:UpdatePower()
+end
+
+function ClassPower:PLAYER_REGEN_ENABLED()
+    self:UpdatePower()
+end
+
+function ClassPower:PLAYER_TARGET_CHANGED()
+    self:UpdatePower()
+end
+
+function ClassPower:UNIT_SPELLCAST_START(event, unit)
+    if unit ~= "player" then return end
+    self:UpdatePower()
+end
+
+function ClassPower:UNIT_SPELLCAST_STOP(event, unit)
+    if unit ~= "player" then return end
+    self:UpdatePower()
+end
+
+function ClassPower:UNIT_SPELLCAST_INTERRUPTED(event, unit)
+    if unit ~= "player" then return end
+    self:UpdatePower()
+end
+
+function ClassPower:UNIT_SPELLCAST_FAILED(event, unit)
+    if unit ~= "player" then return end
+    self:UpdatePower()
+end
+
+function ClassPower:UNIT_SPELLCAST_FAILED_QUIET(event, unit)
+    if unit ~= "player" then return end
+    self:UpdatePower()
+end
+
+function ClassPower:UNIT_SPELLCAST_CHANNEL_START(event, unit)
+    if unit ~= "player" then return end
+    self:UpdatePower()
+end
+
+function ClassPower:UNIT_SPELLCAST_CHANNEL_STOP(event, unit)
+    if unit ~= "player" then return end
+    self:UpdatePower()
+end
+
+function ClassPower:UNIT_SPELLCAST_CHANNEL_UPDATE(event, unit)
+    if unit ~= "player" then return end
+    self:UpdatePower()
+end
+
 --------------------------------------------------------------------------------
 -- ApplyOptions: Update visuals from settings
 --------------------------------------------------------------------------------
@@ -220,6 +304,17 @@ local function EnableModule(enabled)
         EL:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
         EL:RegisterEvent("PLAYER_ENTERING_WORLD")
         EL:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
+        EL:RegisterEvent("PLAYER_REGEN_DISABLED")
+        EL:RegisterEvent("PLAYER_REGEN_ENABLED")
+        EL:RegisterEvent("PLAYER_TARGET_CHANGED")
+        EL:RegisterUnitEvent("UNIT_SPELLCAST_START", "player")
+        EL:RegisterUnitEvent("UNIT_SPELLCAST_STOP", "player")
+        EL:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTED", "player")
+        EL:RegisterUnitEvent("UNIT_SPELLCAST_FAILED", "player")
+        EL:RegisterUnitEvent("UNIT_SPELLCAST_FAILED_QUIET", "player")
+        EL:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_START", "player")
+        EL:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_STOP", "player")
+        EL:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_UPDATE", "player")
         EL:RegisterUnitEvent("UNIT_POWER_UPDATE", "player")
         EL:RegisterUnitEvent("UNIT_MAXPOWER", "player")
 
@@ -256,6 +351,10 @@ for _, key in ipairs(settingKeys) do
         ClassPower:ApplyOptions()
     end)
 end
+
+CallbackRegistry:RegisterSettingCallback("classpower_visibility", function()
+    ClassPower:UpdatePower()
+end)
 
 --------------------------------------------------------------------------------
 -- Register Module

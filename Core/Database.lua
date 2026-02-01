@@ -55,6 +55,7 @@ addon.DefaultValues = {
     classpower_fontColor = {r = 1, g = 1, b = 1, a = 1},
     classpower_offsetX = 0,
     classpower_offsetY = 0,
+    classpower_visibility = "ALWAYS",
 
     -- Ring module settings
     ring_texture = "165624",
