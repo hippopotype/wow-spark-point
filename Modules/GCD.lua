@@ -120,6 +120,8 @@ function GCD:Hide()
     end
     gcdFrame:Hide()
     AnchorFrame:Hide("gcd")
+    gcdStartTime = nil
+    gcdDuration = nil
 
     -- Notify Ring module to hide
     if addon.Modules.RingObj and addon.Modules.RingObj.Hide then
@@ -149,6 +151,16 @@ function GCD:SPELLS_CHANGED()
     self:DetectSpell()
 end
 
+local function CooldownActive(start, duration)
+    local ok, result = pcall(function()
+        return start and duration and duration > 0 and start > 0
+    end)
+    if not ok then
+        return true
+    end
+    return result
+end
+
 function GCD:ACTIONBAR_UPDATE_COOLDOWN()
     if not gcdSpellID then return end
 
@@ -157,13 +169,15 @@ function GCD:ACTIONBAR_UPDATE_COOLDOWN()
         return
     end
 
-    local start, duration, enabled = API.GetSpellCooldown(gcdSpellID)
-
-    -- GCD is typically 1.0-1.5 seconds
-    if duration and duration > 0 and duration <= 1.5 then
+    local start, duration = API.GetSpellCooldown(gcdSpellID)
+    if CooldownActive(start, duration) and duration <= 1.5 then
         gcdStartTime = start
         gcdDuration = duration
         self:Show()
+    else
+        if isActive then
+            self:Hide()
+        end
     end
 end
 
@@ -238,11 +252,21 @@ local function EnableModule(enabled)
         end
 
         EL:RegisterEvent("ACTIONBAR_UPDATE_COOLDOWN")
+        EL:RegisterEvent("PLAYER_STARTED_MOVING")
+        EL:RegisterEvent("PLAYER_STOPPED_MOVING")
         EL:RegisterEvent("SPELLS_CHANGED")
     else
         EL:UnregisterAllEvents()
         GCD:Hide()
     end
+end
+
+function GCD:PLAYER_STARTED_MOVING()
+    self:ACTIONBAR_UPDATE_COOLDOWN()
+end
+
+function GCD:PLAYER_STOPPED_MOVING()
+    self:ACTIONBAR_UPDATE_COOLDOWN()
 end
 
 --------------------------------------------------------------------------------

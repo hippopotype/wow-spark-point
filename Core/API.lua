@@ -35,11 +35,24 @@ end
 --------------------------------------------------------------------------------
 function API.GetSpellCooldown(spellID)
     if not spellID then return 0, 0, 0 end
-    local cooldownInfo = C_Spell.GetSpellCooldown(spellID)
-    if cooldownInfo then
-        return cooldownInfo.startTime, cooldownInfo.duration, cooldownInfo.isEnabled and 1 or 0
+    if not C_Spell or not C_Spell.GetSpellCooldown then
+        if GetSpellCooldown then
+            local s, d, e = GetSpellCooldown(spellID)
+            return s or 0, d or 0, e or 0
+        end
+        return 0, 0, 0
     end
-    return 0, 0, 0
+
+    local a, b, c, d = C_Spell.GetSpellCooldown(spellID)
+    if type(a) == "table" then
+        local info = a
+        return info.startTime or info.start or 0,
+            info.duration or 0,
+            (info.isEnabled and 1 or 0),
+            info.modRate
+    end
+
+    return a or 0, b or 0, c or 0, d
 end
 
 --------------------------------------------------------------------------------
