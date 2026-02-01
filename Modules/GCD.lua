@@ -151,7 +151,30 @@ function GCD:SPELLS_CHANGED()
     self:DetectSpell()
 end
 
-local function CooldownActive(start, duration)
+local function ResolveGCDSpellID(spellID)
+    if gcdSpellID then
+        return gcdSpellID
+    end
+    return spellID
+end
+
+function GCD:UNIT_SPELLCAST_START(event, unit, castGUID, spellID)
+    if unit ~= "player" then return end
+    local id = ResolveGCDSpellID(spellID)
+    if not id then return end
+    local start, duration = API.GetSpellCooldown(id)
+    if GCD.CooldownActive(start, duration) and duration <= 1.5 then
+        gcdStartTime = start
+        gcdDuration = duration
+        self:Show()
+    end
+end
+
+function GCD:UNIT_SPELLCAST_SUCCEEDED(event, unit, castGUID, spellID)
+    self:UNIT_SPELLCAST_START(event, unit, castGUID, spellID)
+end
+
+function GCD.CooldownActive(start, duration)
     local ok, result = pcall(function()
         return start and duration and duration > 0 and start > 0
     end)
@@ -170,7 +193,7 @@ function GCD:ACTIONBAR_UPDATE_COOLDOWN()
     end
 
     local start, duration = API.GetSpellCooldown(gcdSpellID)
-    if CooldownActive(start, duration) and duration <= 1.5 then
+    if GCD.CooldownActive(start, duration) and duration <= 1.5 then
         gcdStartTime = start
         gcdDuration = duration
         self:Show()
@@ -255,6 +278,8 @@ local function EnableModule(enabled)
         EL:RegisterEvent("PLAYER_STARTED_MOVING")
         EL:RegisterEvent("PLAYER_STOPPED_MOVING")
         EL:RegisterEvent("SPELLS_CHANGED")
+        EL:RegisterUnitEvent("UNIT_SPELLCAST_START", "player")
+        EL:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
     else
         EL:UnregisterAllEvents()
         GCD:Hide()
