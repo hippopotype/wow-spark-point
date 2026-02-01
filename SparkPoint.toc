@@ -1,0 +1,30 @@
+## Interface: 120000, 120001
+## Title: Spark Point
+## Notes: Cast ring around cursor.
+## Author: Magic (EU-BurningLegion)
+## Version: 1.0.0
+## SavedVariables: SparkPointDB
+## IconTexture: Interface\Icons\inv_arathordungeon_fragment_color6
+
+# Core (load order matters)
+Core\Initialization.lua
+Core\API.lua
+Core\Database.lua
+Core\ModuleRegistry.lua
+Core\AnchorFrame.lua
+
+# Widgets
+Widgets\DonutWidget.lua
+
+# Modules
+Modules\Cast.lua
+Modules\GCD.lua
+Modules\ClassPower.lua
+Modules\Ring.lua
+Modules\SpellIcon.lua
+
+# Settings
+Settings\SettingsPanel.lua
+
+# Localization
+Localization\enUS.lua

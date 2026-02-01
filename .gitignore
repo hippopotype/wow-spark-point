@@ -1,0 +1,64 @@
+# macOS
+.DS_Store
+**/.DS_Store
+.AppleDouble
+.LSOverride
+
+# Clones
+.clones/
+
+# Skills
+.skills/
+
+# Sessions
+.sessions/
+
+# Agents
+.agents/
+.claude/
+AGENTS.md
+CLAUDE.md
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+
+# Editor/IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# Temporary files
+*.bak
+*.tmp
+*.log
+*.cache
+
+# Build artifacts (if any)
+*.zip
+*.rar
+*.7z
+
+# WoW-specific (usually saved in WTF folder, but just in case)
+*.lua.bak
+SavedVariables/
+
+# Package manager files (if using any)
+node_modules/
+package-lock.json
+yarn.lock
