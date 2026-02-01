@@ -148,8 +148,20 @@ end
 -- SetThickness: Change ring thickness (reloads texture)
 --------------------------------------------------------------------------------
 function DonutWidget:SetThickness(thickness)
-    self.thickness = thickness
-    local texPath = addon.addonFolder .. "\\Textures\\segment_" .. thickness
+    local numericThickness = tonumber(thickness) or 25
+    local valid = {15, 20, 25, 30, 35}
+    local clamped = valid[1]
+    local minDiff = math.abs(numericThickness - clamped)
+    for i = 2, #valid do
+        local diff = math.abs(numericThickness - valid[i])
+        if diff < minDiff then
+            minDiff = diff
+            clamped = valid[i]
+        end
+    end
+
+    self.thickness = clamped
+    local texPath = addon.addonFolder .. "\\Textures\\segment_" .. clamped
 
     for _, v in ipairs(self.background) do
         v:SetTexture(texPath)
@@ -178,7 +190,7 @@ function DonutWidget:SetDirection(direction)
     if direction then
         -- Clockwise
         s1:SetPoint("BOTTOMLEFT", donutFrame, "CENTER")
-        s1:SetTexCoord(0, 0, 0, 0, 0, 0, 0, 0)  -- Default
+        s1:SetTexCoord(0, 1, 0, 1)
 
         s2:SetPoint("TOPLEFT", donutFrame, "CENTER")
         s2:SetTexCoord(0, 1, 1, 1, 0, 0, 1, 0)

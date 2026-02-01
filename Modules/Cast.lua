@@ -102,6 +102,9 @@ function Cast:Show()
     if not GetDBBool("cast_sparkOnly") and latencyDonut then
         local latencyAngle = math.max(0.1, castLatency * 360)
         latencyDonut:SetAngle(latencyAngle)
+        if castDonut then
+            castDonut:SetAngle(0)
+        end
     end
 
     -- Show spell text if enabled
@@ -127,6 +130,15 @@ function Cast:Hide()
     if not castFrame then return end
 
     isCasting = false
+    if castDonut then
+        castDonut:SetAngle(0)
+    end
+    if latencyDonut then
+        latencyDonut:SetAngle(0)
+    end
+    castDuration = 0
+    castStartTime = 0
+    castEndTime = 0
     castFrame:Hide()
     AnchorFrame:Hide("cast")
 
@@ -174,6 +186,16 @@ function Cast:UNIT_SPELLCAST_STOP(event, unit, castGUID, spellID)
 end
 
 function Cast:UNIT_SPELLCAST_INTERRUPTED(event, unit, castGUID, spellID)
+    if unit ~= "player" then return end
+    self:Hide()
+end
+
+function Cast:UNIT_SPELLCAST_FAILED(event, unit, castGUID, spellID)
+    if unit ~= "player" then return end
+    self:Hide()
+end
+
+function Cast:UNIT_SPELLCAST_FAILED_QUIET(event, unit, castGUID, spellID)
     if unit ~= "player" then return end
     self:Hide()
 end
@@ -347,6 +369,8 @@ local function EnableModule(enabled)
         EL:RegisterUnitEvent("UNIT_SPELLCAST_START", "player")
         EL:RegisterUnitEvent("UNIT_SPELLCAST_STOP", "player")
         EL:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTED", "player")
+        EL:RegisterUnitEvent("UNIT_SPELLCAST_FAILED", "player")
+        EL:RegisterUnitEvent("UNIT_SPELLCAST_FAILED_QUIET", "player")
         EL:RegisterUnitEvent("UNIT_SPELLCAST_DELAYED", "player")
         EL:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_START", "player")
         EL:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_STOP", "player")

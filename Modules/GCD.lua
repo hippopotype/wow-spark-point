@@ -100,6 +100,9 @@ function GCD:Show()
     isActive = true
     AnchorFrame:Show("gcd")
     gcdFrame:Show()
+    if gcdDonut then
+        gcdDonut:SetAngle(0)
+    end
 
     -- Notify Ring module to show
     if addon.Modules.RingObj and addon.Modules.RingObj.Show then
@@ -111,6 +114,9 @@ function GCD:Hide()
     if not gcdFrame then return end
 
     isActive = false
+    if gcdDonut then
+        gcdDonut:SetAngle(0)
+    end
     gcdFrame:Hide()
     AnchorFrame:Hide("gcd")
 
