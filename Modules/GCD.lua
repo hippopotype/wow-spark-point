@@ -100,7 +100,7 @@ function GCD:Show()
     isActive = true
     AnchorFrame:Show("gcd")
     gcdFrame:Show()
-    if gcdDonut then
+    if gcdDonut and not GetDBBool("gcd_sparkOnly") then
         gcdDonut:SetAngle(0)
         gcdDonut:Show()
     end
@@ -219,23 +219,27 @@ function GCD:ApplyOptions()
     gcdFrame.sparkTexture:SetVertexColor(r, g, b, a)
     gcdFrame.sparkTexture:SetSize(radius, radius)
 
-    -- Update or create donut
-    if not sparkOnly then
-        if not gcdDonut then
-            gcdDonut = DonutWidget:Create({
-                direction = true,
-                radius = radius,
-                thickness = thickness,
-                barColor = GetDBColorTable("gcd_barColor"),
-                backgroundColor = GetDBColorTable("gcd_backgroundColor"),
-            })
-            gcdDonut:AttachTo(gcdFrame)
-        else
-            gcdDonut:SetRadius(radius)
-            gcdDonut:SetThickness(thickness)
-            gcdDonut:SetBarColor(GetDBColorTable("gcd_barColor"))
-            gcdDonut:SetBackgroundColor(GetDBColorTable("gcd_backgroundColor"))
-        end
+    -- Update or create donut (kept hidden when spark-only)
+    if not gcdDonut then
+        gcdDonut = DonutWidget:Create({
+            direction = true,
+            radius = radius,
+            thickness = thickness,
+            barColor = GetDBColorTable("gcd_barColor"),
+            backgroundColor = GetDBColorTable("gcd_backgroundColor"),
+        })
+        gcdDonut:AttachTo(gcdFrame)
+    else
+        gcdDonut:SetRadius(radius)
+        gcdDonut:SetThickness(thickness)
+        gcdDonut:SetBarColor(GetDBColorTable("gcd_barColor"))
+        gcdDonut:SetBackgroundColor(GetDBColorTable("gcd_backgroundColor"))
+    end
+
+    if sparkOnly or not isActive then
+        gcdDonut:Hide()
+    else
+        gcdDonut:Show()
     end
 end
 
