@@ -67,7 +67,7 @@ addon.DefaultValues = {
     spellicon_size = 32,
     spellicon_offsetX = 0,
     spellicon_offsetY = -40,
-    spellicon_showCooldown = true,
+    spellicon_castProgressSwipe = true,
 }
 
 --------------------------------------------------------------------------------

@@ -78,7 +78,7 @@ function Cast:ApplyIconOptions()
     local size = GetDBValue("spellicon_size")
     local offsetX = GetDBValue("spellicon_offsetX")
     local offsetY = GetDBValue("spellicon_offsetY")
-    local showCooldown = GetDBBool("spellicon_showCooldown")
+    local showCooldown = GetDBBool("spellicon_castProgressSwipe")
 
     castFrame.iconFrame:SetSize(size, size)
     castFrame.iconFrame:ClearAllPoints()
@@ -97,6 +97,8 @@ function Cast:ApplyIconOptions()
     elseif castFrame.iconFrame.cooldown then
         castFrame.iconFrame.cooldown:Hide()
     end
+
+    self:UpdateIconCooldown()
 end
 
 function Cast:UpdateSpellIcon()
@@ -123,6 +125,21 @@ function Cast:UpdateSpellIcon()
     castFrame.iconFrame.icon:SetTexture(texture)
     castFrame.iconFrame.icon:Show()
     castFrame.iconFrame:Show()
+    self:UpdateIconCooldown()
+end
+
+function Cast:UpdateIconCooldown()
+    if not castFrame or not castFrame.iconFrame or not castFrame.iconFrame.cooldown then return end
+    if not GetDBBool("spellicon_castProgressSwipe") then
+        castFrame.iconFrame.cooldown:Hide()
+        return
+    end
+    if not isCasting or not castStartTime or castDuration == 0 then
+        castFrame.iconFrame.cooldown:Hide()
+        return
+    end
+    castFrame.iconFrame.cooldown:SetCooldown(castStartTime / 1000, castDuration / 1000)
+    castFrame.iconFrame.cooldown:Show()
 end
 
 --------------------------------------------------------------------------------
@@ -198,6 +215,7 @@ function Cast:Show()
 
     pendingVisuals = true
     self:ApplyPendingVisuals()
+    self:UpdateIconCooldown()
 
     -- Notify Ring module to show
     if addon.Modules.RingObj and addon.Modules.RingObj.Show then
@@ -231,6 +249,9 @@ function Cast:Hide()
 
     if castFrame.iconFrame then
         castFrame.iconFrame:Hide()
+        if castFrame.iconFrame.cooldown then
+            castFrame.iconFrame.cooldown:Hide()
+        end
     end
 end
 
@@ -297,6 +318,7 @@ function Cast:UNIT_SPELLCAST_DELAYED(event, unit, castGUID, spellID)
         castStartTime = startTimeMS
         castEndTime = endTimeMS
         castDuration = castEndTime - castStartTime
+        self:UpdateIconCooldown()
     end
 end
 
@@ -340,6 +362,7 @@ function Cast:UNIT_SPELLCAST_CHANNEL_UPDATE(event, unit, castGUID, spellID)
         castStartTime = startTimeMS
         castEndTime = endTimeMS
         castDuration = castEndTime - castStartTime
+        self:UpdateIconCooldown()
     end
 end
 
@@ -547,7 +570,7 @@ end)
         "cast_spellTextEnabled", "cast_spellTextFont", "cast_spellTextSize",
         "cast_spellTextOutline", "cast_spellTextColor",
         "cast_spellTextOffsetX", "cast_spellTextOffsetY",
-        "spellicon_size", "spellicon_offsetX", "spellicon_offsetY", "spellicon_showCooldown"
+        "spellicon_size", "spellicon_offsetX", "spellicon_offsetY", "spellicon_castProgressSwipe"
     }
 
 for _, key in ipairs(settingKeys) do

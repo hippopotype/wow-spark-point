@@ -64,7 +64,7 @@ L["Decorative Ring Color"] = "Decorative Ring Color"
 L["Spell Icon Size"] = "Spell Icon Size"
 L["Spell Icon Horizontal Offset"] = "Spell Icon Horizontal Offset"
 L["Spell Icon Vertical Offset"] = "Spell Icon Vertical Offset"
-L["Spell Icon Show Cooldown"] = "Spell Icon Show Cooldown"
+L["Cast Progress Swipe"] = "Cast Progress Swipe"
 
 --------------------------------------------------------------------------------
 -- Cast Ring

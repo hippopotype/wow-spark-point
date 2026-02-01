@@ -296,7 +296,7 @@ local function BuildSettingsPanel()
     AddSlider(iconCategory, "spellicon_size", L["Spell Icon Size"] or "Spell Icon Size", 16, 64, 1)
     AddSlider(iconCategory, "spellicon_offsetX", L["Spell Icon Horizontal Offset"] or "Spell Icon Horizontal Offset", -100, 100, 1)
     AddSlider(iconCategory, "spellicon_offsetY", L["Spell Icon Vertical Offset"] or "Spell Icon Vertical Offset", -100, 100, 1)
-    AddCheckbox(iconCategory, "spellicon_showCooldown", L["Spell Icon Show Cooldown"] or "Spell Icon Show Cooldown")
+    AddCheckbox(iconCategory, "spellicon_castProgressSwipe", L["Cast Progress Swipe"] or "Cast Progress Swipe")
 
     ------------------------------------------------------------------------
     -- Register main category
