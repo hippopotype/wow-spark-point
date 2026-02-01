@@ -7,6 +7,7 @@ local API = addon.API
 local CallbackRegistry = addon.CallbackRegistry
 local AnchorFrame = addon.AnchorFrame
 local GetDBValue = addon.GetDBValue
+local GetDBBool = addon.GetDBBool
 local GetDBColor = addon.GetDBColor
 
 --------------------------------------------------------------------------------
@@ -258,7 +259,12 @@ function ClassPower:ApplyOptions()
     local font = GetDBValue("classpower_font")
     local fontSize = GetDBValue("classpower_fontSize")
     local fontOutline = GetDBValue("classpower_fontOutline")
-    local r, g, b, a = GetDBColor("classpower_fontColor")
+    local r, g, b, a
+    if GetDBBool("classpower_useClassColor") then
+        r, g, b, a = API.GetPlayerClassColor()
+    else
+        r, g, b, a = GetDBColor("classpower_fontColor")
+    end
     local offsetX = GetDBValue("classpower_offsetX")
     local offsetY = GetDBValue("classpower_offsetY")
 
@@ -343,7 +349,7 @@ end)
 --------------------------------------------------------------------------------
 local settingKeys = {
     "classpower_font", "classpower_fontSize", "classpower_fontOutline",
-    "classpower_fontColor", "classpower_offsetX", "classpower_offsetY"
+    "classpower_fontColor", "classpower_offsetX", "classpower_offsetY", "classpower_useClassColor"
 }
 
 for _, key in ipairs(settingKeys) do

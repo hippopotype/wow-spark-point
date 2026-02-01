@@ -49,7 +49,7 @@ local function BuildSettingsPanel()
     ------------------------------------------------------------------------
     -- Helper function to create a slider
     ------------------------------------------------------------------------
-    local function AddSlider(cat, dbKey, displayName, minVal, maxVal, step, tooltip)
+    local function AddSlider(cat, dbKey, displayName, minVal, maxVal, step, tooltip, formatter)
         local defaultValue = DB[dbKey]
         if defaultValue == nil then
             defaultValue = addon.DefaultValues and addon.DefaultValues[dbKey]
@@ -67,7 +67,11 @@ local function BuildSettingsPanel()
             SetDBValue(dbKey, value, true)
         end)
         local options = Settings.CreateSliderOptions(minVal, maxVal, step)
-        options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
+        if formatter then
+            options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, formatter)
+        else
+            options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
+        end
         Settings.CreateSlider(cat, setting, options, tooltip)
         return setting
     end
@@ -260,6 +264,8 @@ local function BuildSettingsPanel()
     AddColor(castCategory, "cast_sparkColor", L["Cast Spark Color"] or "Cast Spark Color")
     AddColor(castCategory, "cast_latencyColor", L["Cast Latency Color"] or "Cast Latency Color")
     AddColor(castCategory, "cast_spellTextColor", L["Cast Spell Text Color"] or "Cast Spell Text Color")
+    AddCheckbox(castCategory, "cast_useClassColor", L["Cast Use Class Color"] or "Cast Use Class Color",
+        L["Cast Use Class Color Tooltip"] or "Override cast colors with your class color")
 
     ------------------------------------------------------------------------
     -- GCD Ring Settings Subcategory
@@ -272,6 +278,8 @@ local function BuildSettingsPanel()
     AddColor(gcdCategory, "gcd_barColor", L["GCD Bar Color"] or "GCD Bar Color")
     AddColor(gcdCategory, "gcd_backgroundColor", L["GCD Background Color"] or "GCD Background Color")
     AddColor(gcdCategory, "gcd_sparkColor", L["GCD Spark Color"] or "GCD Spark Color")
+    AddCheckbox(gcdCategory, "gcd_useClassColor", L["GCD Use Class Color"] or "GCD Use Class Color",
+        L["GCD Use Class Color Tooltip"] or "Override GCD colors with your class color")
 
     ------------------------------------------------------------------------
     -- Class Power Settings Subcategory
@@ -303,6 +311,8 @@ local function BuildSettingsPanel()
         { value = "HAS_TARGET", label = L["Visibility Has Target"] or "Has Target" },
         { value = "CASTING", label = L["Visibility While Casting"] or "While Casting" },
     }, L["Class Power Visibility Tooltip"] or "When to show class power text")
+    AddCheckbox(cpCategory, "classpower_useClassColor", L["Class Power Use Class Color"] or "Class Power Use Class Color",
+        L["Class Power Use Class Color Tooltip"] or "Override class power text color with your class color")
 
     ------------------------------------------------------------------------
     -- Ring Settings Subcategory
@@ -328,6 +338,12 @@ local function BuildSettingsPanel()
         { value = "AuraHalf", label = "Aura Half" },
     })
     AddColor(ringCategory, "ring_color", L["Decorative Ring Color"] or "Decorative Ring Color")
+    AddCheckbox(ringCategory, "ring_useClassColor", L["Decorative Ring Use Class Color"] or "Decorative Ring Use Class Color",
+        L["Decorative Ring Use Class Color Tooltip"] or "Override ring color with your class color")
+    AddSlider(ringCategory, "ring_classColorAlpha", L["Decorative Ring Class Color Opacity"] or "Decorative Ring Class Color Opacity", 0, 1, 0.05,
+        L["Decorative Ring Class Color Opacity Tooltip"] or "Opacity for class color override", function(value)
+            return string.format("%.2f", value or 0)
+        end)
 
     ------------------------------------------------------------------------
     -- Spell Icon Settings Subcategory
@@ -338,6 +354,8 @@ local function BuildSettingsPanel()
     AddSlider(iconCategory, "spellicon_offsetX", L["Spell Icon Horizontal Offset"] or "Spell Icon Horizontal Offset", -100, 100, 1)
     AddSlider(iconCategory, "spellicon_offsetY", L["Spell Icon Vertical Offset"] or "Spell Icon Vertical Offset", -100, 100, 1)
     AddCheckbox(iconCategory, "spellicon_castProgressSwipe", L["Cast Progress Swipe"] or "Cast Progress Swipe")
+    AddCheckbox(iconCategory, "spellicon_useClassColor", L["Spell Icon Use Class Color"] or "Spell Icon Use Class Color",
+        L["Spell Icon Use Class Color Tooltip"] or "Override spell icon border color with your class color")
 
     ------------------------------------------------------------------------
     -- Register main category

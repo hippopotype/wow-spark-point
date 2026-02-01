@@ -213,9 +213,24 @@ function GCD:ApplyOptions()
     local radius = GetDBValue("gcd_radius")
     local thickness = GetDBValue("gcd_thickness")
     local sparkOnly = GetDBBool("gcd_sparkOnly")
+    local useClassColor = GetDBBool("gcd_useClassColor")
+    local cr, cg, cb, ca
+    if useClassColor then
+        cr, cg, cb, ca = API.GetPlayerClassColor()
+    end
+    local backgroundColor = GetDBColorTable("gcd_backgroundColor")
+    if useClassColor then
+        local dim = 0.6
+        backgroundColor = {r = cr * dim, g = cg * dim, b = cb * dim, a = 0.3}
+    end
 
     -- Update spark
-    local r, g, b, a = GetDBColor("gcd_sparkColor")
+    local r, g, b, a
+    if useClassColor then
+        r, g, b, a = cr, cg, cb, ca
+    else
+        r, g, b, a = GetDBColor("gcd_sparkColor")
+    end
     gcdFrame.sparkTexture:SetVertexColor(r, g, b, a)
     gcdFrame.sparkTexture:SetSize(radius, radius)
 
@@ -225,15 +240,15 @@ function GCD:ApplyOptions()
             direction = true,
             radius = radius,
             thickness = thickness,
-            barColor = GetDBColorTable("gcd_barColor"),
-            backgroundColor = GetDBColorTable("gcd_backgroundColor"),
+            barColor = useClassColor and {r = cr, g = cg, b = cb, a = ca} or GetDBColorTable("gcd_barColor"),
+            backgroundColor = backgroundColor,
         })
         gcdDonut:AttachTo(gcdFrame)
     else
         gcdDonut:SetRadius(radius)
         gcdDonut:SetThickness(thickness)
-        gcdDonut:SetBarColor(GetDBColorTable("gcd_barColor"))
-        gcdDonut:SetBackgroundColor(GetDBColorTable("gcd_backgroundColor"))
+        gcdDonut:SetBarColor(useClassColor and {r = cr, g = cg, b = cb, a = ca} or GetDBColorTable("gcd_barColor"))
+        gcdDonut:SetBackgroundColor(backgroundColor)
     end
 
     if sparkOnly or not isActive then
@@ -312,7 +327,7 @@ end)
 --------------------------------------------------------------------------------
 local settingKeys = {
     "gcd_radius", "gcd_thickness", "gcd_barColor", "gcd_backgroundColor",
-    "gcd_sparkColor", "gcd_sparkOnly"
+    "gcd_sparkColor", "gcd_sparkOnly", "gcd_useClassColor"
 }
 
 for _, key in ipairs(settingKeys) do

@@ -32,6 +32,7 @@ addon.DefaultValues = {
     cast_latencyColor = {r = 1, g = 0, b = 0, a = 1},
     cast_sparkOnly = false,
     cast_reverseChanneling = false,
+    cast_useClassColor = false,
     cast_spellTextEnabled = false,
     cast_spellTextFont = "Fonts\\FRIZQT__.TTF",
     cast_spellTextSize = 12,
@@ -47,6 +48,7 @@ addon.DefaultValues = {
     gcd_backgroundColor = {r = 0.4, g = 0.4, b = 0.4, a = 0.8},
     gcd_sparkColor = {r = 0.9, g = 0.8, b = 1, a = 1},
     gcd_sparkOnly = false,
+    gcd_useClassColor = false,
 
     -- ClassPower module settings
     classpower_font = "Fonts\\FRIZQT__.TTF",
@@ -56,18 +58,22 @@ addon.DefaultValues = {
     classpower_offsetX = 0,
     classpower_offsetY = 0,
     classpower_visibility = "ALWAYS",
+    classpower_useClassColor = false,
 
     -- Ring module settings
     ring_texture = "165624",
     ring_color = {r = 0, g = 1, b = 0, a = 0.5},
     ring_width = 75,
     ring_rotate = true,
+    ring_useClassColor = false,
+    ring_classColorAlpha = 0.5,
 
     -- SpellIcon module settings (NEW)
     spellicon_size = 32,
     spellicon_offsetX = 0,
     spellicon_offsetY = -40,
     spellicon_castProgressSwipe = true,
+    spellicon_useClassColor = false,
 }
 
 --------------------------------------------------------------------------------

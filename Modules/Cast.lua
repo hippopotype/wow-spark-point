@@ -133,12 +133,21 @@ function Cast:ApplyIconOptions()
     local offsetX = GetDBValue("spellicon_offsetX")
     local offsetY = GetDBValue("spellicon_offsetY")
     local showCooldown = GetDBBool("spellicon_castProgressSwipe")
+    local useClassColor = GetDBBool("spellicon_useClassColor")
 
     castFrame.iconFrame:SetSize(size, size)
     castFrame.iconFrame:ClearAllPoints()
     castFrame.iconFrame:SetPoint("CENTER", castFrame, "CENTER", offsetX, offsetY)
 
     castFrame.iconFrame.icon:SetSize(size - 4, size - 4)
+    if castFrame.iconFrame.border then
+        if useClassColor then
+            local r, g, b, a = API.GetPlayerClassColor()
+            castFrame.iconFrame.border:SetVertexColor(r, g, b, a)
+        else
+            castFrame.iconFrame.border:SetVertexColor(1, 1, 1, 1)
+        end
+    end
 
     if showCooldown then
         if not castFrame.iconFrame.cooldown then
@@ -208,6 +217,11 @@ local function OnUpdate(self, elapsed)
 
     local now = GetTime() * 1000
     local castPerc = (now - castStartTime) / castDuration
+    local useClassColor = GetDBBool("cast_useClassColor")
+    local cr, cg, cb, ca
+    if useClassColor then
+        cr, cg, cb, ca = API.GetPlayerClassColor()
+    end
 
     if castPerc < 1 then
         local angle = castPerc * 360
@@ -238,7 +252,12 @@ local function OnUpdate(self, elapsed)
             local r, g, b, a = GetDBColor("cast_latencyColor")
             spark:SetVertexColor(r, g, b, a)
         else
-            local r, g, b, a = GetDBColor("cast_sparkColor")
+            local r, g, b, a
+            if useClassColor then
+                r, g, b, a = cr, cg, cb, ca
+            else
+                r, g, b, a = GetDBColor("cast_sparkColor")
+            end
             spark:SetVertexColor(r, g, b, a)
         end
     else
@@ -443,9 +462,24 @@ function Cast:ApplyOptions()
     local radius = GetDBValue("cast_radius")
     local thickness = GetDBValue("cast_thickness")
     local sparkOnly = GetDBBool("cast_sparkOnly")
+    local useClassColor = GetDBBool("cast_useClassColor")
+    local cr, cg, cb, ca
+    if useClassColor then
+        cr, cg, cb, ca = API.GetPlayerClassColor()
+    end
+    local backgroundColor = GetDBColorTable("cast_backgroundColor")
+    if useClassColor then
+        local dim = 0.6
+        backgroundColor = {r = cr * dim, g = cg * dim, b = cb * dim, a = 0.3}
+    end
 
     -- Update spark
-    local r, g, b, a = GetDBColor("cast_sparkColor")
+    local r, g, b, a
+    if useClassColor then
+        r, g, b, a = cr, cg, cb, ca
+    else
+        r, g, b, a = GetDBColor("cast_sparkColor")
+    end
     castFrame.sparkTexture:SetVertexColor(r, g, b, a)
     castFrame.sparkTexture:SetSize(radius, radius)
 
@@ -458,7 +492,7 @@ function Cast:ApplyOptions()
                 radius = radius,
                 thickness = thickness,
                 barColor = GetDBColorTable("cast_latencyColor"),
-                backgroundColor = GetDBColorTable("cast_backgroundColor"),
+                backgroundColor = backgroundColor,
             })
             latencyDonut:AttachTo(castFrame)
 
@@ -467,7 +501,7 @@ function Cast:ApplyOptions()
                 direction = true,
                 radius = radius,
                 thickness = thickness,
-                barColor = GetDBColorTable("cast_barColor"),
+                barColor = useClassColor and {r = cr, g = cg, b = cb, a = ca} or GetDBColorTable("cast_barColor"),
                 backgroundColor = {r = 0, g = 0, b = 0, a = 0},  -- Transparent bg
                 parent = latencyDonut:GetFrame(),
             })
@@ -476,12 +510,12 @@ function Cast:ApplyOptions()
             -- Update existing donuts
             castDonut:SetRadius(radius)
             castDonut:SetThickness(thickness)
-            castDonut:SetBarColor(GetDBColorTable("cast_barColor"))
+            castDonut:SetBarColor(useClassColor and {r = cr, g = cg, b = cb, a = ca} or GetDBColorTable("cast_barColor"))
 
             latencyDonut:SetRadius(radius)
             latencyDonut:SetThickness(thickness)
             latencyDonut:SetBarColor(GetDBColorTable("cast_latencyColor"))
-            latencyDonut:SetBackgroundColor(GetDBColorTable("cast_backgroundColor"))
+            latencyDonut:SetBackgroundColor(backgroundColor)
         end
     end
 
@@ -493,7 +527,12 @@ function Cast:ApplyOptions()
 
         castFrame.spellText:SetFont(font, size, outline)
 
-        local tr, tg, tb, ta = GetDBColor("cast_spellTextColor")
+        local tr, tg, tb, ta
+        if useClassColor then
+            tr, tg, tb, ta = cr, cg, cb, ca
+        else
+            tr, tg, tb, ta = GetDBColor("cast_spellTextColor")
+        end
         castFrame.spellText:SetTextColor(tr, tg, tb, ta)
 
         local offsetX = GetDBValue("cast_spellTextOffsetX")
@@ -618,11 +657,11 @@ end)
 --------------------------------------------------------------------------------
     local settingKeys = {
         "cast_radius", "cast_thickness", "cast_barColor", "cast_backgroundColor",
-        "cast_sparkColor", "cast_latencyColor", "cast_sparkOnly",
+        "cast_sparkColor", "cast_latencyColor", "cast_sparkOnly", "cast_useClassColor",
         "cast_spellTextEnabled", "cast_spellTextFont", "cast_spellTextSize",
         "cast_spellTextOutline", "cast_spellTextColor",
         "cast_spellTextOffsetX", "cast_spellTextOffsetY",
-        "spellicon_size", "spellicon_offsetX", "spellicon_offsetY", "spellicon_castProgressSwipe"
+        "spellicon_size", "spellicon_offsetX", "spellicon_offsetY", "spellicon_castProgressSwipe", "spellicon_useClassColor"
     }
 
 for _, key in ipairs(settingKeys) do

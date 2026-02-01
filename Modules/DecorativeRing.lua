@@ -3,6 +3,7 @@
 
 local addonName, addon = ...
 local L = addon.L
+local API = addon.API
 local CallbackRegistry = addon.CallbackRegistry
 local AnchorFrame = addon.AnchorFrame
 local GetDBValue = addon.GetDBValue
@@ -101,7 +102,13 @@ function Ring:ApplyOptions()
 
     local textureID = GetDBValue("ring_texture")
     local width = GetDBValue("ring_width")
-    local r, g, b, a = GetDBColor("ring_color")
+    local r, g, b, a
+    if GetDBBool("ring_useClassColor") then
+        r, g, b, a = API.GetPlayerClassColor()
+        a = GetDBValue("ring_classColorAlpha") or a
+    else
+        r, g, b, a = GetDBColor("ring_color")
+    end
 
     local texture = ringFrame.texture
     local textureKey = tostring(textureID or "")
@@ -180,7 +187,7 @@ end
 -- Register Setting Callbacks
 --------------------------------------------------------------------------------
 local settingKeys = {
-    "ring_texture", "ring_color", "ring_width", "ring_rotate"
+    "ring_texture", "ring_color", "ring_width", "ring_rotate", "ring_useClassColor", "ring_classColorAlpha"
 }
 
 for _, key in ipairs(settingKeys) do
