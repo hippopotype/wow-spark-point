@@ -13,6 +13,9 @@
 # Sessions
 .sessions/
 
+# Private
+.private/
+
 # Agents
 .agents/
 .claude/

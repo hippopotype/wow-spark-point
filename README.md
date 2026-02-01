@@ -1,7 +1,7 @@
 <p align="center">
   <br />
   <br />
-  <img src="icon.jpg" alt="SparkPoint Icon" width="60" height="60" style="border-radius: 50%;" />
+  <img src="icon.png" alt="SparkPoint Icon" width="128" height="128" style="border-radius: 50%;" />
   <br />
 </p>
 
