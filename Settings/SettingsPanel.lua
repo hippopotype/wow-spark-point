@@ -151,6 +151,19 @@ local function BuildSettingsPanel()
     ------------------------------------------------------------------------
     -- Module Toggles
     ------------------------------------------------------------------------
+    local function SetToggleEnabled(control, enabled)
+        if control and control.Checkbox and control.Checkbox.SetEnabled then
+            control.Checkbox:SetEnabled(enabled)
+        elseif control and control.SetEnabled then
+            control:SetEnabled(enabled)
+        end
+        if control and control.SetAlpha then
+            control:SetAlpha(enabled and 1 or 0.5)
+        end
+    end
+
+    local moduleControls = {}
+    local moduleSettings = {}
     local modules = addon.ControlCenter:GetModulesSorted()
     for _, moduleData in ipairs(modules) do
         local dbKey = moduleData.dbKey
@@ -168,13 +181,37 @@ local function BuildSettingsPanel()
             defaultValue
         )
         setting:SetValueChangedCallback(function(_, value)
+            if dbKey == "moduleEnabled_SpellIcon" and value then
+                if moduleSettings.moduleEnabled_Cast then
+                    moduleSettings.moduleEnabled_Cast:SetValue(true)
+                else
+                    addon.ControlCenter:EnableModule("moduleEnabled_Cast")
+                end
+                SetToggleEnabled(moduleControls.moduleEnabled_Cast, false)
+            end
+
             if value then
                 addon.ControlCenter:EnableModule(dbKey)
             else
                 addon.ControlCenter:DisableModule(dbKey)
             end
+
+            if dbKey == "moduleEnabled_SpellIcon" and not value then
+                SetToggleEnabled(moduleControls.moduleEnabled_Cast, true)
+            end
         end)
-        Settings.CreateCheckbox(category, setting, moduleData.description)
+        local control = Settings.CreateCheckbox(category, setting, moduleData.description)
+        moduleControls[dbKey] = control
+        moduleSettings[dbKey] = setting
+    end
+
+    if GetDBBool("moduleEnabled_SpellIcon") then
+        if moduleSettings.moduleEnabled_Cast then
+            moduleSettings.moduleEnabled_Cast:SetValue(true)
+        else
+            addon.ControlCenter:EnableModule("moduleEnabled_Cast")
+        end
+        SetToggleEnabled(moduleControls.moduleEnabled_Cast, false)
     end
 
     ------------------------------------------------------------------------
