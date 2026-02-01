@@ -32,7 +32,6 @@ addon.DefaultValues = {
     cast_latencyColor = {r = 1, g = 0, b = 0, a = 1},
     cast_sparkOnly = false,
     cast_reverseChanneling = false,
-    cast_hideCastBar = false,
     cast_spellTextEnabled = false,
     cast_spellTextFont = "Fonts\\FRIZQT__.TTF",
     cast_spellTextSize = 12,

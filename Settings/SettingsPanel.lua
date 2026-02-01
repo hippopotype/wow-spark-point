@@ -231,9 +231,6 @@ local function BuildSettingsPanel()
     AddCheckbox(castCategory, "cast_reverseChanneling", L["Cast Reverse Channeling"] or "Cast Reverse Channeling",
         L["Reverse Channeling Tooltip"] or "Reverse the direction for channeled spells")
 
-    AddCheckbox(castCategory, "cast_hideCastBar", L["Cast Hide Default Cast Bar"] or "Cast Hide Default Cast Bar",
-        L["Hide Default Cast Bar Tooltip"] or "Hide the default Blizzard casting bar")
-
     AddCheckbox(castCategory, "cast_spellTextEnabled", L["Cast Show Spell Name"] or "Cast Show Spell Name",
         L["Show Spell Name Tooltip"] or "Display the spell name above the ring")
 

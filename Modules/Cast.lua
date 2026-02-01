@@ -539,13 +539,6 @@ local function EnableModule(enabled)
         EL:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_STOP", "player")
         EL:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_UPDATE", "player")
 
-        -- Hide Blizzard cast bar if requested
-        if GetDBBool("cast_hideCastBar") then
-            if PlayerCastingBarFrame then
-                PlayerCastingBarFrame:UnregisterAllEvents()
-                PlayerCastingBarFrame:Hide()
-            end
-        end
     else
         EL:UnregisterAllEvents()
         Cast:Hide()
@@ -578,20 +571,6 @@ for _, key in ipairs(settingKeys) do
         Cast:ApplyOptions()
     end)
 end
-
--- Special handling for hideCastBar
-CallbackRegistry:RegisterSettingCallback("cast_hideCastBar", function(value)
-    if value then
-        if PlayerCastingBarFrame then
-            PlayerCastingBarFrame:UnregisterAllEvents()
-            PlayerCastingBarFrame:Hide()
-        end
-    else
-        if PlayerCastingBarFrame then
-            PlayerCastingBarFrame:OnLoad(PlayerCastingBarFrame)
-        end
-    end
-end)
 
 --------------------------------------------------------------------------------
 -- Register Module
