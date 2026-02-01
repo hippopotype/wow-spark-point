@@ -130,12 +130,25 @@ function SpellIcon:ApplyOptions()
     local size = GetDBValue("spellicon_size")
     local offsetX = GetDBValue("spellicon_offsetX")
     local offsetY = GetDBValue("spellicon_offsetY")
+    local showCooldown = GetDBBool("spellicon_showCooldown")
 
     iconFrame:SetSize(size, size)
     iconFrame:ClearAllPoints()
     iconFrame:SetPoint("CENTER", AnchorFrame:GetFrame(), "CENTER", offsetX, offsetY)
 
     iconFrame.icon:SetSize(size - 4, size - 4)
+
+    if showCooldown then
+        if not iconFrame.cooldown then
+            iconFrame.cooldown = CreateFrame("Cooldown", nil, iconFrame, "CooldownFrameTemplate")
+            iconFrame.cooldown:SetAllPoints(iconFrame.icon)
+            iconFrame.cooldown:SetDrawEdge(false)
+            iconFrame.cooldown:SetHideCountdownNumbers(true)
+        end
+        iconFrame.cooldown:Show()
+    elseif iconFrame.cooldown then
+        iconFrame.cooldown:Hide()
+    end
 end
 
 --------------------------------------------------------------------------------
@@ -160,14 +173,6 @@ function SpellIcon:Initialize()
     iconFrame.icon = iconFrame:CreateTexture(nil, "ARTWORK")
     iconFrame.icon:SetPoint("CENTER")
     iconFrame.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)  -- Slight inset to hide edges
-
-    -- Optional: Create cooldown overlay
-    if GetDBBool("spellicon_showCooldown") then
-        iconFrame.cooldown = CreateFrame("Cooldown", nil, iconFrame, "CooldownFrameTemplate")
-        iconFrame.cooldown:SetAllPoints(iconFrame.icon)
-        iconFrame.cooldown:SetDrawEdge(false)
-        iconFrame.cooldown:SetHideCountdownNumbers(true)
-    end
 
     self:ApplyOptions()
 end

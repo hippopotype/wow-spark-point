@@ -2,7 +2,7 @@
 ## Title: Spark Point
 ## Notes: Cast ring around cursor.
 ## Author: Magic (EU-BurningLegion)
-## Version: 1.0.0
+## Version: 1.0.1
 ## SavedVariables: SparkPointDB
 ## IconTexture: Interface\Icons\inv_arathordungeon_fragment_color6
 
@@ -24,6 +24,8 @@ Modules\Ring.lua
 Modules\SpellIcon.lua
 
 # Settings
+Settings\SettingsTemplates.xml
+Settings\ColorOverrides.lua
 Settings\SettingsPanel.lua
 
 # Localization
