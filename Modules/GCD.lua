@@ -102,6 +102,7 @@ function GCD:Show()
     gcdFrame:Show()
     if gcdDonut then
         gcdDonut:SetAngle(0)
+        gcdDonut:Show()
     end
 
     -- Notify Ring module to show
@@ -115,7 +116,7 @@ function GCD:Hide()
 
     isActive = false
     if gcdDonut then
-        gcdDonut:SetAngle(0)
+        gcdDonut:Hide()
     end
     gcdFrame:Hide()
     AnchorFrame:Hide("gcd")

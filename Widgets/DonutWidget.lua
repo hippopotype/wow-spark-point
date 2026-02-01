@@ -247,6 +247,21 @@ function DonutWidget:SetAngle(degree)
         degree = 360
     end
 
+    -- Avoid flicker at zero: hide active segments until we have a visible angle.
+    if degree == 0 then
+        self.segment1:Hide()
+        self.segment2:Hide()
+        self.segment3:Hide()
+        self.red:Hide()
+        self.blue:Hide()
+        self.slice:Hide()
+        return
+    else
+        self.red:Show()
+        self.blue:Show()
+        self.slice:Show()
+    end
+
     local quarter = ceil(degree / 90)
     if quarter == 0 then quarter = 1 end
 

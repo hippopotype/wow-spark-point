@@ -105,6 +105,10 @@ function Cast:Show()
         if castDonut then
             castDonut:SetAngle(0)
         end
+        latencyDonut:Show()
+        if castDonut then
+            castDonut:Show()
+        end
     end
 
     -- Show spell text if enabled
@@ -131,10 +135,10 @@ function Cast:Hide()
 
     isCasting = false
     if castDonut then
-        castDonut:SetAngle(0)
+        castDonut:Hide()
     end
     if latencyDonut then
-        latencyDonut:SetAngle(0)
+        latencyDonut:Hide()
     end
     castDuration = 0
     castStartTime = 0
