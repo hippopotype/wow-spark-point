@@ -266,12 +266,12 @@ local function BuildSettingsPanel()
     ------------------------------------------------------------------------
     -- Ring Settings Subcategory
     ------------------------------------------------------------------------
-    local ringCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Ring"] or "Ring")
+    local ringCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Decorative Ring"] or "Decorative Ring")
 
-    AddSlider(ringCategory, "ring_width", L["Ring Size"] or "Ring Size", 20, 200, 1)
-    AddCheckbox(ringCategory, "ring_rotate", L["Ring Rotate"] or "Ring Rotate",
+    AddSlider(ringCategory, "ring_width", L["Decorative Ring Size"] or "Decorative Ring Size", 20, 200, 1)
+    AddCheckbox(ringCategory, "ring_rotate", L["Decorative Ring Rotate"] or "Decorative Ring Rotate",
         L["Rotate Tooltip"] or "Enable rotation animation")
-    AddDropdown(ringCategory, "ring_texture", L["Ring Texture"] or "Ring Texture", {
+    AddDropdown(ringCategory, "ring_texture", L["Decorative Ring Texture"] or "Decorative Ring Texture", {
         { value = "165624", label = "AuraRune 1" },
         { value = "165630", label = "AuraRune 1 Glow" },
         { value = "165635", label = "AuraRune 8" },
@@ -286,7 +286,7 @@ local function BuildSettingsPanel()
         { value = "AuraSplit", label = "Aura Split" },
         { value = "AuraHalf", label = "Aura Half" },
     })
-    AddColor(ringCategory, "ring_color", L["Ring Color"] or "Ring Color")
+    AddColor(ringCategory, "ring_color", L["Decorative Ring Color"] or "Decorative Ring Color")
 
     ------------------------------------------------------------------------
     -- Spell Icon Settings Subcategory

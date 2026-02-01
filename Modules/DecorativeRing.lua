@@ -14,6 +14,7 @@ local GetDBColor = addon.GetDBColor
 --------------------------------------------------------------------------------
 local ringFrame
 local showRequests = {}
+local isEnabled = false
 
 local rad = math.rad
 
@@ -48,11 +49,12 @@ Ring.TEXTURES = RING_TEXTURES
 -- OnUpdate Handler (rotation animation)
 --------------------------------------------------------------------------------
 local function OnUpdate(self, elapsed)
-    self.timer = self.timer + elapsed
-    if self.timer > 0.02 then
-        self.hAngle = self.hAngle + 0.5
-        self.texture:SetRotation(rad(self.hAngle))
-        self.timer = 0
+    local texture = self.texture
+    texture.timer = texture.timer + elapsed
+    if texture.timer > 0.02 then
+        texture.hAngle = texture.hAngle + 0.5
+        texture:SetRotation(rad(texture.hAngle))
+        texture.timer = 0
     end
 end
 
@@ -69,6 +71,7 @@ end
 --------------------------------------------------------------------------------
 function Ring:Show(requester)
     if not ringFrame then return end
+    if not isEnabled then return end
 
     showRequests[requester or "default"] = true
     ringFrame:Show()
@@ -101,14 +104,15 @@ function Ring:ApplyOptions()
     local r, g, b, a = GetDBColor("ring_color")
 
     local texture = ringFrame.texture
+    local textureKey = tostring(textureID or "")
 
     -- Handle texture - could be BlizzardUI ID or custom path
-    if textureID:match("^%d+$") then
+    if textureKey:match("^%d+$") then
         -- Numeric ID - BlizzardUI texture
-        texture:SetTexture(tonumber(textureID))
-    elseif textureID == "AuraSplit" or textureID == "AuraHalf" then
+        texture:SetTexture(tonumber(textureKey))
+    elseif textureKey == "AuraSplit" or textureKey == "AuraHalf" then
         -- Custom texture
-        texture:SetTexture(addon.addonFolder .. "\\Textures\\" .. textureID)
+        texture:SetTexture(addon.addonFolder .. "\\Textures\\" .. textureKey)
     else
         -- Fallback to default
         texture:SetTexture(165624)
@@ -117,6 +121,9 @@ function Ring:ApplyOptions()
     texture:SetVertexColor(r, g, b, a)
     texture:SetBlendMode("ADD")
     texture:SetSize(width, width)
+    texture:SetPoint("CENTER", ringFrame, "CENTER")
+    texture:SetRotation(rad(texture.hAngle or 0))
+    texture:Show()
 
     -- Update rotation setting
     if GetDBBool("ring_rotate") and ringFrame:IsShown() then
@@ -138,12 +145,11 @@ function Ring:Initialize()
     ringFrame:Hide()
 
     -- Initialize rotation state
-    ringFrame.timer = 0
-    ringFrame.hAngle = 0
-
     -- Create texture
     ringFrame.texture = ringFrame:CreateTexture(nil, "ARTWORK")
-    ringFrame.texture:SetPoint("CENTER")
+    ringFrame.texture:SetPoint("CENTER", ringFrame, "CENTER")
+    ringFrame.texture.timer = 0
+    ringFrame.texture.hAngle = 0
 
     -- Set scripts
     ringFrame:SetScript("OnShow", OnShow)
@@ -156,11 +162,13 @@ end
 --------------------------------------------------------------------------------
 local function EnableModule(enabled)
     if enabled then
+        isEnabled = true
         if not ringFrame then
             Ring:Initialize()
         end
         -- Ring shows when other modules request it (Cast, GCD)
     else
+        isEnabled = false
         if ringFrame then
             ringFrame:Hide()
         end
@@ -185,9 +193,9 @@ end
 -- Register Module
 --------------------------------------------------------------------------------
 addon.ControlCenter:AddModule({
-    name = L["Ring"] or "Ring",
+    name = L["Decorative Ring"] or "Decorative Ring",
     dbKey = "moduleEnabled_Ring",
-    description = L["Ring Description"] or "Displays a decorative rotating ring around the cursor during casts",
+    description = L["Decorative Ring Description"] or "Displays a decorative rotating ring around the cursor during casts",
     toggleFunc = EnableModule,
     categoryID = 1,
     uiOrder = 4,

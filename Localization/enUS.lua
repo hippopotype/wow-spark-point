@@ -57,10 +57,10 @@ L["Class Power Vertical Offset"] = "Class Power Vertical Offset"
 L["Class Power Font"] = "Class Power Font"
 L["Class Power Font Outline"] = "Class Power Font Outline"
 L["Class Power Font Color"] = "Class Power Font Color"
-L["Ring Size"] = "Ring Size"
-L["Ring Rotate"] = "Ring Rotate"
-L["Ring Texture"] = "Ring Texture"
-L["Ring Color"] = "Ring Color"
+L["Decorative Ring Size"] = "Decorative Ring Size"
+L["Decorative Ring Rotate"] = "Decorative Ring Rotate"
+L["Decorative Ring Texture"] = "Decorative Ring Texture"
+L["Decorative Ring Color"] = "Decorative Ring Color"
 L["Spell Icon Size"] = "Spell Icon Size"
 L["Spell Icon Horizontal Offset"] = "Spell Icon Horizontal Offset"
 L["Spell Icon Vertical Offset"] = "Spell Icon Vertical Offset"
@@ -94,8 +94,8 @@ L["Class Power Description"] = "Displays your class resource (combo points, holy
 --------------------------------------------------------------------------------
 -- Ring
 --------------------------------------------------------------------------------
-L["Ring"] = "Ring"
-L["Ring Description"] = "Displays a decorative rotating ring around the cursor during casts"
+L["Decorative Ring"] = "Decorative Ring"
+L["Decorative Ring Description"] = "Displays a decorative rotating ring around the cursor during casts"
 
 --------------------------------------------------------------------------------
 -- Spell Icon

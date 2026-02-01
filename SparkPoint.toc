@@ -20,7 +20,7 @@ Widgets\DonutWidget.lua
 Modules\Cast.lua
 Modules\GCD.lua
 Modules\ClassPower.lua
-Modules\Ring.lua
+Modules\DecorativeRing.lua
 Modules\SpellIcon.lua
 
 # Settings
