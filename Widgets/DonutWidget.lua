@@ -48,6 +48,10 @@ function DonutWidget:Create(config)
     donut.radius = config.radius or 22
     donut.thickness = ClampThickness(config.thickness)
     donut.direction = config.direction ~= false  -- default true (clockwise)
+    donut.backgroundBase = config.backgroundTextureBase or "ring"
+    donut.progressBase = config.progressTextureBase or "ring"
+    donut.overlayBase = config.overlayTextureBase
+    donut.frameBase = config.frameTextureBase
 
     ----------------------------------------------------------------------------
     -- Create frames
@@ -69,6 +73,7 @@ function DonutWidget:Create(config)
     local ringFrame = CreateFrame("Frame", nil, frame)
     donut.ringFrame = ringFrame
     ringFrame:SetPoint("CENTER", frame, "CENTER")
+    ringFrame:SetFrameLevel(1)
 
     ----------------------------------------------------------------------------
     -- Background texture (full ring)
@@ -84,10 +89,28 @@ function DonutWidget:Create(config)
     donut.foreground:Hide()
 
     ----------------------------------------------------------------------------
+    -- Overlay (glow)
+    ----------------------------------------------------------------------------
+    donut.overlay = ringFrame:CreateTexture(nil, "OVERLAY")
+    donut.overlay:SetPoint("CENTER", ringFrame, "CENTER")
+    donut.overlay:SetBlendMode("ADD")
+    donut.overlay:SetDrawLayer("OVERLAY", 1)
+    donut.overlay:Hide()
+
+    ----------------------------------------------------------------------------
+    -- Frame (top border)
+    ----------------------------------------------------------------------------
+    donut.frameTex = ringFrame:CreateTexture(nil, "OVERLAY")
+    donut.frameTex:SetPoint("CENTER", ringFrame, "CENTER")
+    donut.frameTex:SetDrawLayer("OVERLAY", 7)
+    donut.frameTex:Hide()
+
+    ----------------------------------------------------------------------------
     -- Cooldown swipe (progress)
     ----------------------------------------------------------------------------
     donut.cooldown = CreateFrame("Cooldown", nil, ringFrame, "CooldownFrameTemplate")
     donut.cooldown:SetAllPoints(ringFrame)
+    donut.cooldown:SetFrameLevel(5)
     SafeCall(donut.cooldown, "SetHideCountdownNumbers", true)
     SafeCall(donut.cooldown, "SetDrawEdge", false)
     SafeCall(donut.cooldown, "SetDrawBling", false)
@@ -136,6 +159,8 @@ function DonutWidget:SetRadius(radius)
     self.ringFrame:SetSize(size, size)
     self.background:SetSize(size, size)
     self.foreground:SetSize(size, size)
+    self.overlay:SetSize(size, size)
+    self.frameTex:SetSize(size, size)
     self.cooldown:SetSize(size, size)
 end
 
@@ -146,10 +171,30 @@ function DonutWidget:SetThickness(thickness)
     local clamped = ClampThickness(thickness)
     self.thickness = clamped
 
-    local texPath = addon.addonFolder .. "\\Textures\\ring_" .. clamped
-    self.background:SetTexture(texPath)
-    self.foreground:SetTexture(texPath)
-    SafeCall(self.cooldown, "SetSwipeTexture", texPath)
+    if self.backgroundBase then
+        local backgroundPath = addon.addonFolder .. "\\Textures\\" .. self.backgroundBase .. "_" .. clamped
+        self.background:SetTexture(backgroundPath)
+        self.background:Show()
+    else
+        self.background:Hide()
+    end
+
+    local progressPath = addon.addonFolder .. "\\Textures\\" .. self.progressBase .. "_" .. clamped
+    self.foreground:SetTexture(progressPath)
+    SafeCall(self.cooldown, "SetSwipeTexture", progressPath)
+
+    if self.overlayBase then
+        local overlayPath = addon.addonFolder .. "\\Textures\\" .. self.overlayBase .. "_" .. clamped
+        self.overlay:SetTexture(overlayPath)
+    end
+
+    if self.frameBase then
+        local framePath = addon.addonFolder .. "\\Textures\\" .. self.frameBase .. "_" .. clamped
+        self.frameTex:SetTexture(framePath)
+        self.frameTex:Show()
+    else
+        self.frameTex:Hide()
+    end
 end
 
 --------------------------------------------------------------------------------
@@ -168,6 +213,44 @@ end
 function DonutWidget:SetBarColor(color)
     SafeCall(self.cooldown, "SetSwipeColor", color.r, color.g, color.b, color.a)
     self.foreground:SetVertexColor(color.r, color.g, color.b, color.a)
+end
+
+--------------------------------------------------------------------------------
+-- SetOverlayColor: Update overlay RGBA
+--------------------------------------------------------------------------------
+function DonutWidget:SetOverlayColor(color)
+    self.overlay:SetVertexColor(color.r, color.g, color.b, color.a)
+end
+
+--------------------------------------------------------------------------------
+-- SetOverlayShown: Show/Hide overlay
+--------------------------------------------------------------------------------
+function DonutWidget:SetOverlayShown(shown)
+    if not self.overlayBase then
+        self.overlay:Hide()
+        return
+    end
+    if shown then
+        self.overlay:Show()
+    else
+        self.overlay:Hide()
+    end
+end
+
+--------------------------------------------------------------------------------
+-- SetFrameColor: Update frame RGBA
+--------------------------------------------------------------------------------
+function DonutWidget:SetFrameColor(color)
+    self.frameTex:SetVertexColor(color.r, color.g, color.b, color.a)
+end
+
+--------------------------------------------------------------------------------
+-- SetFrameLevel: Adjust ringFrame layering
+--------------------------------------------------------------------------------
+function DonutWidget:SetFrameLevel(level)
+    if self.ringFrame then
+        self.ringFrame:SetFrameLevel(level)
+    end
 end
 
 --------------------------------------------------------------------------------

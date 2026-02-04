@@ -223,11 +223,9 @@ local function BuildSettingsPanel()
     ------------------------------------------------------------------------
     local castCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Cast Ring"] or "Cast Ring")
 
-    AddSlider(castCategory, "cast_radius", L["Cast Radius"] or "Cast Radius", 10, 128, 1,
+    AddSlider(castCategory, "cast_radius", L["Cast Radius"] or "Cast Radius", 16, 64, 1,
         L["Radius Tooltip"] or "Size of the cast ring")
 
-    AddSlider(castCategory, "cast_thickness", L["Cast Thickness"] or "Cast Thickness", 15, 35, 5,
-        L["Thickness Tooltip"] or "Thickness of the ring")
 
     AddCheckbox(castCategory, "cast_sparkOnly", L["Cast Spark Only"] or "Cast Spark Only",
         L["Spark Only Tooltip"] or "Show only the spark without the ring")
@@ -260,7 +258,12 @@ local function BuildSettingsPanel()
     AddSlider(castCategory, "cast_spellTextOffsetY", L["Cast Spell Text Offset Y"] or "Cast Spell Text Offset Y", -80, 80, 1)
 
     AddColor(castCategory, "cast_barColor", L["Cast Bar Color"] or "Cast Bar Color")
-    AddColor(castCategory, "cast_backgroundColor", L["Cast Background Color"] or "Cast Background Color")
+    AddSlider(castCategory, "cast_backgroundOpacity", L["Cast Background Opacity"] or "Cast Background Opacity", 0, 1, 0.05,
+        L["Cast Background Opacity Tooltip"] or "Opacity of the cast ring background")
+    AddSlider(castCategory, "cast_frameOpacity", L["Cast Frame Opacity"] or "Cast Frame Opacity", 0, 1, 0.05,
+        L["Cast Frame Opacity Tooltip"] or "Opacity of the cast ring frame")
+    AddSlider(castCategory, "cast_glowOpacity", L["Cast Glow Opacity"] or "Cast Glow Opacity", 0, 1, 0.05,
+        L["Cast Glow Opacity Tooltip"] or "Opacity of the cast glow overlay")
     AddColor(castCategory, "cast_sparkColor", L["Cast Spark Color"] or "Cast Spark Color")
     AddColor(castCategory, "cast_latencyColor", L["Cast Latency Color"] or "Cast Latency Color")
     AddColor(castCategory, "cast_spellTextColor", L["Cast Spell Text Color"] or "Cast Spell Text Color")

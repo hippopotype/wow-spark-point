@@ -240,17 +240,19 @@ local function OnUpdate(self, elapsed)
             if latencyDonut then
                 local latencyAngle = math.max(0.1, castLatency * 360)
                 latencyDonut:SetAngle(latencyAngle)
-                if debugLatency and math.random() < 0.02 then
-                    print(string.format("SparkPoint latency: castPerc=%.3f latency=%.4f angle=%.2f", castPerc, castLatency, latencyAngle))
-                end
             end
         end
 
         -- Update spark position (rotates around ring)
         local sparkAngle = 360 - (-90 + angle)
         local radius = GetDBValue("cast_radius")
-        local x = cos(rad(sparkAngle)) * radius * 0.95
-        local y = sin(rad(sparkAngle)) * radius * 0.95
+        -- Align spark to the centerline of the 20px ring texture (texture radius = 128px)
+        local texThickness = 20
+        local texRadius = 38
+        local ringHalf = radius * (texThickness / texRadius) * 0.5
+        local sparkRadius = math.max(0, radius - ringHalf)
+        local x = cos(rad(sparkAngle)) * sparkRadius
+        local y = sin(rad(sparkAngle)) * sparkRadius
 
         local spark = castFrame.sparkTexture
         spark:SetRotation(rad(sparkAngle + 90))
@@ -294,7 +296,11 @@ function Cast:Show()
         latencyDonut:Show()
         if castDonut then
             castDonut:Show()
+            castDonut:SetOverlayShown(true)
         end
+    end
+    if castFrame.frameTexture and not GetDBBool("cast_sparkOnly") then
+        castFrame.frameTexture:Show()
     end
 
     pendingVisuals = true
@@ -316,9 +322,13 @@ function Cast:Hide()
     pendingVisuals = false
     if castDonut then
         castDonut:Hide()
+        castDonut:SetOverlayShown(false)
     end
     if latencyDonut then
         latencyDonut:Hide()
+    end
+    if castFrame.frameTexture then
+        castFrame.frameTexture:Hide()
     end
     castDuration = 0
     castStartTime = 0
@@ -478,18 +488,28 @@ function Cast:ApplyOptions()
     if not castFrame then return end
 
     local radius = GetDBValue("cast_radius")
-    local thickness = GetDBValue("cast_thickness")
+    local thickness = 20
     local sparkOnly = GetDBBool("cast_sparkOnly")
     local useClassColor = GetDBBool("cast_useClassColor")
+    local frameOpacity = GetDBValue("cast_frameOpacity")
+    if frameOpacity == nil then
+        frameOpacity = 0.8
+    end
+    local backgroundOpacity = GetDBValue("cast_backgroundOpacity")
+    if backgroundOpacity == nil then
+        backgroundOpacity = 0.8
+    end
+    local glowOpacity = GetDBValue("cast_glowOpacity")
+    if glowOpacity == nil then
+        glowOpacity = 0.8
+    end
     local cr, cg, cb, ca
     if useClassColor then
         cr, cg, cb, ca = API.GetPlayerClassColor()
     end
-    local backgroundColor = GetDBColorTable("cast_backgroundColor")
-    if useClassColor then
-        local dim = 0.6
-        backgroundColor = {r = cr * dim, g = cg * dim, b = cb * dim, a = 0.3}
-    end
+    local backgroundColor = {r = 1, g = 1, b = 1, a = backgroundOpacity}
+    local frameColor = {r = 1, g = 1, b = 1, a = frameOpacity}
+    local glowColor = {r = 1, g = 1, b = 1, a = glowOpacity}
 
     -- Update spark
     local r, g, b, a
@@ -499,29 +519,37 @@ function Cast:ApplyOptions()
         r, g, b, a = GetDBColor("cast_sparkColor")
     end
     castFrame.sparkTexture:SetVertexColor(r, g, b, a)
-    castFrame.sparkTexture:SetSize(radius, radius)
+    castFrame.sparkTexture:SetSize(radius * 0.5, radius * 0.5)
 
     -- Rebuild donuts if needed
     if not sparkOnly then
         if not castDonut then
-            -- Create latency donut (background layer)
+            -- Create latency donut (between fill and frame)
             latencyDonut = DonutWidget:Create({
                 direction = false,
                 radius = radius,
                 thickness = thickness,
                 barColor = GetDBColorTable("cast_latencyColor"),
-                backgroundColor = backgroundColor,
+                backgroundColor = {r = 1, g = 1, b = 1, a = 0},
+                backgroundTextureBase = nil,
+                progressTextureBase = "cast_fill",
+                frameTextureBase = nil,
             })
             latencyDonut:AttachTo(castFrame)
+            latencyDonut:SetOverlayShown(false)
+            latencyDonut:SetBackgroundColor({r = 1, g = 1, b = 1, a = 0})
 
-            -- Create cast donut (foreground layer)
+            -- Create cast donut (background + fill + glow)
             castDonut = DonutWidget:Create({
                 direction = true,
                 radius = radius,
                 thickness = thickness,
                 barColor = useClassColor and {r = cr, g = cg, b = cb, a = ca} or GetDBColorTable("cast_barColor"),
-                backgroundColor = {r = 0, g = 0, b = 0, a = 0},  -- Transparent bg
-                parent = latencyDonut:GetFrame(),
+                backgroundColor = backgroundColor,
+                backgroundTextureBase = "cast_background",
+                progressTextureBase = "cast_fill",
+                overlayTextureBase = "cast_glow",
+                frameTextureBase = nil,
             })
             castDonut:AttachTo(castFrame)
         else
@@ -529,12 +557,41 @@ function Cast:ApplyOptions()
             castDonut:SetRadius(radius)
             castDonut:SetThickness(thickness)
             castDonut:SetBarColor(useClassColor and {r = cr, g = cg, b = cb, a = ca} or GetDBColorTable("cast_barColor"))
+            castDonut:SetBackgroundColor(backgroundColor)
 
             latencyDonut:SetRadius(radius)
             latencyDonut:SetThickness(thickness)
             latencyDonut:SetBarColor(GetDBColorTable("cast_latencyColor"))
-            latencyDonut:SetBackgroundColor(backgroundColor)
+            latencyDonut:SetBackgroundColor({r = 1, g = 1, b = 1, a = 0})
         end
+    end
+
+    -- Update glow overlay color
+    if castDonut then
+        castDonut:SetOverlayColor(glowColor)
+    end
+
+    -- Update frame overlay texture (top border)
+    if castFrame.frameTexture then
+        local texPath = addon.addonFolder .. "\\Textures\\cast_frame_20"
+        castFrame.frameTexture:SetTexture(texPath)
+        castFrame.frameTexture:SetVertexColor(frameColor.r, frameColor.g, frameColor.b, frameColor.a)
+        castFrame.frameTexture:SetSize(radius * 2, radius * 2)
+        castFrame.frameTexture:ClearAllPoints()
+        castFrame.frameTexture:SetPoint("CENTER", castFrame.overlayFrame, "CENTER")
+        if not sparkOnly and isActive then
+            castFrame.frameTexture:Show()
+        else
+            castFrame.frameTexture:Hide()
+        end
+    end
+
+    -- Enforce layering: fill below latency, frame on top
+    if castDonut then
+        castDonut:SetFrameLevel(1)
+    end
+    if latencyDonut then
+        latencyDonut:SetFrameLevel(2)
     end
 
     -- Update spell text
@@ -576,11 +633,21 @@ function Cast:Initialize()
     castFrame:SetAllPoints()
     castFrame:Hide()
 
-    -- Create spark texture
-    castFrame.sparkTexture = castFrame:CreateTexture(nil, "OVERLAY")
+    -- Create overlay frame for top-most elements
+    castFrame.overlayFrame = CreateFrame("Frame", nil, castFrame)
+    castFrame.overlayFrame:SetAllPoints()
+    castFrame.overlayFrame:SetFrameLevel(castFrame:GetFrameLevel() + 10)
+
+    -- Create spark texture (above rings)
+    castFrame.sparkTexture = castFrame.overlayFrame:CreateTexture(nil, "OVERLAY")
     castFrame.sparkTexture:SetTexture("Interface\\CastingBar\\UI-CastingBar-Spark")
     castFrame.sparkTexture:SetBlendMode("ADD")
     castFrame.sparkTexture:SetSize(32, 32)
+
+    -- Create cast frame overlay texture (top border)
+    castFrame.frameTexture = castFrame.overlayFrame:CreateTexture(nil, "OVERLAY")
+    castFrame.frameTexture:SetDrawLayer("OVERLAY", 7)
+    castFrame.frameTexture:Hide()
 
     -- Create spell text
     castFrame.spellText = castFrame:CreateFontString(nil, "OVERLAY")
@@ -674,7 +741,7 @@ end)
 -- Register Setting Callbacks
 --------------------------------------------------------------------------------
     local settingKeys = {
-        "cast_radius", "cast_thickness", "cast_barColor", "cast_backgroundColor",
+        "cast_radius", "cast_barColor", "cast_backgroundOpacity", "cast_frameOpacity", "cast_glowOpacity",
         "cast_sparkColor", "cast_latencyColor", "cast_sparkOnly", "cast_useClassColor",
         "cast_spellTextEnabled", "cast_spellTextFont", "cast_spellTextSize",
         "cast_spellTextOutline", "cast_spellTextColor",

@@ -25,10 +25,13 @@ addon.DefaultValues = {
 
     -- Cast module settings
     cast_radius = 22,
-    cast_thickness = 25,
+    cast_thickness = 20,
     cast_barColor = {r = 1, g = 1, b = 1, a = 0.8},
-    cast_backgroundColor = {r = 0.4, g = 0.4, b = 0.4, a = 0.8},
+    cast_backgroundOpacity = 0.8,
+    cast_frameOpacity = 0.8,
+    cast_glowOpacity = 0.8,
     cast_sparkColor = {r = 0.9, g = 0.8, b = 1, a = 1},
+    cast_sparkScale = 0.5,
     cast_latencyColor = {r = 1, g = 0, b = 0, a = 1},
     cast_sparkOnly = false,
     cast_reverseChanneling = false,
