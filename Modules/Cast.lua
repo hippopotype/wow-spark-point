@@ -231,9 +231,19 @@ local function OnUpdate(self, elapsed)
             angle = (1 - castPerc) * 360
         end
 
-        -- Update donut if not spark-only mode
-        if not GetDBBool("cast_sparkOnly") and castDonut then
-            castDonut:SetAngle(angle)
+        -- Update donuts if not spark-only mode
+        if not GetDBBool("cast_sparkOnly") then
+            if castDonut then
+                castDonut:SetAngle(angle)
+            end
+            -- Keep latency arc static (Cooldown swipe animates otherwise)
+            if latencyDonut then
+                local latencyAngle = math.max(0.1, castLatency * 360)
+                latencyDonut:SetAngle(latencyAngle)
+                if debugLatency and math.random() < 0.02 then
+                    print(string.format("SparkPoint latency: castPerc=%.3f latency=%.4f angle=%.2f", castPerc, castLatency, latencyAngle))
+                end
+            end
         end
 
         -- Update spark position (rotates around ring)
@@ -358,6 +368,10 @@ function Cast:UNIT_SPELLCAST_START(event, unit, castGUID, spellID)
 
     -- Calculate latency
     local sendLag = (castSent > 0) and (GetTime() * 1000 - castSent) or 0
+    if sendLag <= 0 and GetNetStats then
+        local _, _, home, world = GetNetStats()
+        sendLag = math.max(home or 0, world or 0)
+    end
     sendLag = math.min(sendLag, castDuration)
     castLatency = (castDuration > 0) and (sendLag / castDuration) or 0
 
@@ -417,6 +431,10 @@ function Cast:UNIT_SPELLCAST_CHANNEL_START(event, unit, castGUID, spellID)
 
     -- Calculate latency
     local sendLag = (castSent > 0) and (GetTime() * 1000 - castSent) or 0
+    if sendLag <= 0 and GetNetStats then
+        local _, _, home, world = GetNetStats()
+        sendLag = math.max(home or 0, world or 0)
+    end
     sendLag = math.min(sendLag, castDuration)
     castLatency = (castDuration > 0) and (sendLag / castDuration) or 0
 
