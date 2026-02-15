@@ -117,10 +117,10 @@ function Ring:ApplyOptions()
     if textureKey:match("^%d+$") then
         -- Numeric ID - BlizzardUI texture
         texture:SetTexture(tonumber(textureKey))
-    elseif textureKey == "AuraSplit" or textureKey == "AuraHalf" then
-        -- Custom texture
-        texture:SetTexture(addon.addonFolder .. "\\Textures\\" .. textureKey)
-    else
+	elseif textureKey == "AuraSplit" or textureKey == "AuraHalf" then
+		-- Custom texture
+		texture:SetTexture(addon.addonFolder .. "\\Textures\\" .. textureKey .. ".tga")
+	else
         -- Fallback to default
         texture:SetTexture(165624)
     end

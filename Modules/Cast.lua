@@ -38,6 +38,20 @@ local UnitCastingInfo = UnitCastingInfo
 local UnitChannelInfo = UnitChannelInfo
 local cos, sin, rad = math.cos, math.sin, math.rad
 
+local function SetTextureSmooth(texture, texturePath)
+    if not texture then return end
+    local ok = pcall(texture.SetTexture, texture, texturePath, nil, nil, "TRILINEAR")
+    if not ok then
+        texture:SetTexture(texturePath)
+    end
+    if texture.SetSnapToPixelGrid then
+        texture:SetSnapToPixelGrid(false)
+    end
+    if texture.SetTexelSnappingBias then
+        texture:SetTexelSnappingBias(0)
+    end
+end
+
 local function GetMasqueGroup()
     if not Masque and LibStub then
         Masque = LibStub("Masque", true)
@@ -575,8 +589,8 @@ function Cast:ApplyOptions()
 
     -- Update frame overlay texture (top border)
     if castFrame.frameTexture then
-        local texPath = addon.addonFolder .. "\\Textures\\cast_frame_20"
-        castFrame.frameTexture:SetTexture(texPath)
+        local texPath = addon.addonFolder .. "\\Textures\\cast_frame_20.png"
+        SetTextureSmooth(castFrame.frameTexture, texPath)
         castFrame.frameTexture:SetVertexColor(frameColor.r, frameColor.g, frameColor.b, frameColor.a)
         castFrame.frameTexture:SetSize(radius * 2, radius * 2)
         castFrame.frameTexture:ClearAllPoints()

@@ -30,6 +30,20 @@ local function SafeCall(obj, method, ...)
     end
 end
 
+local function SetTextureSmooth(texture, texturePath)
+    if not texture then return end
+
+    -- Try trilinear sampling first; fallback to default if unsupported.
+    local ok = pcall(texture.SetTexture, texture, texturePath, nil, nil, "TRILINEAR")
+    if not ok then
+        texture:SetTexture(texturePath)
+    end
+
+    -- Avoid pixel-grid snapping for softer vector-derived edges.
+    SafeCall(texture, "SetSnapToPixelGrid", false)
+    SafeCall(texture, "SetTexelSnappingBias", 0)
+end
+
 --------------------------------------------------------------------------------
 -- DonutWidget:Create(config) -> donut
 --
@@ -172,25 +186,25 @@ function DonutWidget:SetThickness(thickness)
     self.thickness = clamped
 
     if self.backgroundBase then
-        local backgroundPath = addon.addonFolder .. "\\Textures\\" .. self.backgroundBase .. "_" .. clamped
-        self.background:SetTexture(backgroundPath)
+        local backgroundPath = addon.addonFolder .. "\\Textures\\" .. self.backgroundBase .. "_" .. clamped .. ".png"
+        SetTextureSmooth(self.background, backgroundPath)
         self.background:Show()
     else
         self.background:Hide()
     end
 
-    local progressPath = addon.addonFolder .. "\\Textures\\" .. self.progressBase .. "_" .. clamped
-    self.foreground:SetTexture(progressPath)
+    local progressPath = addon.addonFolder .. "\\Textures\\" .. self.progressBase .. "_" .. clamped .. ".png"
+    SetTextureSmooth(self.foreground, progressPath)
     SafeCall(self.cooldown, "SetSwipeTexture", progressPath)
 
     if self.overlayBase then
-        local overlayPath = addon.addonFolder .. "\\Textures\\" .. self.overlayBase .. "_" .. clamped
-        self.overlay:SetTexture(overlayPath)
+        local overlayPath = addon.addonFolder .. "\\Textures\\" .. self.overlayBase .. "_" .. clamped .. ".png"
+        SetTextureSmooth(self.overlay, overlayPath)
     end
 
     if self.frameBase then
-        local framePath = addon.addonFolder .. "\\Textures\\" .. self.frameBase .. "_" .. clamped
-        self.frameTex:SetTexture(framePath)
+        local framePath = addon.addonFolder .. "\\Textures\\" .. self.frameBase .. "_" .. clamped .. ".png"
+        SetTextureSmooth(self.frameTex, framePath)
         self.frameTex:Show()
     else
         self.frameTex:Hide()
