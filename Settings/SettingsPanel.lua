@@ -287,7 +287,7 @@ local function BuildSettingsPanel()
     })
 
     AddSlider(castCategory, "cast_spellTextOffsetX", L["Cast Spell Text Offset X"] or "Cast Spell Text Offset X", -60, 60, 1)
-    AddSlider(castCategory, "cast_spellTextOffsetY", L["Cast Spell Text Offset Y"] or "Cast Spell Text Offset Y", -80, 80, 1)
+    AddSlider(castCategory, "cast_spellTextOffsetY", L["Cast Spell Text Offset Y"] or "Cast Spell Text Offset Y", -240, 240, 1)
 
     AddColor(castCategory, "cast_barColor", L["Cast Bar Color"] or "Cast Bar Color")
     AddSlider(castCategory, "cast_backgroundOpacity", L["Cast Background Opacity"] or "Cast Background Opacity", 0, 1, 0.05,
