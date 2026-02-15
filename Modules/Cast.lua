@@ -26,6 +26,7 @@ local isCasting = false
 local castStartTime, castEndTime, castDuration
 local castLatency = 0
 local castSent = 0
+local currentCastGUID = nil
 local currentSpellName = ""
 local currentSpellID
 local currentSpellTexture
@@ -319,6 +320,7 @@ function Cast:Hide()
     if not castFrame then return end
 
     isCasting = false
+    currentCastGUID = nil
     pendingVisuals = false
     if castDonut then
         castDonut:Hide()
@@ -363,6 +365,7 @@ function Cast:UNIT_SPELLCAST_START(event, unit, castGUID, spellID)
     local name, text, texture, startTimeMS, endTimeMS = UnitCastingInfo("player")
     if not name then return end
 
+    currentCastGUID = castGUID
     castStartTime = startTimeMS
     castEndTime = endTimeMS
     castDuration = castEndTime - castStartTime
@@ -390,22 +393,30 @@ end
 
 function Cast:UNIT_SPELLCAST_STOP(event, unit, castGUID, spellID)
     if unit ~= "player" then return end
-    self:Hide()
+    if castGUID == currentCastGUID then
+        self:Hide()
+    end
 end
 
 function Cast:UNIT_SPELLCAST_INTERRUPTED(event, unit, castGUID, spellID)
     if unit ~= "player" then return end
-    self:Hide()
+    if castGUID == currentCastGUID then
+        self:Hide()
+    end
 end
 
 function Cast:UNIT_SPELLCAST_FAILED(event, unit, castGUID, spellID)
     if unit ~= "player" then return end
-    self:Hide()
+    if castGUID == currentCastGUID then
+        self:Hide()
+    end
 end
 
 function Cast:UNIT_SPELLCAST_FAILED_QUIET(event, unit, castGUID, spellID)
     if unit ~= "player" then return end
-    self:Hide()
+    if castGUID == currentCastGUID then
+        self:Hide()
+    end
 end
 
 function Cast:UNIT_SPELLCAST_DELAYED(event, unit, castGUID, spellID)
@@ -426,6 +437,7 @@ function Cast:UNIT_SPELLCAST_CHANNEL_START(event, unit, castGUID, spellID)
     local name, text, texture, startTimeMS, endTimeMS = UnitChannelInfo("player")
     if not name then return end
 
+    currentCastGUID = castGUID
     castStartTime = startTimeMS
     castEndTime = endTimeMS
     castDuration = castEndTime - castStartTime
@@ -453,7 +465,9 @@ end
 
 function Cast:UNIT_SPELLCAST_CHANNEL_STOP(event, unit, castGUID, spellID)
     if unit ~= "player" then return end
-    self:Hide()
+    if castGUID == currentCastGUID then
+        self:Hide()
+    end
 end
 
 function Cast:UNIT_SPELLCAST_CHANNEL_UPDATE(event, unit, castGUID, spellID)
