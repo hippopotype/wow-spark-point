@@ -46,14 +46,44 @@ local function BuildSettingsPanel()
         return setting
     end
 
-    ------------------------------------------------------------------------
-    -- Helper function to create a slider
-    ------------------------------------------------------------------------
-    local function AddSlider(cat, dbKey, displayName, minVal, maxVal, step, tooltip, formatter)
-        local defaultValue = DB[dbKey]
-        if defaultValue == nil then
-            defaultValue = addon.DefaultValues and addon.DefaultValues[dbKey]
-        end
+	------------------------------------------------------------------------
+	-- Helper function to create a slider
+	------------------------------------------------------------------------
+	local function GetStepPrecision(step)
+		local stepString = tostring(step or 1)
+		local dotPos = string.find(stepString, "%.")
+		if not dotPos then
+			return 0
+		end
+		return math.min(4, #stepString - dotPos)
+	end
+
+	local function QuantizeSliderValue(value, minVal, maxVal, step)
+		if type(value) ~= "number" then
+			return value
+		end
+		if type(step) ~= "number" or step <= 0 then
+			return value
+		end
+
+		local snapped = minVal + math.floor(((value - minVal) / step) + 0.5) * step
+		if type(minVal) == "number" then
+			snapped = math.max(minVal, snapped)
+		end
+		if type(maxVal) == "number" then
+			snapped = math.min(maxVal, snapped)
+		end
+
+		local precision = GetStepPrecision(step)
+		local scale = 10 ^ precision
+		return math.floor((snapped * scale) + 0.5) / scale
+	end
+
+	local function AddSlider(cat, dbKey, displayName, minVal, maxVal, step, tooltip, formatter)
+		local defaultValue = DB[dbKey]
+		if defaultValue == nil then
+			defaultValue = addon.DefaultValues and addon.DefaultValues[dbKey]
+		end
         local setting = Settings.RegisterAddOnSetting(
             cat,
             addonName .. "_" .. dbKey,
@@ -63,18 +93,23 @@ local function BuildSettingsPanel()
             displayName,
             defaultValue
         )
-        setting:SetValueChangedCallback(function(_, value)
-            SetDBValue(dbKey, value, true)
-        end)
-        local options = Settings.CreateSliderOptions(minVal, maxVal, step)
-        if formatter then
-            options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, formatter)
-        else
-            options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right)
-        end
-        Settings.CreateSlider(cat, setting, options, tooltip)
-        return setting
-    end
+		setting:SetValueChangedCallback(function(_, value)
+			local snappedValue = QuantizeSliderValue(value, minVal, maxVal, step)
+			SetDBValue(dbKey, snappedValue, true)
+		end)
+		local options = Settings.CreateSliderOptions(minVal, maxVal, step)
+		if formatter then
+			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, formatter)
+		else
+			local precision = GetStepPrecision(step)
+			options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, function(value)
+				local displayValue = QuantizeSliderValue(value or 0, minVal, maxVal, step)
+				return string.format("%." .. precision .. "f", displayValue or 0)
+			end)
+		end
+		Settings.CreateSlider(cat, setting, options, tooltip)
+		return setting
+	end
 
     ------------------------------------------------------------------------
     -- Helper function to create a dropdown
