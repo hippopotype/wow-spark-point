@@ -49,14 +49,16 @@ L["Cast Latency Color"] = "Cast Latency Color"
 L["Cast Spell Text Color"] = "Cast Spell Text Color"
 L["Cast Use Class Color"] = "Cast Use Class Color"
 L["Cast Use Class Color Tooltip"] = "Override cast colors with your class color"
-L["GCD Radius"] = "GCD Radius"
-L["GCD Thickness"] = "GCD Thickness"
-
-L["GCD Bar Color"] = "GCD Bar Color"
-L["GCD Background Color"] = "GCD Background Color"
-L["GCD Spark Color"] = "GCD Spark Color"
-L["GCD Use Class Color"] = "GCD Use Class Color"
-L["GCD Use Class Color Tooltip"] = "Override GCD colors with your class color"
+L["Inner Ring Slots"] = "Inner Ring Slots"
+L["Slot"] = "Slot"
+L["Slot Source"] = "Slot"
+L["Source"] = "Source"
+L["Slot Source Tooltip"] = "Choose what to display in inner ring slot"
+L["None"] = "None"
+L["Background Opacity"] = "Background Opacity"
+L["Slot Background Opacity Tooltip"] = "Opacity of the slot background ring"
+L["Use Class Color"] = "Use Class Color"
+L["Slot Use Class Color Tooltip"] = "Override slot bar color with your class color"
 L["Class Power Font Size"] = "Class Power Font Size"
 L["Class Power Horizontal Offset"] = "Class Power Horizontal Offset"
 L["Class Power Vertical Offset"] = "Class Power Vertical Offset"
@@ -95,12 +97,6 @@ L["Reverse Channeling Tooltip"] = "Reverse the direction for channeled spells"
 L["Show Spell Name"] = "Show Spell Name"
 L["Show Spell Name Tooltip"] = "Display the spell name above the ring"
 L["Spell Text Size"] = "Spell Text Size"
-
---------------------------------------------------------------------------------
--- GCD Ring
---------------------------------------------------------------------------------
-L["GCD Ring"] = "GCD Ring"
-L["GCD Ring Description"] = "Shows a progress ring during Global Cooldown after instant casts"
 
 --------------------------------------------------------------------------------
 -- Class Power

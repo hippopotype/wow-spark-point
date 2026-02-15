@@ -11,14 +11,18 @@ Core\Initialization.lua
 Core\API.lua
 Core\Database.lua
 Core\ModuleRegistry.lua
+Core\SlotProviders.lua
 Core\AnchorFrame.lua
 
 # Widgets
 Widgets\DonutWidget.lua
+Widgets\SlotRingWidget.lua
+
+# Providers
+Providers\GCD.lua
 
 # Modules
 Modules\Cast.lua
-Modules\GCD.lua
 Modules\ClassPower.lua
 Modules\DecorativeRing.lua
 Modules\SpellIcon.lua

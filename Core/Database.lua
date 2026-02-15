@@ -18,7 +18,6 @@ addon.DefaultValues = {
 
     -- Module enable flags
     moduleEnabled_Cast = true,
-    moduleEnabled_GCD = true,
     moduleEnabled_ClassPower = true,
     moduleEnabled_Ring = true,
     moduleEnabled_SpellIcon = true,
@@ -44,14 +43,24 @@ addon.DefaultValues = {
     cast_spellTextOffsetX = 0,
     cast_spellTextOffsetY = 0,
 
-    -- GCD module settings
-    gcd_radius = 23,
-    gcd_thickness = 25,
-    gcd_barColor = {r = 1, g = 1, b = 1, a = 0.8},
-    gcd_backgroundColor = {r = 0.4, g = 0.4, b = 0.4, a = 0.8},
+    -- GCD provider settings
     gcd_sparkColor = {r = 0.9, g = 0.8, b = 1, a = 1},
-
     gcd_useClassColor = false,
+
+    -- Inner ring slot settings
+    slot1_provider = "GCD",
+    slot2_provider = "NONE",
+    slot3_provider = "NONE",
+
+    slot1_barColor = {r = 1, g = 1, b = 1, a = 0.8},
+    slot1_useClassColor = false,
+    slot1_backgroundOpacity = 0.8,
+    slot2_barColor = {r = 1, g = 1, b = 1, a = 0.8},
+    slot2_useClassColor = false,
+    slot2_backgroundOpacity = 0.8,
+    slot3_barColor = {r = 1, g = 1, b = 1, a = 0.8},
+    slot3_useClassColor = false,
+    slot3_backgroundOpacity = 0.8,
 
     -- ClassPower module settings
     classpower_font = "Fonts\\FRIZQT__.TTF",

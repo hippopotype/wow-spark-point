@@ -303,18 +303,28 @@ local function BuildSettingsPanel()
         L["Cast Use Class Color Tooltip"] or "Override cast colors with your class color")
 
     ------------------------------------------------------------------------
-    -- GCD Ring Settings Subcategory
+    -- Inner Ring Slots Settings Subcategory
     ------------------------------------------------------------------------
-    local gcdCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["GCD Ring"] or "GCD Ring")
+    local slotsCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Inner Ring Slots"] or "Inner Ring Slots")
 
-    AddSlider(gcdCategory, "gcd_radius", L["GCD Radius"] or "GCD Radius", 10, 128, 1)
-    AddSlider(gcdCategory, "gcd_thickness", L["GCD Thickness"] or "GCD Thickness", 15, 35, 5)
+    local slotProviderOptions = addon.SlotProviders:GetDropdownOptions()
 
-    AddColor(gcdCategory, "gcd_barColor", L["GCD Bar Color"] or "GCD Bar Color")
-    AddColor(gcdCategory, "gcd_backgroundColor", L["GCD Background Color"] or "GCD Background Color")
-    AddColor(gcdCategory, "gcd_sparkColor", L["GCD Spark Color"] or "GCD Spark Color")
-    AddCheckbox(gcdCategory, "gcd_useClassColor", L["GCD Use Class Color"] or "GCD Use Class Color",
-        L["GCD Use Class Color Tooltip"] or "Override GCD colors with your class color")
+    for i = 1, 3 do
+        local prefix = "slot" .. i
+        AddDropdown(slotsCategory, prefix .. "_provider",
+            (L["Slot Source"] or "Slot") .. " " .. i .. " " .. (L["Source"] or "Source"),
+            slotProviderOptions,
+            (L["Slot Source Tooltip"] or "Choose what to display in inner ring slot") .. " " .. i)
+        AddColor(slotsCategory, prefix .. "_barColor",
+            (L["Slot"] or "Slot") .. " " .. i .. " " .. (L["Bar Color"] or "Bar Color"))
+        AddCheckbox(slotsCategory, prefix .. "_useClassColor",
+            (L["Slot"] or "Slot") .. " " .. i .. " " .. (L["Use Class Color"] or "Use Class Color"),
+            (L["Slot Use Class Color Tooltip"] or "Override slot bar color with your class color"))
+        AddSlider(slotsCategory, prefix .. "_backgroundOpacity",
+            (L["Slot"] or "Slot") .. " " .. i .. " " .. (L["Background Opacity"] or "Background Opacity"),
+            0, 1, 0.05,
+            (L["Slot Background Opacity Tooltip"] or "Opacity of the slot background ring"))
+    end
 
     ------------------------------------------------------------------------
     -- Class Power Settings Subcategory

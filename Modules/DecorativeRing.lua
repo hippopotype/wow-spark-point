@@ -173,7 +173,7 @@ local function EnableModule(enabled)
         if not ringFrame then
             Ring:Initialize()
         end
-        -- Ring shows when other modules request it (Cast, GCD)
+        -- Ring shows when other modules request it (Cast)
     else
         isEnabled = false
         if ringFrame then

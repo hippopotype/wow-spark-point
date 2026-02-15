@@ -12,10 +12,23 @@ local GetDBBool = addon.GetDBBool
 local GetDBColor = addon.GetDBColor
 local GetDBColorTable = addon.GetDBColorTable
 
+local SlotRingWidget = addon.SlotRingWidget
+local SlotProviders = addon.SlotProviders
+
 local Cast
-local SPELL_ICON_MASK_PATH = addon.addonFolder .. "\\Textures\\spell_icon_mask_20.png"
+local SPELL_ICON_MASK_PATH = addon.addonFolder .. "\\Textures\\spell_icon_mask.png"
 local SPELL_ICON_MASK_BASE_SIZE = 32
 local SPELL_ICON_MASK_BASE_EXPAND = 6
+
+--------------------------------------------------------------------------------
+-- Inner Ring Slot Constants
+--------------------------------------------------------------------------------
+local NUM_SLOTS = 3
+-- Slot textures are authored on a shared 1024x1024 root map with baked sizing.
+-- Use one scale reference (cast_radius) and let each texture encode its own diameter.
+local SLOT_ROOT_SCALE = {1, 1, 1}
+-- Fill centerline radius ratios (measured from slot{N}_fill.png on 1024 map).
+local SLOT_SPARK_RADIUS_RATIOS = {0.5929, 0.4875, 0.3819}
 
 --------------------------------------------------------------------------------
 -- Module State
@@ -34,10 +47,46 @@ local currentSpellTexture
 local spellIconEnabled = false
 local pendingVisuals = false
 
+-- Inner ring slots
+local slots = {}  -- {widget, provider, providerID} per slot
+local activeProviders = {}
+local moduleEnabled = false
+
 local GetTime = GetTime
 local UnitCastingInfo = UnitCastingInfo
 local UnitChannelInfo = UnitChannelInfo
 local cos, sin, rad = math.cos, math.sin, math.rad
+
+local function NormalizeProviderID(providerID)
+	if type(providerID) ~= "string" then
+		return "NONE"
+	end
+	local normalized = string.upper(providerID)
+	if normalized == "" then
+		return "NONE"
+	end
+	return normalized
+end
+
+local function DisableSlotProviders()
+	for id, provider in pairs(activeProviders) do
+		if provider and provider.Disable then
+			provider:Disable()
+		end
+		activeProviders[id] = nil
+	end
+end
+
+local function GetSlotBarColor(slotIndex, providerResult)
+	if GetDBBool("slot" .. slotIndex .. "_useClassColor") then
+		local r, g, b, a = API.GetPlayerClassColor()
+		return {r = r, g = g, b = b, a = a}
+	end
+	if providerResult and providerResult.barColor then
+		return providerResult.barColor
+	end
+	return GetDBColorTable("slot" .. slotIndex .. "_barColor")
+end
 
 local function SetTextureSmooth(texture, texturePath)
     if not texture then return end
@@ -268,6 +317,27 @@ local function OnUpdate(self, elapsed)
             r, g, b, a = GetDBColor("cast_sparkColor")
         end
         spark:SetVertexColor(r, g, b, a)
+
+        -- Update inner ring slots
+        for i = 1, NUM_SLOTS do
+            local slot = slots[i]
+            if slot and slot.provider then
+                local result = slot.provider:GetProgress()
+                slot.widget:SetBarColor(GetSlotBarColor(i, result))
+
+                -- Keep assigned slot backgrounds visible while cast module is active.
+                -- Provider activity controls the progress/spark only.
+                slot.widget:Show()
+
+                if result and result.active then
+                    slot.widget:SetAngle((result.progress or 0) * 360)
+                else
+                    slot.widget:SetAngle(0)
+                end
+            elseif slot then
+                slot.widget:Hide()
+            end
+        end
     else
         Cast:Hide()
     end
@@ -304,6 +374,14 @@ function Cast:Show()
     self:ApplyPendingVisuals()
     self:UpdateIconCooldown()
 
+    -- Show assigned slot widgets (background/frame visible even when provider idle).
+    for i = 1, NUM_SLOTS do
+        local slot = slots[i]
+        if slot and slot.provider then
+            slot.widget:Show()
+        end
+    end
+
     -- Notify Ring module to show
     if addon.Modules.RingObj and addon.Modules.RingObj.Show then
         addon.Modules.RingObj:Show("cast")
@@ -327,6 +405,12 @@ function Cast:Hide()
     end
     if castFrame.frameTexture then
         castFrame.frameTexture:Hide()
+    end
+    -- Hide inner ring slots
+    for i = 1, NUM_SLOTS do
+        if slots[i] then
+            slots[i].widget:Hide()
+        end
     end
     castDuration = 0
     castStartTime = 0
@@ -492,6 +576,84 @@ function Cast:UNIT_SPELLCAST_EMPOWER_UPDATE(event, unit, castGUID, spellID)
 end
 
 --------------------------------------------------------------------------------
+-- Inner Ring Slot Management
+--------------------------------------------------------------------------------
+function Cast:ApplySlotAssignments()
+    -- Disable all currently active providers before re-assignment.
+    DisableSlotProviders()
+
+    -- Clear existing assignments (defer visibility changes until after re-assignment
+    -- to avoid hide/show flicker while casting).
+    for i = 1, NUM_SLOTS do
+        local slot = slots[i]
+        if slot then
+            slot.provider = nil
+            slot.providerID = nil
+        end
+    end
+
+    -- Read settings and assign providers.
+    for i = 1, NUM_SLOTS do
+        local slot = slots[i]
+        if slot then
+            local providerID = NormalizeProviderID(GetDBValue("slot" .. i .. "_provider"))
+            slot.providerID = providerID
+            if providerID ~= "NONE" then
+                local provider = SlotProviders:Get(providerID)
+                if provider then
+                    slot.provider = provider
+                end
+            end
+        end
+    end
+
+    -- Keep providers inactive if module is currently disabled.
+    if not moduleEnabled then
+        return
+    end
+
+    -- Enable each unique assigned provider once.
+    for i = 1, NUM_SLOTS do
+        local slot = slots[i]
+        if slot and slot.provider and not activeProviders[slot.providerID] then
+            slot.provider:Enable()
+            activeProviders[slot.providerID] = slot.provider
+        end
+    end
+
+    -- Enforce slot visibility contract:
+    -- assigned/non-NONE slots stay mounted while cast ring is visible.
+    for i = 1, NUM_SLOTS do
+        local slot = slots[i]
+        if slot and slot.provider and isCasting then
+            slot.widget:Show()
+        elseif slot then
+            slot.widget:Hide()
+        end
+    end
+end
+
+function Cast:ApplySlotOptions()
+    if not castFrame then return end
+
+    local radius = GetDBValue("cast_radius")
+    for i = 1, NUM_SLOTS do
+        local slot = slots[i]
+        if slot then
+            local backgroundOpacity = GetDBValue("slot" .. i .. "_backgroundOpacity")
+            if backgroundOpacity == nil then
+                local legacyBackground = GetDBColorTable("slot" .. i .. "_backgroundColor")
+                backgroundOpacity = legacyBackground and legacyBackground.a or 0.8
+            end
+            slot.widget:SetRadius(radius * SLOT_ROOT_SCALE[i])
+            slot.widget:SetBarColor(GetSlotBarColor(i))
+            slot.widget:SetBackgroundColor({r = 1, g = 1, b = 1, a = backgroundOpacity})
+            slot.widget:SetFrameLevel(NUM_SLOTS - i + 1)
+        end
+    end
+end
+
+--------------------------------------------------------------------------------
 -- ApplyOptions: Update visuals from settings
 --------------------------------------------------------------------------------
 function Cast:ApplyOptions()
@@ -538,6 +700,7 @@ function Cast:ApplyOptions()
                 direction = false,
                 radius = radius,
                 thickness = thickness,
+                useThicknessSuffix = false,
                 barColor = GetDBColorTable("cast_latencyColor"),
                 backgroundColor = {r = 1, g = 1, b = 1, a = 0},
                 backgroundTextureBase = nil,
@@ -553,6 +716,7 @@ function Cast:ApplyOptions()
                 direction = true,
                 radius = radius,
                 thickness = thickness,
+                useThicknessSuffix = false,
                 barColor = useClassColor and {r = cr, g = cg, b = cb, a = ca} or GetDBColorTable("cast_barColor"),
                 backgroundColor = backgroundColor,
                 backgroundTextureBase = "cast_background",
@@ -581,7 +745,7 @@ function Cast:ApplyOptions()
 
     -- Update frame overlay texture (top border)
     if castFrame.frameTexture then
-        local texPath = addon.addonFolder .. "\\Textures\\cast_frame_20.png"
+        local texPath = addon.addonFolder .. "\\Textures\\cast_frame.png"
         SetTextureSmooth(castFrame.frameTexture, texPath)
         castFrame.frameTexture:SetVertexColor(frameColor.r, frameColor.g, frameColor.b, frameColor.a)
         castFrame.frameTexture:SetSize(radius * 2, radius * 2)
@@ -590,13 +754,20 @@ function Cast:ApplyOptions()
         castFrame.frameTexture:Hide()
     end
 
-    -- Enforce layering: fill below latency, frame on top
+    -- Enforce layering: slots innermost, then cast fill, then latency on top
+    -- Slots are at levels 1..NUM_SLOTS (innermost = 1)
+    if castFrame.iconFrame then
+        castFrame.iconFrame:SetFrameLevel(0)
+    end
     if castDonut then
-        castDonut:SetFrameLevel(1)
+        castDonut:SetFrameLevel(NUM_SLOTS + 1)
     end
     if latencyDonut then
-        latencyDonut:SetFrameLevel(2)
+        latencyDonut:SetFrameLevel(NUM_SLOTS + 2)
     end
+
+    -- Update inner ring slot options
+    self:ApplySlotOptions()
 
     -- Update spell text
     if castFrame.spellText then
@@ -661,9 +832,10 @@ function Cast:Initialize()
     castFrame.iconFrame = CreateFrame("Frame", nil, castFrame)
     castFrame.iconFrame:SetSize(32, 32)
     castFrame.iconFrame:SetPoint("CENTER", castFrame, "CENTER", 0, -40)
+    castFrame.iconFrame:SetFrameLevel(0)
     castFrame.iconFrame:Hide()
 
-    castFrame.iconFrame.icon = castFrame.iconFrame:CreateTexture(nil, "ARTWORK")
+    castFrame.iconFrame.icon = castFrame.iconFrame:CreateTexture(nil, "BACKGROUND")
     castFrame.iconFrame.icon:SetPoint("CENTER")
     castFrame.iconFrame.icon:SetTexCoord(0, 1, 0, 1)
 
@@ -681,6 +853,23 @@ function Cast:Initialize()
 
     castFrame.iconMaskReady = ApplySpellIconMask()
 
+    -- Create inner ring slot widgets
+    local radius = GetDBValue("cast_radius")
+    for i = 1, NUM_SLOTS do
+        local widget = SlotRingWidget:Create({
+            radius = radius * SLOT_ROOT_SCALE[i],
+            fillBase = "slot" .. i .. "_fill",
+            frameBase = "slot" .. i .. "_frame",
+            backgroundBase = "slot" .. i .. "_background",
+            sparkRadiusRatio = SLOT_SPARK_RADIUS_RATIOS[i],
+            barColor = GetDBColorTable("slot" .. i .. "_barColor"),
+            backgroundColor = {r = 1, g = 1, b = 1, a = GetDBValue("slot" .. i .. "_backgroundOpacity") or 0.8},
+        })
+        widget:AttachTo(castFrame)
+        widget:Hide()
+        slots[i] = {widget = widget, provider = nil, providerID = nil}
+    end
+
     -- Set scripts
     castFrame:SetScript("OnUpdate", OnUpdate)
     castFrame:SetScript("OnShow", function()
@@ -690,12 +879,15 @@ function Cast:Initialize()
     spellIconEnabled = addon.GetDBBool("moduleEnabled_SpellIcon")
     self:ApplyOptions()
     self:ApplyIconOptions()
+    self:ApplySlotAssignments()
 end
 
 --------------------------------------------------------------------------------
 -- Enable/Disable
 --------------------------------------------------------------------------------
 local function EnableModule(enabled)
+    moduleEnabled = enabled == true
+
     if enabled then
         -- Initialize if needed
         if not castFrame then
@@ -719,9 +911,11 @@ local function EnableModule(enabled)
         EL:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_STOP", "player")
         EL:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_UPDATE", "player")
 
+        Cast:ApplySlotAssignments()
     else
         EL:UnregisterAllEvents()
         Cast:Hide()
+        DisableSlotProviders()
     end
 end
 
@@ -750,6 +944,22 @@ for _, key in ipairs(settingKeys) do
     CallbackRegistry:RegisterSettingCallback(key, function()
         Cast:ApplyOptions()
     end)
+end
+
+-- Slot provider assignment callbacks
+for i = 1, NUM_SLOTS do
+    CallbackRegistry:RegisterSettingCallback("slot" .. i .. "_provider", function()
+        Cast:ApplySlotAssignments()
+    end)
+end
+
+-- Slot color callbacks
+for i = 1, NUM_SLOTS do
+    for _, suffix in ipairs({"_barColor", "_backgroundOpacity", "_useClassColor"}) do
+        CallbackRegistry:RegisterSettingCallback("slot" .. i .. suffix, function()
+            Cast:ApplySlotOptions()
+        end)
+    end
 end
 
 --------------------------------------------------------------------------------

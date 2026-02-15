@@ -66,6 +66,7 @@ function DonutWidget:Create(config)
     donut.progressBase = config.progressTextureBase or "ring"
     donut.overlayBase = config.overlayTextureBase
     donut.frameBase = config.frameTextureBase
+    donut.useThicknessSuffix = config.useThicknessSuffix ~= false
 
     ----------------------------------------------------------------------------
     -- Create frames
@@ -185,25 +186,35 @@ function DonutWidget:SetThickness(thickness)
     local clamped = ClampThickness(thickness)
     self.thickness = clamped
 
+    local function BuildTexturePath(base)
+        if not base then
+            return nil
+        end
+        if self.useThicknessSuffix then
+            return addon.addonFolder .. "\\Textures\\" .. base .. "_" .. clamped .. ".png"
+        end
+        return addon.addonFolder .. "\\Textures\\" .. base .. ".png"
+    end
+
     if self.backgroundBase then
-        local backgroundPath = addon.addonFolder .. "\\Textures\\" .. self.backgroundBase .. "_" .. clamped .. ".png"
+        local backgroundPath = BuildTexturePath(self.backgroundBase)
         SetTextureSmooth(self.background, backgroundPath)
         self.background:Show()
     else
         self.background:Hide()
     end
 
-    local progressPath = addon.addonFolder .. "\\Textures\\" .. self.progressBase .. "_" .. clamped .. ".png"
+    local progressPath = BuildTexturePath(self.progressBase)
     SetTextureSmooth(self.foreground, progressPath)
     SafeCall(self.cooldown, "SetSwipeTexture", progressPath)
 
     if self.overlayBase then
-        local overlayPath = addon.addonFolder .. "\\Textures\\" .. self.overlayBase .. "_" .. clamped .. ".png"
+        local overlayPath = BuildTexturePath(self.overlayBase)
         SetTextureSmooth(self.overlay, overlayPath)
     end
 
     if self.frameBase then
-        local framePath = addon.addonFolder .. "\\Textures\\" .. self.frameBase .. "_" .. clamped .. ".png"
+        local framePath = BuildTexturePath(self.frameBase)
         SetTextureSmooth(self.frameTex, framePath)
         self.frameTex:Show()
     else
