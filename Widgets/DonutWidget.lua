@@ -107,7 +107,7 @@ function DonutWidget:Create(config)
     ----------------------------------------------------------------------------
     donut.overlay = ringFrame:CreateTexture(nil, "OVERLAY")
     donut.overlay:SetPoint("CENTER", ringFrame, "CENTER")
-    donut.overlay:SetBlendMode("ADD")
+    donut.overlay:SetBlendMode("BLEND")
     donut.overlay:SetDrawLayer("OVERLAY", 1)
     donut.overlay:Hide()
 
@@ -233,7 +233,31 @@ end
 -- SetOverlayColor: Update overlay RGBA
 --------------------------------------------------------------------------------
 function DonutWidget:SetOverlayColor(color)
+    self.overlayColor = self.overlayColor or {}
+    self.overlayColor.r = color.r
+    self.overlayColor.g = color.g
+    self.overlayColor.b = color.b
+    self.overlayColor.a = color.a
     self.overlay:SetVertexColor(color.r, color.g, color.b, color.a)
+end
+
+--------------------------------------------------------------------------------
+-- SetOverlayAlpha: Update overlay alpha only (keeps current RGB)
+--------------------------------------------------------------------------------
+function DonutWidget:SetOverlayAlpha(alpha)
+    if not self.overlayBase then return end
+    if alpha < 0 then
+        alpha = 0
+    elseif alpha > 1 then
+        alpha = 1
+    end
+
+    if self.overlayColor then
+        self.overlay:SetVertexColor(self.overlayColor.r, self.overlayColor.g, self.overlayColor.b, alpha)
+    else
+        local r, g, b = self.overlay:GetVertexColor()
+        self.overlay:SetVertexColor(r, g, b, alpha)
+    end
 end
 
 --------------------------------------------------------------------------------

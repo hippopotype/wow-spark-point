@@ -25,6 +25,7 @@ local castDonut, latencyDonut
 local isCasting = false
 local castStartTime, castEndTime, castDuration
 local castLatency = 0
+local castGlowMaxOpacity = 0.8
 local castSent = 0
 local currentCastGUID = nil
 local currentSpellName = ""
@@ -227,6 +228,7 @@ local function OnUpdate(self, elapsed)
 
     if castPerc < 1 then
         local angle = castPerc * 360
+        local clampedPerc = math.max(0, math.min(1, castPerc))
 
         -- Reverse for channeled spells if enabled
         if GetDBBool("cast_reverseChanneling") and UnitChannelInfo("player") then
@@ -235,6 +237,7 @@ local function OnUpdate(self, elapsed)
 
         if castDonut then
             castDonut:SetAngle(angle)
+            castDonut:SetOverlayAlpha(castGlowMaxOpacity * clampedPerc)
         end
         -- Keep latency arc static (Cooldown swipe animates otherwise)
         if latencyDonut then
@@ -290,6 +293,7 @@ function Cast:Show()
         if castDonut then
             castDonut:Show()
             castDonut:SetOverlayShown(true)
+            castDonut:SetOverlayAlpha(0)
         end
     end
     if castFrame.frameTexture then
@@ -508,6 +512,7 @@ function Cast:ApplyOptions()
     if glowOpacity == nil then
         glowOpacity = 0.8
     end
+    castGlowMaxOpacity = glowOpacity
     local cr, cg, cb, ca
     if useClassColor then
         cr, cg, cb, ca = API.GetPlayerClassColor()
