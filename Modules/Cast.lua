@@ -12,10 +12,10 @@ local GetDBBool = addon.GetDBBool
 local GetDBColor = addon.GetDBColor
 local GetDBColorTable = addon.GetDBColorTable
 
-local Masque
-local masqueGroup
-local masqueLoader
 local Cast
+local SPELL_ICON_MASK_PATH = addon.addonFolder .. "\\Textures\\spell_icon_mask_20.png"
+local SPELL_ICON_MASK_BASE_SIZE = 32
+local SPELL_ICON_MASK_BASE_EXPAND = 6
 
 --------------------------------------------------------------------------------
 -- Module State
@@ -52,32 +52,6 @@ local function SetTextureSmooth(texture, texturePath)
     end
 end
 
-local function GetMasqueGroup()
-    if not Masque and LibStub then
-        Masque = LibStub("Masque", true)
-    end
-    if not Masque then return nil end
-    if not masqueGroup then
-        masqueGroup = Masque:Group(addonName, L["Spell Icon"] or "Spell Icon", "SpellIcon")
-    end
-    return masqueGroup
-end
-
-local function EnsureMasqueLoader()
-    if masqueLoader then return end
-    local frame = CreateFrame("Frame")
-    frame:RegisterEvent("ADDON_LOADED")
-    frame:SetScript("OnEvent", function(_, event, name)
-        if event == "ADDON_LOADED" and name == "Masque" then
-            if Cast and Cast.RegisterMasqueButtons then
-                Cast:RegisterMasqueButtons()
-                Cast:ReskinMasque()
-            end
-        end
-    end)
-    masqueLoader = frame
-end
-
 --------------------------------------------------------------------------------
 -- Event Frame
 --------------------------------------------------------------------------------
@@ -93,27 +67,42 @@ function Cast:GetFrame()
     return castFrame
 end
 
-function Cast:RegisterMasqueButtons()
-    local group = GetMasqueGroup()
-    if not group or not castFrame or not castFrame.iconFrame then return end
-    local iconFrame = castFrame.iconFrame
-    if iconFrame._sparkMasqueAdded then return end
-
-    local regions = {
-        Icon = iconFrame.icon,
-        Cooldown = iconFrame.cooldown,
-        Normal = iconFrame.border,
-    }
-
-    group:AddButton(iconFrame, regions, "Action", true)
-    iconFrame._sparkMasqueAdded = true
-end
-
-function Cast:ReskinMasque()
-    local group = GetMasqueGroup()
-    if group and group.ReSkin then
-        group:ReSkin()
+local function ApplySpellIconMask()
+    if not castFrame or not castFrame.iconFrame or not castFrame.iconFrame.icon then
+        return false
     end
+    local iconFrame = castFrame.iconFrame
+    local icon = iconFrame.icon
+    if not icon.AddMaskTexture then
+        return false
+    end
+
+    iconFrame.iconMask = iconFrame.iconMask or iconFrame:CreateMaskTexture()
+    local mask = iconFrame.iconMask
+    if not mask then
+        return false
+    end
+
+    local iconSize = icon:GetWidth() or SPELL_ICON_MASK_BASE_SIZE
+    local expand = math.floor((iconSize / SPELL_ICON_MASK_BASE_SIZE) * SPELL_ICON_MASK_BASE_EXPAND + 0.5)
+    if expand < 0 then
+        expand = 0
+    end
+
+    mask:SetTexture(SPELL_ICON_MASK_PATH, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    mask:ClearAllPoints()
+    mask:SetPoint("TOPLEFT", icon, "TOPLEFT", -expand, expand)
+    mask:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", expand, -expand)
+
+    if not iconFrame.iconMaskAttached then
+        local ok = pcall(icon.AddMaskTexture, icon, mask)
+        if not ok then
+            return false
+        end
+        iconFrame.iconMaskAttached = true
+    end
+
+    return true
 end
 
 function Cast:SetSpellIconEnabled(enabled)
@@ -148,21 +137,12 @@ function Cast:ApplyIconOptions()
     local offsetX = GetDBValue("spellicon_offsetX")
     local offsetY = GetDBValue("spellicon_offsetY")
     local showCooldown = GetDBBool("spellicon_castProgressSwipe")
-    local useClassColor = GetDBBool("spellicon_useClassColor")
 
     castFrame.iconFrame:SetSize(size, size)
     castFrame.iconFrame:ClearAllPoints()
     castFrame.iconFrame:SetPoint("CENTER", castFrame, "CENTER", offsetX, offsetY)
 
-    castFrame.iconFrame.icon:SetSize(size - 4, size - 4)
-    if castFrame.iconFrame.border then
-        if useClassColor then
-            local r, g, b, a = API.GetPlayerClassColor()
-            castFrame.iconFrame.border:SetVertexColor(r, g, b, a)
-        else
-            castFrame.iconFrame.border:SetVertexColor(1, 1, 1, 1)
-        end
-    end
+    castFrame.iconFrame.icon:SetSize(size, size)
 
     if showCooldown then
         if not castFrame.iconFrame.cooldown then
@@ -176,8 +156,8 @@ function Cast:ApplyIconOptions()
         castFrame.iconFrame.cooldown:Hide()
     end
 
+    castFrame.iconMaskReady = ApplySpellIconMask()
     self:UpdateIconCooldown()
-    self:ReskinMasque()
 end
 
 function Cast:UpdateSpellIcon()
@@ -196,6 +176,13 @@ function Cast:UpdateSpellIcon()
     if not currentSpellTexture then
         castFrame.iconFrame:Hide()
         return
+    end
+    if not castFrame.iconMaskReady then
+        castFrame.iconMaskReady = ApplySpellIconMask()
+        if not castFrame.iconMaskReady then
+            castFrame.iconFrame:Hide()
+            return
+        end
     end
     local texture = currentSpellTexture
     if type(texture) ~= "number" and type(texture) ~= "string" then
@@ -671,14 +658,9 @@ function Cast:Initialize()
     castFrame.iconFrame:SetPoint("CENTER", castFrame, "CENTER", 0, -40)
     castFrame.iconFrame:Hide()
 
-    castFrame.iconFrame.border = castFrame.iconFrame:CreateTexture(nil, "OVERLAY")
-    castFrame.iconFrame.border:SetAllPoints()
-    castFrame.iconFrame.border:SetTexture("Interface\\Buttons\\UI-Quickslot2")
-    castFrame.iconFrame.border:SetTexCoord(0.2, 0.8, 0.2, 0.8)
-
     castFrame.iconFrame.icon = castFrame.iconFrame:CreateTexture(nil, "ARTWORK")
     castFrame.iconFrame.icon:SetPoint("CENTER")
-    castFrame.iconFrame.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    castFrame.iconFrame.icon:SetTexCoord(0, 1, 0, 1)
 
     -- Preload assets to avoid first-use stutter (font must be set before text)
     castFrame.iconFrame.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
@@ -692,9 +674,7 @@ function Cast:Initialize()
         castFrame.iconFrame.cooldown:Hide()
     end
 
-    self:RegisterMasqueButtons()
-    self:ReskinMasque()
-    EnsureMasqueLoader()
+    castFrame.iconMaskReady = ApplySpellIconMask()
 
     -- Set scripts
     castFrame:SetScript("OnUpdate", OnUpdate)
@@ -758,7 +738,7 @@ end)
         "cast_spellTextEnabled", "cast_spellTextFont", "cast_spellTextSize",
         "cast_spellTextOutline", "cast_spellTextColor",
         "cast_spellTextOffsetX", "cast_spellTextOffsetY",
-        "spellicon_size", "spellicon_offsetX", "spellicon_offsetY", "spellicon_castProgressSwipe", "spellicon_useClassColor"
+        "spellicon_size", "spellicon_offsetX", "spellicon_offsetY", "spellicon_castProgressSwipe"
     }
 
 for _, key in ipairs(settingKeys) do

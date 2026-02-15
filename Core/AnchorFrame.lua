@@ -11,9 +11,46 @@ addon.AnchorFrame = AnchorFrame
 
 local anchor
 local showRequests = {}
+local settingsOpenDeferred = false
+local settingsOpenFrame
+local OpenSettingsSafely
 
 local GetCursorPosition = GetCursorPosition
 local UIParent = UIParent
+
+local function OpenSettingsNow()
+	if addon.SettingsCategoryID then
+		Settings.OpenToCategory(addon.SettingsCategoryID)
+		return
+	end
+
+	C_Timer.After(0.1, function()
+		-- Re-check combat state before opening to avoid protected call races.
+		OpenSettingsSafely()
+	end)
+end
+
+local function EnsureSettingsOpenFrame()
+	if settingsOpenFrame then return end
+	settingsOpenFrame = CreateFrame("Frame")
+	settingsOpenFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+	settingsOpenFrame:SetScript("OnEvent", function()
+		if not settingsOpenDeferred then return end
+		settingsOpenDeferred = false
+		OpenSettingsNow()
+	end)
+end
+
+OpenSettingsSafely = function()
+	if InCombatLockdown and InCombatLockdown() then
+		settingsOpenDeferred = true
+		EnsureSettingsOpenFrame()
+		print("SparkPoint: Settings will open after combat.")
+		return
+	end
+
+	OpenSettingsNow()
+end
 
 --------------------------------------------------------------------------------
 -- Show/Hide Request System
@@ -162,15 +199,6 @@ SlashCmdList["SPARKPOINT"] = function(msg)
         addon.SetDBValue("attachToMouse", true, true)
         print("SparkPoint: Position reset to defaults.")
     else
-        -- Open settings
-        if addon.SettingsCategoryID then
-            Settings.OpenToCategory(addon.SettingsCategoryID)
-        else
-            C_Timer.After(0.1, function()
-                if addon.SettingsCategoryID then
-                    Settings.OpenToCategory(addon.SettingsCategoryID)
-                end
-            end)
-        end
+        OpenSettingsSafely()
     end
 end

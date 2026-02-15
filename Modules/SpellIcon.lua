@@ -39,7 +39,7 @@ end
 -- Register Setting Callbacks
 --------------------------------------------------------------------------------
 local settingKeys = {
-    "spellicon_size", "spellicon_offsetX", "spellicon_offsetY", "spellicon_castProgressSwipe", "spellicon_useClassColor"
+    "spellicon_size", "spellicon_offsetX", "spellicon_offsetY", "spellicon_castProgressSwipe"
 }
 
 for _, key in ipairs(settingKeys) do

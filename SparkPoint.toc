@@ -5,7 +5,6 @@
 ## Version: 1.0.1
 ## SavedVariables: SparkPointDB
 ## IconTexture: Interface\Icons\inv_arathordungeon_fragment_color6
-## OptionalDeps: Masque
 
 # Core (load order matters)
 Core\Initialization.lua

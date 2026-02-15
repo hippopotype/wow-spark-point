@@ -389,8 +389,6 @@ local function BuildSettingsPanel()
     AddSlider(iconCategory, "spellicon_offsetX", L["Spell Icon Horizontal Offset"] or "Spell Icon Horizontal Offset", -100, 100, 1)
     AddSlider(iconCategory, "spellicon_offsetY", L["Spell Icon Vertical Offset"] or "Spell Icon Vertical Offset", -100, 100, 1)
     AddCheckbox(iconCategory, "spellicon_castProgressSwipe", L["Cast Progress Swipe"] or "Cast Progress Swipe")
-    AddCheckbox(iconCategory, "spellicon_useClassColor", L["Spell Icon Use Class Color"] or "Spell Icon Use Class Color",
-        L["Spell Icon Use Class Color Tooltip"] or "Override spell icon border color with your class color")
 
     ------------------------------------------------------------------------
     -- Register main category

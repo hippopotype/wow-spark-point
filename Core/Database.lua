@@ -76,7 +76,6 @@ addon.DefaultValues = {
     spellicon_offsetX = 0,
     spellicon_offsetY = -40,
     spellicon_castProgressSwipe = true,
-    spellicon_useClassColor = false,
 }
 
 --------------------------------------------------------------------------------

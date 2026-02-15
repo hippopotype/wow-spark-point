@@ -84,8 +84,6 @@ L["Spell Icon Size"] = "Spell Icon Size"
 L["Spell Icon Horizontal Offset"] = "Spell Icon Horizontal Offset"
 L["Spell Icon Vertical Offset"] = "Spell Icon Vertical Offset"
 L["Cast Progress Swipe"] = "Cast Progress Swipe"
-L["Spell Icon Use Class Color"] = "Spell Icon Use Class Color"
-L["Spell Icon Use Class Color Tooltip"] = "Override spell icon border color with your class color"
 
 --------------------------------------------------------------------------------
 -- Cast Ring
