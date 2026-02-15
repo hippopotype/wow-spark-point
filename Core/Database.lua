@@ -33,7 +33,7 @@ addon.DefaultValues = {
     cast_sparkColor = {r = 0.9, g = 0.8, b = 1, a = 1},
     cast_sparkScale = 0.5,
     cast_latencyColor = {r = 1, g = 0, b = 0, a = 1},
-    cast_sparkOnly = false,
+
     cast_reverseChanneling = false,
     cast_useClassColor = false,
     cast_spellTextEnabled = false,
@@ -50,7 +50,7 @@ addon.DefaultValues = {
     gcd_barColor = {r = 1, g = 1, b = 1, a = 0.8},
     gcd_backgroundColor = {r = 0.4, g = 0.4, b = 0.4, a = 0.8},
     gcd_sparkColor = {r = 0.9, g = 0.8, b = 1, a = 1},
-    gcd_sparkOnly = false,
+
     gcd_useClassColor = false,
 
     -- ClassPower module settings

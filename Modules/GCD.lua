@@ -71,8 +71,7 @@ local function OnUpdate(self, elapsed)
     if gcdPerc < 1 then
         local angle = gcdPerc * 360
 
-        -- Update donut if not spark-only mode
-        if not GetDBBool("gcd_sparkOnly") and gcdDonut then
+        if gcdDonut then
             gcdDonut:SetAngle(angle)
         end
 
@@ -100,7 +99,7 @@ function GCD:Show()
     isActive = true
     AnchorFrame:Show("gcd")
     gcdFrame:Show()
-    if gcdDonut and not GetDBBool("gcd_sparkOnly") then
+    if gcdDonut then
         gcdDonut:SetAngle(0)
         gcdDonut:Show()
     end
@@ -212,7 +211,6 @@ function GCD:ApplyOptions()
 
     local radius = GetDBValue("gcd_radius")
     local thickness = GetDBValue("gcd_thickness")
-    local sparkOnly = GetDBBool("gcd_sparkOnly")
     local useClassColor = GetDBBool("gcd_useClassColor")
     local cr, cg, cb, ca
     if useClassColor then
@@ -251,7 +249,7 @@ function GCD:ApplyOptions()
         gcdDonut:SetBackgroundColor(backgroundColor)
     end
 
-    if sparkOnly or not isActive then
+    if not isActive then
         gcdDonut:Hide()
     else
         gcdDonut:Show()
@@ -327,7 +325,7 @@ end)
 --------------------------------------------------------------------------------
 local settingKeys = {
     "gcd_radius", "gcd_thickness", "gcd_barColor", "gcd_backgroundColor",
-    "gcd_sparkColor", "gcd_sparkOnly", "gcd_useClassColor"
+    "gcd_sparkColor", "gcd_useClassColor"
 }
 
 for _, key in ipairs(settingKeys) do

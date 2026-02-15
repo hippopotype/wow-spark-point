@@ -232,16 +232,13 @@ local function OnUpdate(self, elapsed)
             angle = (1 - castPerc) * 360
         end
 
-        -- Update donuts if not spark-only mode
-        if not GetDBBool("cast_sparkOnly") then
-            if castDonut then
-                castDonut:SetAngle(angle)
-            end
-            -- Keep latency arc static (Cooldown swipe animates otherwise)
-            if latencyDonut then
-                local latencyAngle = math.max(0.1, castLatency * 360)
-                latencyDonut:SetAngle(latencyAngle)
-            end
+        if castDonut then
+            castDonut:SetAngle(angle)
+        end
+        -- Keep latency arc static (Cooldown swipe animates otherwise)
+        if latencyDonut then
+            local latencyAngle = math.max(0.1, castLatency * 360)
+            latencyDonut:SetAngle(latencyAngle)
         end
 
         -- Update spark position (rotates around ring)
@@ -260,19 +257,13 @@ local function OnUpdate(self, elapsed)
         spark:ClearAllPoints()
         spark:SetPoint("CENTER", castFrame, "CENTER", x, y)
 
-        -- Latency coloring in final portion (spark-only mode)
-        if GetDBBool("cast_sparkOnly") and castPerc > 1 - castLatency then
-            local r, g, b, a = GetDBColor("cast_latencyColor")
-            spark:SetVertexColor(r, g, b, a)
+        local r, g, b, a
+        if useClassColor then
+            r, g, b, a = cr, cg, cb, ca
         else
-            local r, g, b, a
-            if useClassColor then
-                r, g, b, a = cr, cg, cb, ca
-            else
-                r, g, b, a = GetDBColor("cast_sparkColor")
-            end
-            spark:SetVertexColor(r, g, b, a)
+            r, g, b, a = GetDBColor("cast_sparkColor")
         end
+        spark:SetVertexColor(r, g, b, a)
     else
         Cast:Hide()
     end
@@ -288,7 +279,7 @@ function Cast:Show()
     AnchorFrame:Show("cast")
 
     -- Show latency indicator
-    if not GetDBBool("cast_sparkOnly") and latencyDonut then
+    if latencyDonut then
         local latencyAngle = math.max(0.1, castLatency * 360)
         latencyDonut:SetAngle(latencyAngle)
         if castDonut then
@@ -300,7 +291,7 @@ function Cast:Show()
             castDonut:SetOverlayShown(true)
         end
     end
-    if castFrame.frameTexture and not GetDBBool("cast_sparkOnly") then
+    if castFrame.frameTexture then
         castFrame.frameTexture:Show()
     end
 
@@ -503,7 +494,6 @@ function Cast:ApplyOptions()
 
     local radius = GetDBValue("cast_radius")
     local thickness = 20
-    local sparkOnly = GetDBBool("cast_sparkOnly")
     local useClassColor = GetDBBool("cast_useClassColor")
     local frameOpacity = GetDBValue("cast_frameOpacity")
     if frameOpacity == nil then
@@ -536,8 +526,7 @@ function Cast:ApplyOptions()
     castFrame.sparkTexture:SetSize(radius * 0.5, radius * 0.5)
 
     -- Rebuild donuts if needed
-    if not sparkOnly then
-        if not castDonut then
+    if not castDonut then
             -- Create latency donut (between fill and frame)
             latencyDonut = DonutWidget:Create({
                 direction = false,
@@ -577,7 +566,6 @@ function Cast:ApplyOptions()
             latencyDonut:SetThickness(thickness)
             latencyDonut:SetBarColor(GetDBColorTable("cast_latencyColor"))
             latencyDonut:SetBackgroundColor({r = 1, g = 1, b = 1, a = 0})
-        end
     end
 
     -- Update glow overlay color
@@ -593,11 +581,7 @@ function Cast:ApplyOptions()
         castFrame.frameTexture:SetSize(radius * 2, radius * 2)
         castFrame.frameTexture:ClearAllPoints()
         castFrame.frameTexture:SetPoint("CENTER", castFrame.overlayFrame, "CENTER")
-        if not sparkOnly and isActive then
-            castFrame.frameTexture:Show()
-        else
-            castFrame.frameTexture:Hide()
-        end
+        castFrame.frameTexture:Hide()
     end
 
     -- Enforce layering: fill below latency, frame on top
@@ -756,7 +740,7 @@ end)
 --------------------------------------------------------------------------------
     local settingKeys = {
         "cast_radius", "cast_barColor", "cast_backgroundOpacity", "cast_frameOpacity", "cast_glowOpacity",
-        "cast_sparkColor", "cast_latencyColor", "cast_sparkOnly", "cast_useClassColor",
+        "cast_sparkColor", "cast_latencyColor", "cast_useClassColor",
         "cast_spellTextEnabled", "cast_spellTextFont", "cast_spellTextSize",
         "cast_spellTextOutline", "cast_spellTextColor",
         "cast_spellTextOffsetX", "cast_spellTextOffsetY",

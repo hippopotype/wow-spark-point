@@ -227,9 +227,6 @@ local function BuildSettingsPanel()
         L["Radius Tooltip"] or "Size of the cast ring")
 
 
-    AddCheckbox(castCategory, "cast_sparkOnly", L["Cast Spark Only"] or "Cast Spark Only",
-        L["Spark Only Tooltip"] or "Show only the spark without the ring")
-
     AddCheckbox(castCategory, "cast_reverseChanneling", L["Cast Reverse Channeling"] or "Cast Reverse Channeling",
         L["Reverse Channeling Tooltip"] or "Reverse the direction for channeled spells")
 
@@ -277,7 +274,7 @@ local function BuildSettingsPanel()
 
     AddSlider(gcdCategory, "gcd_radius", L["GCD Radius"] or "GCD Radius", 10, 128, 1)
     AddSlider(gcdCategory, "gcd_thickness", L["GCD Thickness"] or "GCD Thickness", 15, 35, 5)
-    AddCheckbox(gcdCategory, "gcd_sparkOnly", L["GCD Spark Only"] or "GCD Spark Only")
+
     AddColor(gcdCategory, "gcd_barColor", L["GCD Bar Color"] or "GCD Bar Color")
     AddColor(gcdCategory, "gcd_backgroundColor", L["GCD Background Color"] or "GCD Background Color")
     AddColor(gcdCategory, "gcd_sparkColor", L["GCD Spark Color"] or "GCD Spark Color")
