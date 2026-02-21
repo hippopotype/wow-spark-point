@@ -331,16 +331,30 @@ local function BuildSettingsPanel()
     ------------------------------------------------------------------------
     local cpCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Class Resource"] or "Class Resource")
 
-    AddSlider(cpCategory, "classresource_fontSize", L["Class Resource Font Size"] or "Class Resource Font Size", 8, 32, 1)
-    AddSlider(cpCategory, "classresource_offsetX", L["Class Resource Horizontal Offset"] or "Class Resource Horizontal Offset", -200, 200, 1)
-    AddSlider(cpCategory, "classresource_offsetY", L["Class Resource Vertical Offset"] or "Class Resource Vertical Offset", -200, 200, 1)
-    AddDropdown(cpCategory, "classresource_font", L["Class Resource Font"] or "Class Resource Font", {
+    AddDropdown(cpCategory, "classresource_mode", L["Class Resource Mode"] or "Class Resource Mode", {
+        { value = "TEXT", label = L["Class Resource Mode Text"] or "Text" },
+        { value = "BARS", label = L["Class Resource Mode Bars"] or "Bars" },
+    }, L["Class Resource Mode Tooltip"] or "Switch between simple text and stateful class resource bars")
+
+    AddDropdown(cpCategory, "classresource_visibility", L["Class Resource Visibility"] or "Class Resource Visibility", {
+        { value = "ALWAYS", label = L["Visibility Always"] or "Always" },
+        { value = "IN_COMBAT", label = L["Visibility In Combat"] or "In Combat" },
+        { value = "OUT_OF_COMBAT", label = L["Visibility Out of Combat"] or "Out of Combat" },
+        { value = "HAS_TARGET", label = L["Visibility Has Target"] or "Has Target" },
+        { value = "CASTING", label = L["Visibility While Casting"] or "While Casting" },
+    }, L["Class Resource Visibility Tooltip"] or "When to show class resource")
+
+    local cpTextCategory = Settings.RegisterVerticalLayoutSubcategory(cpCategory, L["Class Resource Text Mode"] or "Text Mode")
+    AddSlider(cpTextCategory, "classresource_fontSize", L["Class Resource Font Size"] or "Class Resource Font Size", 8, 32, 1)
+    AddSlider(cpTextCategory, "classresource_offsetX", L["Class Resource Horizontal Offset"] or "Class Resource Horizontal Offset", -200, 200, 1)
+    AddSlider(cpTextCategory, "classresource_offsetY", L["Class Resource Vertical Offset"] or "Class Resource Vertical Offset", -200, 200, 1)
+    AddDropdown(cpTextCategory, "classresource_font", L["Class Resource Font"] or "Class Resource Font", {
         { value = "Fonts\\FRIZQT__.TTF", label = "Friz Quadrata" },
         { value = "Fonts\\ARIALN.TTF", label = "Arial Narrow" },
         { value = "Fonts\\MORPHEUS.ttf", label = "Morpheus" },
         { value = "Fonts\\SKURRI.TTF", label = "Skurri" },
     })
-    AddDropdown(cpCategory, "classresource_fontOutline", L["Class Resource Font Outline"] or "Class Resource Font Outline", {
+    AddDropdown(cpTextCategory, "classresource_fontOutline", L["Class Resource Font Outline"] or "Class Resource Font Outline", {
         { value = "", label = "None" },
         { value = "OUTLINE", label = "Outline" },
         { value = "THICKOUTLINE", label = "Thick Outline" },
@@ -348,16 +362,49 @@ local function BuildSettingsPanel()
         { value = "MONOCHROME,OUTLINE", label = "Mono + Outline" },
         { value = "MONOCHROME,THICKOUTLINE", label = "Mono + Thick Outline" },
     })
-    AddColor(cpCategory, "classresource_fontColor", L["Class Resource Font Color"] or "Class Resource Font Color")
-    AddDropdown(cpCategory, "classresource_visibility", L["Class Resource Visibility"] or "Class Resource Visibility", {
-        { value = "ALWAYS", label = L["Visibility Always"] or "Always" },
-        { value = "IN_COMBAT", label = L["Visibility In Combat"] or "In Combat" },
-        { value = "OUT_OF_COMBAT", label = L["Visibility Out of Combat"] or "Out of Combat" },
-        { value = "HAS_TARGET", label = L["Visibility Has Target"] or "Has Target" },
-        { value = "CASTING", label = L["Visibility While Casting"] or "While Casting" },
-    }, L["Class Resource Visibility Tooltip"] or "When to show class resource text")
-    AddCheckbox(cpCategory, "classresource_useClassColor", L["Class Resource Use Class Color"] or "Class Resource Use Class Color",
+    AddColor(cpTextCategory, "classresource_fontColor", L["Class Resource Font Color"] or "Class Resource Font Color")
+    AddCheckbox(cpTextCategory, "classresource_useClassColor", L["Class Resource Use Class Color"] or "Class Resource Use Class Color",
         L["Class Resource Use Class Color Tooltip"] or "Override class resource text color with your class color")
+
+    local cpBarsCategory = Settings.RegisterVerticalLayoutSubcategory(cpCategory, L["Class Resource Bars Mode"] or "Bars Mode")
+    AddSlider(cpBarsCategory, "classresource_bars_width", L["Class Resource Bars Width"] or "Bars Width", 80, 320, 1)
+    AddSlider(cpBarsCategory, "classresource_bars_height", L["Class Resource Bars Height"] or "Bars Height", 8, 40, 1)
+    AddSlider(cpBarsCategory, "classresource_bars_spacing", L["Class Resource Bars Spacing"] or "Bars Spacing", 0, 20, 1)
+    AddSlider(cpBarsCategory, "classresource_bars_offsetX", L["Class Resource Bars Offset X"] or "Bars Offset X", -300, 300, 1)
+    AddSlider(cpBarsCategory, "classresource_bars_offsetY", L["Class Resource Bars Offset Y"] or "Bars Offset Y", -300, 300, 1)
+    AddCheckbox(cpBarsCategory, "classresource_bars_showSecondary", L["Class Resource Bars Show Secondary"] or "Show Secondary Resources")
+    AddCheckbox(cpBarsCategory, "classresource_bars_showText", L["Class Resource Bars Show Text"] or "Show Bar Text")
+    AddDropdown(cpBarsCategory, "classresource_bars_textStyle", L["Class Resource Bars Text Style"] or "Bar Text Style", {
+        { value = "PERCENT", label = L["Percent"] or "Percent" },
+        { value = "CURRENT", label = L["Current"] or "Current" },
+        { value = "CURMAX", label = L["CurrentMax"] or "Current / Max" },
+        { value = "NONE", label = L["None"] or "None" },
+    })
+    AddDropdown(cpBarsCategory, "classresource_bars_font", L["Class Resource Bars Font"] or "Bar Font", {
+        { value = "Fonts\\FRIZQT__.TTF", label = "Friz Quadrata" },
+        { value = "Fonts\\ARIALN.TTF", label = "Arial Narrow" },
+        { value = "Fonts\\MORPHEUS.ttf", label = "Morpheus" },
+        { value = "Fonts\\SKURRI.TTF", label = "Skurri" },
+    })
+    AddDropdown(cpBarsCategory, "classresource_bars_fontOutline", L["Class Resource Bars Font Outline"] or "Bar Font Outline", {
+        { value = "", label = "None" },
+        { value = "OUTLINE", label = "Outline" },
+        { value = "THICKOUTLINE", label = "Thick Outline" },
+        { value = "MONOCHROME", label = "Monochrome" },
+        { value = "MONOCHROME,OUTLINE", label = "Mono + Outline" },
+        { value = "MONOCHROME,THICKOUTLINE", label = "Mono + Thick Outline" },
+    })
+    AddSlider(cpBarsCategory, "classresource_bars_fontSize", L["Class Resource Bars Font Size"] or "Bar Font Size", 8, 24, 1)
+    AddDropdown(cpBarsCategory, "classresource_bars_texture", L["Class Resource Bars Texture"] or "Bar Texture", {
+        { value = "AUTO", label = L["Class Resource Bars Texture Auto"] or "Auto (Resource)" },
+        { value = "BLIZZARD", label = L["Class Resource Bars Texture Blizzard"] or "Blizzard Default" },
+        { value = "MANA", label = L["Class Resource Bars Texture Mana"] or "Blizzard Mana" },
+        { value = "RAGE", label = L["Class Resource Bars Texture Rage"] or "Blizzard Rage" },
+    })
+    AddCheckbox(cpBarsCategory, "classresource_bars_usePowerColor", L["Class Resource Bars Use Power Color"] or "Use Power Type Colors")
+    AddCheckbox(cpBarsCategory, "classresource_bars_useClassColor", L["Class Resource Bars Use Class Color"] or "Use Class Color")
+    AddColor(cpBarsCategory, "classresource_bars_barColor", L["Class Resource Bars Bar Color"] or "Bar Color")
+    AddColor(cpBarsCategory, "classresource_bars_backgroundColor", L["Class Resource Bars Background Color"] or "Background Color")
 
     ------------------------------------------------------------------------
     -- Ring Settings Subcategory
