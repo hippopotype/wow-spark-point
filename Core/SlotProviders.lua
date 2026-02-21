@@ -15,6 +15,8 @@ local registry = {}
 --   provider.displayName  (string)
 --   provider:GetProgress() -> {
 --       progress=0..1,
+--       current=number|nil,          -- optional raw value for StatusBar-backed widgets
+--       max=number|nil,              -- optional max for StatusBar-backed widgets
 --       active=bool,
 --       show=bool,                  -- optional; defaults to `active`
 --       barColor={r,g,b,a}|nil,     -- optional

@@ -1,15 +1,16 @@
 -- SparkPoint SlotRingWidget
 -- Lightweight ring widget for inner ring slots
 -- Has spark + frame layers, no glow/overlay (lighter than DonutWidget)
--- Cooldown swipe-based rendering
+-- StatusBar-backed rendering (safer with secret-wrapped values)
 
 local addonName, addon = ...
 
 local SlotRingWidget = {}
 addon.SlotRingWidget = SlotRingWidget
 
-local GetTime = GetTime
 local cos, sin, rad = math.cos, math.sin, math.rad
+local GetTime = GetTime
+local issecretvalue = _G.issecretvalue
 
 local function SafeCall(obj, method, ...)
 	if obj and obj[method] then
@@ -73,11 +74,42 @@ function SlotRingWidget:Create(config)
 	ring.background:SetPoint("CENTER", ringFrame, "CENTER")
 
 	--------------------------------------------------------------------------
-	-- Foreground (full ring for 100%)
+	-- StatusBar-backed fill (engine-driven value rendering)
+	--------------------------------------------------------------------------
+	ring.statusBar = CreateFrame("StatusBar", nil, ringFrame)
+	ring.statusBar:SetPoint("CENTER", ringFrame, "CENTER")
+	ring.statusBar:SetMinMaxValues(0, 1)
+	ring.statusBar:SetValue(0)
+
+	ring.statusTex = ring.statusBar:CreateTexture(nil, "ARTWORK", nil, 1)
+	ring.statusTex:SetPoint("TOPLEFT", ring.statusBar, "TOPLEFT")
+	ring.statusTex:SetPoint("BOTTOMRIGHT", ring.statusBar, "BOTTOMRIGHT")
+	ring.statusBar:SetStatusBarTexture(ring.statusTex)
+
+	ring.fillMask = ring.statusBar:CreateMaskTexture()
+	ring.fillMask:SetPoint("TOPLEFT", ring.statusBar, "TOPLEFT")
+	ring.fillMask:SetPoint("BOTTOMRIGHT", ring.statusBar, "BOTTOMRIGHT")
+	if ring.statusTex and ring.statusTex.AddMaskTexture then
+		ring.statusTex:AddMaskTexture(ring.fillMask)
+	end
+
+	--------------------------------------------------------------------------
+	-- Radial fill path (clockwise donut progress)
 	--------------------------------------------------------------------------
 	ring.foreground = ringFrame:CreateTexture(nil, "ARTWORK")
 	ring.foreground:SetPoint("CENTER", ringFrame, "CENTER")
 	ring.foreground:Hide()
+
+	ring.cooldown = CreateFrame("Cooldown", nil, ringFrame, "CooldownFrameTemplate")
+	ring.cooldown:SetAllPoints(ringFrame)
+	ring.cooldown:SetFrameLevel(5)
+	SafeCall(ring.cooldown, "SetHideCountdownNumbers", true)
+	SafeCall(ring.cooldown, "SetDrawEdge", false)
+	SafeCall(ring.cooldown, "SetDrawBling", false)
+	SafeCall(ring.cooldown, "SetReverse", false)
+	ring.cooldown:Hide()
+
+	ring._lastProgress = 0
 
 	--------------------------------------------------------------------------
 	-- Frame texture (top border)
@@ -87,18 +119,6 @@ function SlotRingWidget:Create(config)
 	ring.frameTex:SetDrawLayer("OVERLAY", 7)
 	ring.frameTex:Hide()
 
-	--------------------------------------------------------------------------
-	-- Cooldown swipe (progress)
-	--------------------------------------------------------------------------
-	ring.cooldown = CreateFrame("Cooldown", nil, ringFrame, "CooldownFrameTemplate")
-	ring.cooldown:SetAllPoints(ringFrame)
-	ring.cooldown:SetFrameLevel(5)
-	SafeCall(ring.cooldown, "SetHideCountdownNumbers", true)
-	SafeCall(ring.cooldown, "SetDrawEdge", false)
-	SafeCall(ring.cooldown, "SetDrawBling", false)
-	SafeCall(ring.cooldown, "SetReverse", false)
-
-	--------------------------------------------------------------------------
 	-- Spark texture
 	--------------------------------------------------------------------------
 	ring.spark = ringFrame:CreateTexture(nil, "OVERLAY")
@@ -130,7 +150,7 @@ function SlotRingWidget:Create(config)
 		ring:SetSparkColor(config.sparkColor)
 	end
 
-	ring:SetAngle(0)
+	ring:SetProgress(0)
 
 	return ring
 end
@@ -149,6 +169,10 @@ function SlotRingWidget:LoadTextures()
 
 	if self.fillBase then
 		local path = addon.addonFolder .. "\\Textures\\" .. self.fillBase .. ".png"
+		SetTextureSmooth(self.statusTex, path)
+		if self.fillMask then
+			SetTextureSmooth(self.fillMask, path)
+		end
 		SetTextureSmooth(self.foreground, path)
 		SafeCall(self.cooldown, "SetSwipeTexture", path)
 	end
@@ -178,6 +202,8 @@ function SlotRingWidget:SetRadius(radius)
 	local size = radius * 2
 	self.ringFrame:SetSize(size, size)
 	self.background:SetSize(size, size)
+	self.statusBar:SetSize(size, size)
+	self.statusTex:SetSize(size, size)
 	self.foreground:SetSize(size, size)
 	self.frameTex:SetSize(size, size)
 	self.cooldown:SetSize(size, size)
@@ -188,39 +214,87 @@ function SlotRingWidget:SetRadius(radius)
 	self.spark:SetSize(sparkSize, sparkSize)
 end
 
---------------------------------------------------------------------------------
--- SetAngle: Set progress (0-360 degrees)
---------------------------------------------------------------------------------
+-- SetAngle remains for compatibility with existing callers.
 function SlotRingWidget:SetAngle(degree)
-	if degree < 0 then
-		degree = 0
-	elseif degree > 360 then
-		degree = 360
+	local progress = (degree or 0) / 360
+	self:SetProgress(progress)
+end
+
+local function IsSecretNumber(value)
+	return type(value) == "number" and issecretvalue and issecretvalue(value)
+end
+
+function SlotRingWidget:SetProgress(progress)
+	if progress == nil or type(progress) ~= "number" then
+		progress = 0
+	end
+	if progress < 0 then
+		progress = 0
+	elseif progress > 1 then
+		progress = 1
 	end
 
-	if degree == 0 then
+	self._lastProgress = progress
+
+	-- Use radial donut progress (clockwise) for regular provider progress values.
+	self.statusBar:Hide()
+	self.foreground:Hide()
+
+	if progress <= 0 then
 		self.cooldown:Hide()
-		self.foreground:Hide()
 		self.spark:Hide()
 		return
 	end
 
-	if degree >= 360 then
+	if progress >= 1 then
 		self.cooldown:Hide()
 		self.foreground:Show()
 		self:UpdateSparkPosition(360)
 		return
 	end
 
-	self.foreground:Hide()
-
 	local duration = 1
-	local progress = degree / 360
 	local start = GetTime() - (progress * duration)
 	self.cooldown:SetCooldown(start, duration)
 	self.cooldown:Show()
+	self:UpdateSparkPosition(progress * 360)
+end
 
-	self:UpdateSparkPosition(degree)
+-- SetValueRange uses engine min/max fill logic and can accept secret-wrapped values.
+-- If we also have a numeric percent, we use it for spark placement.
+function SlotRingWidget:SetValueRange(value, maxValue, percentForSpark)
+	if value == nil or maxValue == nil then
+		self:SetProgress(0)
+		return
+	end
+
+	self.cooldown:Hide()
+	self.foreground:Hide()
+	self.statusBar:Show()
+
+	local okRange = pcall(self.statusBar.SetMinMaxValues, self.statusBar, 0, maxValue)
+	local okValue = pcall(self.statusBar.SetValue, self.statusBar, value)
+	if not okRange or not okValue then
+		self:SetProgress(0)
+		return
+	end
+
+	if type(percentForSpark) == "number" and not IsSecretNumber(percentForSpark) then
+		if percentForSpark < 0 then
+			percentForSpark = 0
+		elseif percentForSpark > 1 then
+			percentForSpark = 1
+		end
+		self._lastProgress = percentForSpark
+		if percentForSpark > 0 then
+			self:UpdateSparkPosition(percentForSpark * 360)
+		else
+			self.spark:Hide()
+		end
+	else
+		-- No safe ratio available: keep fill visible, suppress spark to avoid unsafe math.
+		self.spark:Hide()
+	end
 end
 
 --------------------------------------------------------------------------------
@@ -242,8 +316,12 @@ end
 -- SetBarColor: Update bar RGBA
 --------------------------------------------------------------------------------
 function SlotRingWidget:SetBarColor(color)
-	SafeCall(self.cooldown, "SetSwipeColor", color.r, color.g, color.b, color.a)
-	self.foreground:SetVertexColor(color.r, color.g, color.b, color.a)
+	local a = color.a
+	if a == nil then a = 1 end
+	self.statusBar:SetStatusBarColor(color.r, color.g, color.b, a)
+	SafeCall(self.cooldown, "SetSwipeColor", color.r, color.g, color.b, a)
+	self.foreground:SetVertexColor(color.r, color.g, color.b, a)
+	self.statusTex:SetVertexColor(1, 1, 1, 1)
 end
 
 --------------------------------------------------------------------------------
@@ -274,6 +352,9 @@ function SlotRingWidget:SetFrameLevel(level)
 	if self.ringFrame then
 		self.ringFrame:SetFrameLevel(level)
 	end
+	if self.statusBar then
+		self.statusBar:SetFrameLevel(math.max(0, level - 1))
+	end
 end
 
 --------------------------------------------------------------------------------
@@ -285,7 +366,7 @@ end
 
 function SlotRingWidget:Hide()
 	self.bgFrame:Hide()
-	self:SetAngle(0)
+	self:SetProgress(0)
 end
 
 function SlotRingWidget:IsShown()

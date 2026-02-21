@@ -330,9 +330,13 @@ local function OnUpdate(self, elapsed)
                 slot.widget:Show()
 
                 if result and result.active then
-                    slot.widget:SetAngle((result.progress or 0) * 360)
+                    if result.current ~= nil and result.max ~= nil then
+                        slot.widget:SetValueRange(result.current, result.max, result.progress)
+                    else
+                        slot.widget:SetProgress(result.progress or 0)
+                    end
                 else
-                    slot.widget:SetAngle(0)
+                    slot.widget:SetProgress(0)
                 end
             elseif slot then
                 slot.widget:Hide()
