@@ -327,20 +327,20 @@ local function BuildSettingsPanel()
     end
 
     ------------------------------------------------------------------------
-    -- Class Power Settings Subcategory
+    -- Class Resource Settings Subcategory
     ------------------------------------------------------------------------
-    local cpCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Class Power"] or "Class Power")
+    local cpCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Class Resource"] or "Class Resource")
 
-    AddSlider(cpCategory, "classpower_fontSize", L["Class Power Font Size"] or "Class Power Font Size", 8, 32, 1)
-    AddSlider(cpCategory, "classpower_offsetX", L["Class Power Horizontal Offset"] or "Class Power Horizontal Offset", -50, 50, 1)
-    AddSlider(cpCategory, "classpower_offsetY", L["Class Power Vertical Offset"] or "Class Power Vertical Offset", -50, 50, 1)
-    AddDropdown(cpCategory, "classpower_font", L["Class Power Font"] or "Class Power Font", {
+    AddSlider(cpCategory, "classresource_fontSize", L["Class Resource Font Size"] or "Class Resource Font Size", 8, 32, 1)
+    AddSlider(cpCategory, "classresource_offsetX", L["Class Resource Horizontal Offset"] or "Class Resource Horizontal Offset", -50, 50, 1)
+    AddSlider(cpCategory, "classresource_offsetY", L["Class Resource Vertical Offset"] or "Class Resource Vertical Offset", -50, 50, 1)
+    AddDropdown(cpCategory, "classresource_font", L["Class Resource Font"] or "Class Resource Font", {
         { value = "Fonts\\FRIZQT__.TTF", label = "Friz Quadrata" },
         { value = "Fonts\\ARIALN.TTF", label = "Arial Narrow" },
         { value = "Fonts\\MORPHEUS.ttf", label = "Morpheus" },
         { value = "Fonts\\SKURRI.TTF", label = "Skurri" },
     })
-    AddDropdown(cpCategory, "classpower_fontOutline", L["Class Power Font Outline"] or "Class Power Font Outline", {
+    AddDropdown(cpCategory, "classresource_fontOutline", L["Class Resource Font Outline"] or "Class Resource Font Outline", {
         { value = "", label = "None" },
         { value = "OUTLINE", label = "Outline" },
         { value = "THICKOUTLINE", label = "Thick Outline" },
@@ -348,16 +348,16 @@ local function BuildSettingsPanel()
         { value = "MONOCHROME,OUTLINE", label = "Mono + Outline" },
         { value = "MONOCHROME,THICKOUTLINE", label = "Mono + Thick Outline" },
     })
-    AddColor(cpCategory, "classpower_fontColor", L["Class Power Font Color"] or "Class Power Font Color")
-    AddDropdown(cpCategory, "classpower_visibility", L["Class Power Visibility"] or "Class Power Visibility", {
+    AddColor(cpCategory, "classresource_fontColor", L["Class Resource Font Color"] or "Class Resource Font Color")
+    AddDropdown(cpCategory, "classresource_visibility", L["Class Resource Visibility"] or "Class Resource Visibility", {
         { value = "ALWAYS", label = L["Visibility Always"] or "Always" },
         { value = "IN_COMBAT", label = L["Visibility In Combat"] or "In Combat" },
         { value = "OUT_OF_COMBAT", label = L["Visibility Out of Combat"] or "Out of Combat" },
         { value = "HAS_TARGET", label = L["Visibility Has Target"] or "Has Target" },
         { value = "CASTING", label = L["Visibility While Casting"] or "While Casting" },
-    }, L["Class Power Visibility Tooltip"] or "When to show class power text")
-    AddCheckbox(cpCategory, "classpower_useClassColor", L["Class Power Use Class Color"] or "Class Power Use Class Color",
-        L["Class Power Use Class Color Tooltip"] or "Override class power text color with your class color")
+    }, L["Class Resource Visibility Tooltip"] or "When to show class resource text")
+    AddCheckbox(cpCategory, "classresource_useClassColor", L["Class Resource Use Class Color"] or "Class Resource Use Class Color",
+        L["Class Resource Use Class Color Tooltip"] or "Override class resource text color with your class color")
 
     ------------------------------------------------------------------------
     -- Ring Settings Subcategory

@@ -7,7 +7,7 @@
 
 # SparkPoint
 
-SparkPoint is a lightweight World of Warcraft addon that draws cast and cooldown visuals around your cursor, plus optional class power text and spell icon display. No external libraries.
+SparkPoint is a lightweight World of Warcraft addon that draws cast and cooldown visuals around your cursor, plus optional class resource text and spell icon display. No external libraries.
 
 ## Features
 - Cast ring with latency and optional spell name text.
@@ -19,7 +19,7 @@ SparkPoint is a lightweight World of Warcraft addon that draws cast and cooldown
 
 ## Customization Options
 - Ring sizes, thickness, colors, and spark-only modes.
-- Class color overrides per module (Cast/GCD/Class Power/Ring/Spell Icon border).
+- Class color overrides per module (Cast/GCD/Class Resource/Ring/Spell Icon border).
 - Cast latency color and background color.
 - Spell name font, size, outline, color, and offsets.
 - Class power font, size, offsets, and visibility rules.

@@ -59,16 +59,16 @@ L["Background Opacity"] = "Background Opacity"
 L["Slot Background Opacity Tooltip"] = "Opacity of the slot background ring"
 L["Use Class Color"] = "Use Class Color"
 L["Slot Use Class Color Tooltip"] = "Override slot bar color with your class color"
-L["Class Power Font Size"] = "Class Power Font Size"
-L["Class Power Horizontal Offset"] = "Class Power Horizontal Offset"
-L["Class Power Vertical Offset"] = "Class Power Vertical Offset"
-L["Class Power Font"] = "Class Power Font"
-L["Class Power Font Outline"] = "Class Power Font Outline"
-L["Class Power Font Color"] = "Class Power Font Color"
-L["Class Power Use Class Color"] = "Class Power Use Class Color"
-L["Class Power Use Class Color Tooltip"] = "Override class power text color with your class color"
-L["Class Power Visibility"] = "Class Power Visibility"
-L["Class Power Visibility Tooltip"] = "When to show class power text"
+L["Class Resource Font Size"] = "Class Resource Font Size"
+L["Class Resource Horizontal Offset"] = "Class Resource Horizontal Offset"
+L["Class Resource Vertical Offset"] = "Class Resource Vertical Offset"
+L["Class Resource Font"] = "Class Resource Font"
+L["Class Resource Font Outline"] = "Class Resource Font Outline"
+L["Class Resource Font Color"] = "Class Resource Font Color"
+L["Class Resource Use Class Color"] = "Class Resource Use Class Color"
+L["Class Resource Use Class Color Tooltip"] = "Override class resource text color with your class color"
+L["Class Resource Visibility"] = "Class Resource Visibility"
+L["Class Resource Visibility Tooltip"] = "When to show class resource text"
 L["Visibility Always"] = "Always"
 L["Visibility In Combat"] = "In Combat"
 L["Visibility Out of Combat"] = "Out of Combat"
@@ -99,10 +99,10 @@ L["Show Spell Name Tooltip"] = "Display the spell name above the ring"
 L["Spell Text Size"] = "Spell Text Size"
 
 --------------------------------------------------------------------------------
--- Class Power
+-- Class Resource
 --------------------------------------------------------------------------------
-L["Class Power"] = "Class Power"
-L["Class Power Description"] = "Displays your class resource (combo points, holy power, etc.) as text"
+L["Class Resource"] = "Class Resource"
+L["Class Resource Description"] = "Displays your class resource (combo points, holy power, etc.) as text"
 
 --------------------------------------------------------------------------------
 -- Ring

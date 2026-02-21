@@ -1,4 +1,4 @@
--- SparkPoint ClassPower Module
+-- SparkPoint ClassResource Module
 -- Displays class-specific power resources as text near the cursor
 
 local addonName, addon = ...
@@ -13,7 +13,7 @@ local GetDBColor = addon.GetDBColor
 --------------------------------------------------------------------------------
 -- Module State
 --------------------------------------------------------------------------------
-local classPowerFrame
+local classResourceFrame
 local currentPowerType
 local lastPowerValue = ""
 local updateTimer = 0
@@ -28,6 +28,7 @@ local UnitClass = UnitClass
 local tostring = tostring
 local InCombatLockdown = InCombatLockdown
 local UnitExists = UnitExists
+local issecretvalue = _G.issecretvalue
 
 --------------------------------------------------------------------------------
 -- Event Frame
@@ -35,10 +36,10 @@ local UnitExists = UnitExists
 local EL = CreateFrame("Frame")
 
 --------------------------------------------------------------------------------
--- ClassPower Module Object
+-- ClassResource Module Object
 --------------------------------------------------------------------------------
-local ClassPower = {}
-addon.Modules.ClassPowerObj = ClassPower
+local ClassResource = {}
+addon.Modules.ClassResourceObj = ClassResource
 
 local VISIBILITY_OPTIONS = {
     ALWAYS = "ALWAYS",
@@ -48,8 +49,37 @@ local VISIBILITY_OPTIONS = {
     CASTING = "CASTING",
 }
 
-function ClassPower:ShouldBeVisible()
-    local setting = GetDBValue("classpower_visibility") or VISIBILITY_OPTIONS.ALWAYS
+local function IsSecret(value)
+    return issecretvalue and issecretvalue(value)
+end
+
+local function IsPowerTypeUsable(powerType)
+    if powerType == nil then
+        return false
+    end
+
+    local maxPower = UnitPowerMax("player", powerType)
+    if maxPower == nil then
+        return false
+    end
+
+    -- 12.x can return secret-wrapped values that explode on numeric comparisons.
+    -- If we cannot safely compare, treat the type as usable.
+    if IsSecret(maxPower) then
+        return true
+    end
+
+    local ok, hasPower = pcall(function()
+        return maxPower > 0
+    end)
+    if not ok then
+        return true
+    end
+    return hasPower and true or false
+end
+
+function ClassResource:ShouldBeVisible()
+    local setting = GetDBValue("classresource_visibility") or VISIBILITY_OPTIONS.ALWAYS
     if setting == VISIBILITY_OPTIONS.IN_COMBAT then
         return InCombatLockdown()
     elseif setting == VISIBILITY_OPTIONS.OUT_OF_COMBAT then
@@ -73,7 +103,10 @@ local POWER_CONFIG = {
         [1] = Enum.PowerType.LunarPower,    -- Balance
     },
     PALADIN = {
+        [1] = Enum.PowerType.HolyPower,     -- Holy
+        [2] = Enum.PowerType.HolyPower,     -- Protection
         [3] = Enum.PowerType.HolyPower,     -- Retribution
+        default = Enum.PowerType.HolyPower,
     },
     MONK = {
         [3] = Enum.PowerType.Chi,           -- Windwalker
@@ -97,7 +130,7 @@ local POWER_CONFIG = {
     },
 }
 
-function ClassPower:DetectPowerType()
+function ClassResource:DetectPowerType()
     local _, class = UnitClass("player")
     local spec = GetSpecialization()
 
@@ -111,12 +144,9 @@ function ClassPower:DetectPowerType()
     local powerType = classConfig[spec] or classConfig.default
 
     -- Verify power type is valid
-    if powerType then
-        local maxPower = UnitPowerMax("player", powerType)
-        if maxPower and maxPower > 0 then
-            currentPowerType = powerType
-            return
-        end
+    if IsPowerTypeUsable(powerType) then
+        currentPowerType = powerType
+        return
     end
 
     currentPowerType = nil
@@ -125,35 +155,46 @@ end
 --------------------------------------------------------------------------------
 -- Update Power Display
 --------------------------------------------------------------------------------
-function ClassPower:UpdatePower()
-    if not classPowerFrame then return end
+function ClassResource:UpdatePower()
+    if not classResourceFrame then return end
 
     if not currentPowerType then
-        classPowerFrame:Hide()
-        AnchorFrame:Hide("classpower")
-        return
+        self:DetectPowerType()
+        if not currentPowerType then
+            classResourceFrame:Hide()
+            AnchorFrame:Hide("classresource")
+            return
+        end
     end
 
     if not self:ShouldBeVisible() then
-        classPowerFrame:Hide()
-        AnchorFrame:Hide("classpower")
+        classResourceFrame:Hide()
+        AnchorFrame:Hide("classresource")
         return
     end
 
     local power = UnitPower("player", currentPowerType)
-    -- Convert to string to handle WoW "secret values"
-    local powerString = tostring(power or 0)
+    local powerString
+    if power == nil then
+        powerString = "0"
+    elseif IsSecret(power) then
+        local ok, valueText = pcall(tostring, power)
+        powerString = ok and valueText or "?"
+    else
+        local ok, valueText = pcall(tostring, power)
+        powerString = ok and valueText or "0"
+    end
 
     -- Only update if changed
     if powerString ~= lastPowerValue then
         lastPowerValue = powerString
-        classPowerFrame.powerText:SetText(powerString)
+        classResourceFrame.powerText:SetText(powerString)
     end
 
     -- Show if we have a valid power type
-    if not classPowerFrame:IsShown() then
-        classPowerFrame:Show()
-        AnchorFrame:Show("classpower")
+    if not classResourceFrame:IsShown() then
+        classResourceFrame:Show()
+        AnchorFrame:Show("classresource")
     end
 end
 
@@ -164,88 +205,88 @@ local function OnUpdate(self, elapsed)
     updateTimer = updateTimer + elapsed
     if updateTimer >= UPDATE_INTERVAL then
         updateTimer = 0
-        ClassPower:UpdatePower()
+        ClassResource:UpdatePower()
     end
 end
 
 --------------------------------------------------------------------------------
 -- Event Handlers
 --------------------------------------------------------------------------------
-function ClassPower:PLAYER_SPECIALIZATION_CHANGED()
+function ClassResource:PLAYER_SPECIALIZATION_CHANGED()
     self:DetectPowerType()
     self:UpdatePower()
 end
 
-function ClassPower:PLAYER_ENTERING_WORLD()
+function ClassResource:PLAYER_ENTERING_WORLD()
     self:DetectPowerType()
     self:UpdatePower()
 end
 
-function ClassPower:UPDATE_SHAPESHIFT_FORM()
+function ClassResource:UPDATE_SHAPESHIFT_FORM()
     -- Druid form changes may change power type
     self:DetectPowerType()
     self:UpdatePower()
 end
 
-function ClassPower:UNIT_POWER_UPDATE(event, unit, powerType)
+function ClassResource:UNIT_POWER_UPDATE(event, unit, powerType)
     if unit ~= "player" then return end
     self:UpdatePower()
 end
 
-function ClassPower:UNIT_MAXPOWER(event, unit, powerType)
+function ClassResource:UNIT_MAXPOWER(event, unit, powerType)
     if unit ~= "player" then return end
     self:DetectPowerType()
     self:UpdatePower()
 end
 
-function ClassPower:PLAYER_REGEN_DISABLED()
+function ClassResource:PLAYER_REGEN_DISABLED()
     self:UpdatePower()
 end
 
-function ClassPower:PLAYER_REGEN_ENABLED()
+function ClassResource:PLAYER_REGEN_ENABLED()
     self:UpdatePower()
 end
 
-function ClassPower:PLAYER_TARGET_CHANGED()
+function ClassResource:PLAYER_TARGET_CHANGED()
     self:UpdatePower()
 end
 
-function ClassPower:UNIT_SPELLCAST_START(event, unit)
+function ClassResource:UNIT_SPELLCAST_START(event, unit)
     if unit ~= "player" then return end
     self:UpdatePower()
 end
 
-function ClassPower:UNIT_SPELLCAST_STOP(event, unit)
+function ClassResource:UNIT_SPELLCAST_STOP(event, unit)
     if unit ~= "player" then return end
     self:UpdatePower()
 end
 
-function ClassPower:UNIT_SPELLCAST_INTERRUPTED(event, unit)
+function ClassResource:UNIT_SPELLCAST_INTERRUPTED(event, unit)
     if unit ~= "player" then return end
     self:UpdatePower()
 end
 
-function ClassPower:UNIT_SPELLCAST_FAILED(event, unit)
+function ClassResource:UNIT_SPELLCAST_FAILED(event, unit)
     if unit ~= "player" then return end
     self:UpdatePower()
 end
 
-function ClassPower:UNIT_SPELLCAST_FAILED_QUIET(event, unit)
+function ClassResource:UNIT_SPELLCAST_FAILED_QUIET(event, unit)
     if unit ~= "player" then return end
     self:UpdatePower()
 end
 
-function ClassPower:UNIT_SPELLCAST_CHANNEL_START(event, unit)
+function ClassResource:UNIT_SPELLCAST_CHANNEL_START(event, unit)
     if unit ~= "player" then return end
     self:UpdatePower()
 end
 
-function ClassPower:UNIT_SPELLCAST_CHANNEL_STOP(event, unit)
+function ClassResource:UNIT_SPELLCAST_CHANNEL_STOP(event, unit)
     if unit ~= "player" then return end
     self:UpdatePower()
 end
 
-function ClassPower:UNIT_SPELLCAST_CHANNEL_UPDATE(event, unit)
+function ClassResource:UNIT_SPELLCAST_CHANNEL_UPDATE(event, unit)
     if unit ~= "player" then return end
     self:UpdatePower()
 end
@@ -253,46 +294,46 @@ end
 --------------------------------------------------------------------------------
 -- ApplyOptions: Update visuals from settings
 --------------------------------------------------------------------------------
-function ClassPower:ApplyOptions()
-    if not classPowerFrame then return end
+function ClassResource:ApplyOptions()
+    if not classResourceFrame then return end
 
-    local font = GetDBValue("classpower_font")
-    local fontSize = GetDBValue("classpower_fontSize")
-    local fontOutline = GetDBValue("classpower_fontOutline")
+    local font = GetDBValue("classresource_font")
+    local fontSize = GetDBValue("classresource_fontSize")
+    local fontOutline = GetDBValue("classresource_fontOutline")
     local r, g, b, a
-    if GetDBBool("classpower_useClassColor") then
+    if GetDBBool("classresource_useClassColor") then
         r, g, b, a = API.GetPlayerClassColor()
     else
-        r, g, b, a = GetDBColor("classpower_fontColor")
+        r, g, b, a = GetDBColor("classresource_fontColor")
     end
-    local offsetX = GetDBValue("classpower_offsetX")
-    local offsetY = GetDBValue("classpower_offsetY")
+    local offsetX = GetDBValue("classresource_offsetX")
+    local offsetY = GetDBValue("classresource_offsetY")
 
-    local powerText = classPowerFrame.powerText
+    local powerText = classResourceFrame.powerText
     powerText:SetFont(font, fontSize, fontOutline)
     powerText:SetTextColor(r, g, b, a)
     powerText:ClearAllPoints()
-    powerText:SetPoint("CENTER", classPowerFrame, "CENTER", offsetX, offsetY)
+    powerText:SetPoint("CENTER", classResourceFrame, "CENTER", offsetX, offsetY)
 end
 
 --------------------------------------------------------------------------------
 -- Initialize
 --------------------------------------------------------------------------------
-function ClassPower:Initialize()
+function ClassResource:Initialize()
     local anchor = AnchorFrame:GetFrame()
     if not anchor then return end
 
-    classPowerFrame = CreateFrame("Frame", nil, anchor)
-    classPowerFrame:SetAllPoints()
-    classPowerFrame:SetFrameStrata("HIGH")
-    classPowerFrame:Hide()
+    classResourceFrame = CreateFrame("Frame", nil, anchor)
+    classResourceFrame:SetAllPoints()
+    classResourceFrame:SetFrameStrata("HIGH")
+    classResourceFrame:Hide()
 
     -- Create power text
-    classPowerFrame.powerText = classPowerFrame:CreateFontString(nil, "OVERLAY")
-    classPowerFrame.powerText:SetPoint("CENTER")
+    classResourceFrame.powerText = classResourceFrame:CreateFontString(nil, "OVERLAY")
+    classResourceFrame.powerText:SetPoint("CENTER")
 
     -- Set OnUpdate for throttled updates
-    classPowerFrame:SetScript("OnUpdate", OnUpdate)
+    classResourceFrame:SetScript("OnUpdate", OnUpdate)
 
     self:ApplyOptions()
     self:DetectPowerType()
@@ -303,8 +344,8 @@ end
 --------------------------------------------------------------------------------
 local function EnableModule(enabled)
     if enabled then
-        if not classPowerFrame then
-            ClassPower:Initialize()
+        if not classResourceFrame then
+            ClassResource:Initialize()
         end
 
         EL:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
@@ -324,14 +365,14 @@ local function EnableModule(enabled)
         EL:RegisterUnitEvent("UNIT_POWER_UPDATE", "player")
         EL:RegisterUnitEvent("UNIT_MAXPOWER", "player")
 
-        ClassPower:DetectPowerType()
-        ClassPower:UpdatePower()
+        ClassResource:DetectPowerType()
+        ClassResource:UpdatePower()
     else
         EL:UnregisterAllEvents()
-        if classPowerFrame then
-            classPowerFrame:Hide()
+        if classResourceFrame then
+            classResourceFrame:Hide()
         end
-        AnchorFrame:Hide("classpower")
+        AnchorFrame:Hide("classresource")
     end
 end
 
@@ -339,8 +380,8 @@ end
 -- Event Dispatcher
 --------------------------------------------------------------------------------
 EL:SetScript("OnEvent", function(self, event, ...)
-    if ClassPower[event] then
-        ClassPower[event](ClassPower, event, ...)
+    if ClassResource[event] then
+        ClassResource[event](ClassResource, event, ...)
     end
 end)
 
@@ -348,27 +389,27 @@ end)
 -- Register Setting Callbacks
 --------------------------------------------------------------------------------
 local settingKeys = {
-    "classpower_font", "classpower_fontSize", "classpower_fontOutline",
-    "classpower_fontColor", "classpower_offsetX", "classpower_offsetY", "classpower_useClassColor"
+    "classresource_font", "classresource_fontSize", "classresource_fontOutline",
+    "classresource_fontColor", "classresource_offsetX", "classresource_offsetY", "classresource_useClassColor"
 }
 
 for _, key in ipairs(settingKeys) do
     CallbackRegistry:RegisterSettingCallback(key, function()
-        ClassPower:ApplyOptions()
+        ClassResource:ApplyOptions()
     end)
 end
 
-CallbackRegistry:RegisterSettingCallback("classpower_visibility", function()
-    ClassPower:UpdatePower()
+CallbackRegistry:RegisterSettingCallback("classresource_visibility", function()
+    ClassResource:UpdatePower()
 end)
 
 --------------------------------------------------------------------------------
 -- Register Module
 --------------------------------------------------------------------------------
 addon.ControlCenter:AddModule({
-    name = L["Class Power"] or "Class Power",
-    dbKey = "moduleEnabled_ClassPower",
-    description = L["Class Power Description"] or "Displays your class resource (combo points, holy power, etc.) as text",
+    name = L["Class Resource"] or "Class Resource",
+    dbKey = "moduleEnabled_ClassResource",
+    description = L["Class Resource Description"] or "Displays your class resource (combo points, holy power, etc.) as text",
     toggleFunc = EnableModule,
     categoryID = 1,
     uiOrder = 3,

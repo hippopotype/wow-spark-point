@@ -147,7 +147,7 @@ local POWER_TYPES = {
     },
 }
 
-function API.GetClassPowerType()
+function API.GetClassResourceType()
     local class = API.GetPlayerClass()
     local spec = API.GetPlayerSpec()
 

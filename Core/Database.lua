@@ -18,7 +18,7 @@ addon.DefaultValues = {
 
     -- Module enable flags
     moduleEnabled_Cast = true,
-    moduleEnabled_ClassPower = true,
+    moduleEnabled_ClassResource = true,
     moduleEnabled_Ring = true,
     moduleEnabled_SpellIcon = true,
 
@@ -62,15 +62,15 @@ addon.DefaultValues = {
     slot3_useClassColor = false,
     slot3_backgroundOpacity = 0.8,
 
-    -- ClassPower module settings
-    classpower_font = "Fonts\\FRIZQT__.TTF",
-    classpower_fontSize = 16,
-    classpower_fontOutline = "",
-    classpower_fontColor = {r = 1, g = 1, b = 1, a = 1},
-    classpower_offsetX = 0,
-    classpower_offsetY = 0,
-    classpower_visibility = "ALWAYS",
-    classpower_useClassColor = false,
+    -- ClassResource module settings
+    classresource_font = "Fonts\\FRIZQT__.TTF",
+    classresource_fontSize = 16,
+    classresource_fontOutline = "",
+    classresource_fontColor = {r = 1, g = 1, b = 1, a = 1},
+    classresource_offsetX = 0,
+    classresource_offsetY = 0,
+    classresource_visibility = "ALWAYS",
+    classresource_useClassColor = false,
 
     -- Ring module settings
     ring_texture = "165624",

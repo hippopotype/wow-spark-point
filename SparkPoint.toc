@@ -23,7 +23,7 @@ Providers\GCD.lua
 
 # Modules
 Modules\Cast.lua
-Modules\ClassPower.lua
+Modules\ClassResource.lua
 Modules\DecorativeRing.lua
 Modules\SpellIcon.lua
 
