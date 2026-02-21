@@ -67,6 +67,11 @@ function SlotRingWidget:Create(config)
 	ring.ringFrame = ringFrame
 	ringFrame:SetPoint("CENTER", bgFrame, "CENTER")
 
+	-- Dedicated overlay container that stays above fill/cooldown visuals.
+	ring.overlayFrame = CreateFrame("Frame", nil, ringFrame)
+	ring.overlayFrame:SetAllPoints(ringFrame)
+	ring.overlayFrame:SetFrameLevel((ringFrame:GetFrameLevel() or 1) + 2)
+
 	--------------------------------------------------------------------------
 	-- Background texture (full ring)
 	--------------------------------------------------------------------------
@@ -114,14 +119,14 @@ function SlotRingWidget:Create(config)
 	--------------------------------------------------------------------------
 	-- Frame texture (top border)
 	--------------------------------------------------------------------------
-	ring.frameTex = ringFrame:CreateTexture(nil, "OVERLAY")
-	ring.frameTex:SetPoint("CENTER", ringFrame, "CENTER")
+	ring.frameTex = ring.overlayFrame:CreateTexture(nil, "OVERLAY")
+	ring.frameTex:SetPoint("CENTER", ring.overlayFrame, "CENTER")
 	ring.frameTex:SetDrawLayer("OVERLAY", 7)
 	ring.frameTex:Hide()
 
 	-- Spark texture
 	--------------------------------------------------------------------------
-	ring.spark = ringFrame:CreateTexture(nil, "OVERLAY")
+	ring.spark = ring.overlayFrame:CreateTexture(nil, "OVERLAY")
 	ring.spark:SetTexture("Interface\\CastingBar\\UI-CastingBar-Spark")
 	ring.spark:SetBlendMode("ADD")
 	ring.spark:SetDrawLayer("OVERLAY", 2)
@@ -346,8 +351,14 @@ function SlotRingWidget:SetFrameLevel(level)
 	if self.ringFrame then
 		self.ringFrame:SetFrameLevel(level)
 	end
+	if self.cooldown then
+		self.cooldown:SetFrameLevel(math.max(0, level))
+	end
 	if self.statusBar then
 		self.statusBar:SetFrameLevel(math.max(0, level - 1))
+	end
+	if self.overlayFrame then
+		self.overlayFrame:SetFrameLevel(math.max(0, level + 2))
 	end
 end
 
