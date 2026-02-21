@@ -26,25 +26,50 @@ local Ring = {}
 addon.Modules.RingObj = Ring
 
 --------------------------------------------------------------------------------
--- Available Textures (BlizzardUI IDs)
+-- Texture Definitions
+-- Add new decorative ring textures here:
+-- { key = "my_key", file = "my_file.tga", label = "My Label" }
 --------------------------------------------------------------------------------
-local RING_TEXTURES = {
-    ["165624"] = "AuraRune 1",
-    ["165630"] = "AuraRune 1 Glow",
-    ["165635"] = "AuraRune 8",
-    ["165633"] = "AuraRune 5",
-    ["165634"] = "AuraRune 7",
-    ["165631"] = "AuraRune 9",
-    ["165638"] = "AuraRune A",
-    ["165639"] = "AuraRune B",
-    ["165640"] = "AuraRune C",
-    ["165623"] = "Halo",
-    ["165632"] = "Circle",
-    ["AuraSplit"] = "Aura Split",
-    ["AuraHalf"] = "Aura Half",
+local RING_TEXTURE_DEFINITIONS = {
+	{ key = "decorative_ring_1", file = "decorative_ring_1.tga", label = "Decorative Ring 1" },
+	{ key = "decorative_ring_2", file = "decorative_ring_2.tga", label = "Decorative Ring 2" },
 }
 
+local RING_TEXTURES = {}
+local RING_TEXTURE_PATHS = {}
+local RING_TEXTURE_OPTIONS = {}
+for _, def in ipairs(RING_TEXTURE_DEFINITIONS) do
+	RING_TEXTURES[def.key] = def.label
+	RING_TEXTURE_PATHS[def.key] = addon.addonFolder .. "\\Textures\\" .. def.file
+	RING_TEXTURE_OPTIONS[#RING_TEXTURE_OPTIONS + 1] = { value = def.key, label = def.label }
+end
+
+local DEFAULT_TEXTURE_KEY = (RING_TEXTURE_DEFINITIONS[1] and RING_TEXTURE_DEFINITIONS[1].key) or "decorative_ring_1"
+
 Ring.TEXTURES = RING_TEXTURES
+Ring.TEXTURE_OPTIONS = RING_TEXTURE_OPTIONS
+
+local function SetTextureSmooth(texture, texturePath)
+	if not texture then return end
+	local ok = pcall(texture.SetTexture, texture, texturePath, nil, nil, "TRILINEAR")
+	if not ok then
+		texture:SetTexture(texturePath)
+	end
+	if texture.SetSnapToPixelGrid then
+		texture:SetSnapToPixelGrid(false)
+	end
+	if texture.SetTexelSnappingBias then
+		texture:SetTexelSnappingBias(0)
+	end
+end
+
+local function NormalizeTextureKey(textureValue)
+	local textureKey = tostring(textureValue or "")
+	if RING_TEXTURE_PATHS[textureKey] then
+		return textureKey
+	end
+	return DEFAULT_TEXTURE_KEY
+end
 
 --------------------------------------------------------------------------------
 -- OnUpdate Handler (rotation animation)
@@ -111,19 +136,9 @@ function Ring:ApplyOptions()
     end
 
     local texture = ringFrame.texture
-    local textureKey = tostring(textureID or "")
-
-    -- Handle texture - could be BlizzardUI ID or custom path
-    if textureKey:match("^%d+$") then
-        -- Numeric ID - BlizzardUI texture
-        texture:SetTexture(tonumber(textureKey))
-	elseif textureKey == "AuraSplit" or textureKey == "AuraHalf" then
-		-- Custom texture
-		texture:SetTexture(addon.addonFolder .. "\\Textures\\" .. textureKey .. ".tga")
-	else
-        -- Fallback to default
-        texture:SetTexture(165624)
-    end
+    local textureKey = NormalizeTextureKey(textureID)
+	local texturePath = RING_TEXTURE_PATHS[textureKey] or RING_TEXTURE_PATHS[DEFAULT_TEXTURE_KEY]
+	SetTextureSmooth(texture, texturePath)
 
     texture:SetVertexColor(r, g, b, a)
     texture:SetBlendMode("ADD")

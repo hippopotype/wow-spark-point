@@ -78,7 +78,7 @@ addon.DefaultValues = {
     classresource_visibility = "ALWAYS",
 
     -- Ring module settings
-    ring_texture = "165624",
+    ring_texture = "decorative_ring_1",
     ring_color = {r = 0, g = 1, b = 0, a = 0.5},
     ring_width = 75,
     ring_rotate = true,

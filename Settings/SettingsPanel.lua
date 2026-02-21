@@ -377,26 +377,17 @@ local function BuildSettingsPanel()
     ------------------------------------------------------------------------
     -- Ring Settings Subcategory
     ------------------------------------------------------------------------
-    local ringCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Decorative Ring"] or "Decorative Ring")
+	local ringCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Decorative Ring"] or "Decorative Ring")
+	local ringModule = addon.Modules and addon.Modules.RingObj
+	local ringTextureOptions = (ringModule and ringModule.TEXTURE_OPTIONS) or {
+		{ value = "decorative_ring_1", label = "Decorative Ring 1" },
+		{ value = "decorative_ring_2", label = "Decorative Ring 2" },
+	}
 
-    AddSlider(ringCategory, "ring_width", L["Decorative Ring Size"] or "Decorative Ring Size", 20, 200, 1)
-    AddCheckbox(ringCategory, "ring_rotate", L["Decorative Ring Rotate"] or "Decorative Ring Rotate",
-        L["Rotate Tooltip"] or "Enable rotation animation")
-    AddDropdown(ringCategory, "ring_texture", L["Decorative Ring Texture"] or "Decorative Ring Texture", {
-        { value = "165624", label = "AuraRune 1" },
-        { value = "165630", label = "AuraRune 1 Glow" },
-        { value = "165635", label = "AuraRune 8" },
-        { value = "165633", label = "AuraRune 5" },
-        { value = "165634", label = "AuraRune 7" },
-        { value = "165631", label = "AuraRune 9" },
-        { value = "165638", label = "AuraRune A" },
-        { value = "165639", label = "AuraRune B" },
-        { value = "165640", label = "AuraRune C" },
-        { value = "165623", label = "Halo" },
-        { value = "165632", label = "Circle" },
-        { value = "AuraSplit", label = "Aura Split" },
-        { value = "AuraHalf", label = "Aura Half" },
-    })
+	AddSlider(ringCategory, "ring_width", L["Decorative Ring Size"] or "Decorative Ring Size", 20, 200, 1)
+	AddCheckbox(ringCategory, "ring_rotate", L["Decorative Ring Rotate"] or "Decorative Ring Rotate",
+		L["Rotate Tooltip"] or "Enable rotation animation")
+	AddDropdown(ringCategory, "ring_texture", L["Decorative Ring Texture"] or "Decorative Ring Texture", ringTextureOptions)
     AddColor(ringCategory, "ring_color", L["Decorative Ring Color"] or "Decorative Ring Color")
     AddCheckbox(ringCategory, "ring_useClassColor", L["Decorative Ring Use Class Color"] or "Decorative Ring Use Class Color",
         L["Decorative Ring Use Class Color Tooltip"] or "Override ring color with your class color")
