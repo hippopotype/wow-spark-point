@@ -62,9 +62,9 @@ L["Slot Use Class Color Tooltip"] = "Override slot bar color with your class col
 L["Class Resource Horizontal Offset"] = "Class Resource Horizontal Offset"
 L["Class Resource Vertical Offset"] = "Class Resource Vertical Offset"
 L["Class Resource Scale"] = "Class Resource Scale"
-L["Class Resource Scale Tooltip"] = "Scale for the Blizzard class-resource frame"
+L["Class Resource Scale Tooltip"] = "Scale for the class resource display"
 L["Class Resource Opacity"] = "Class Resource Opacity"
-L["Class Resource Opacity Tooltip"] = "Opacity for the class-resource copy frame"
+L["Class Resource Opacity Tooltip"] = "Opacity for the class resource display"
 L["Class Resource Visibility"] = "Class Resource Visibility"
 L["Class Resource Visibility Tooltip"] = "When to show class resources"
 L["Visibility Always"] = "Always"
@@ -100,7 +100,7 @@ L["Spell Text Size"] = "Spell Text Size"
 -- Class Resource
 --------------------------------------------------------------------------------
 L["Class Resource"] = "Class Resource"
-L["Class Resource Description"] = "Repositions Blizzard class-resource pips near the cursor"
+L["Class Resource Description"] = "Displays class resources near the cursor"
 
 --------------------------------------------------------------------------------
 -- Ring
