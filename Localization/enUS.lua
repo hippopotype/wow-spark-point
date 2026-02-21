@@ -1,6 +1,6 @@
 -- SparkPoint Localization - English (US)
 
-local addonName, addon = ...
+local _, addon = ...
 local L = addon.L
 
 --------------------------------------------------------------------------------

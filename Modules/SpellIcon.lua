@@ -1,7 +1,7 @@
 -- SparkPoint SpellIcon Module
 -- Settings and enable/disable proxy for the Cast-integrated icon
 
-local addonName, addon = ...
+local _, addon = ...
 local L = addon.L
 local CallbackRegistry = addon.CallbackRegistry
 

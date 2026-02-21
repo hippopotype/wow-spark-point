@@ -1,6 +1,6 @@
 -- SparkPoint Color Overrides Mixin
 
-local addonName, addon = ...
+local _, addon = ...
 
 SparkPointColorOverridesMixin = CreateFromMixins(SettingsListElementMixin)
 

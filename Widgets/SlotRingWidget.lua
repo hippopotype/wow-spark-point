@@ -3,7 +3,7 @@
 -- Has spark + frame layers, no glow/overlay (lighter than DonutWidget)
 -- StatusBar-backed rendering (safer with secret-wrapped values)
 
-local addonName, addon = ...
+local _, addon = ...
 
 local SlotRingWidget = {}
 addon.SlotRingWidget = SlotRingWidget
@@ -212,12 +212,6 @@ function SlotRingWidget:SetRadius(radius)
 	self.sparkRadius = radius * self.sparkRadiusRatio
 	local sparkSize = math.max(8, self.sparkRadius * 0.4)
 	self.spark:SetSize(sparkSize, sparkSize)
-end
-
--- SetAngle remains for compatibility with existing callers.
-function SlotRingWidget:SetAngle(degree)
-	local progress = (degree or 0) / 360
-	self:SetProgress(progress)
 end
 
 local function IsSecretNumber(value)

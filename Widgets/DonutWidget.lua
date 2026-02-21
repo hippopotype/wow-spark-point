@@ -2,7 +2,7 @@
 -- Reusable ring/arc rendering widget with clean API
 -- Cooldown swipe-based rendering (full-ring texture)
 
-local addonName, addon = ...
+local _, addon = ...
 
 local DonutWidget = {}
 addon.DonutWidget = DonutWidget

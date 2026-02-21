@@ -1,6 +1,6 @@
 -- SparkPoint Module Registry (ControlCenter)
 
-local addonName, addon = ...
+local _, addon = ...
 local CallbackRegistry = addon.CallbackRegistry
 
 local ControlCenter = {}

@@ -1,7 +1,7 @@
 -- SparkPoint GCD Slot Provider
 -- Provides GCD progress data for inner ring slots
 
-local addonName, addon = ...
+local _, addon = ...
 local API = addon.API
 
 --------------------------------------------------------------------------------
@@ -24,7 +24,7 @@ local CLASS_SPELLS = {
 	SHAMAN = 331,        -- Healing Wave
 	WARRIOR = 6673,      -- Battle Shout
 	DEATHKNIGHT = 45902, -- Blood Strike
-	HUNTER = 75,         -- Auto Shot (fallback)
+	HUNTER = 75,         -- Auto Shot
 	MAGE = 1459,         -- Arcane Intellect
 	WARLOCK = 687,       -- Demon Skin
 	ROGUE = 1752,        -- Sinister Strike

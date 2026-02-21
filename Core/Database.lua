@@ -1,7 +1,7 @@
 -- SparkPoint Database System
 -- Centralized defaults and DialogueUI-style getters/setters
 
-local addonName, addon = ...
+local _, addon = ...
 
 local DB
 

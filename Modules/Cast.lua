@@ -1,7 +1,7 @@
 -- SparkPoint Cast Module
 -- Displays a ring around cursor during spell casting with latency indicator
 
-local addonName, addon = ...
+local _, addon = ...
 local L = addon.L
 local API = addon.API
 local DonutWidget = addon.DonutWidget
@@ -224,7 +224,7 @@ function Cast:UpdateSpellIcon()
         castFrame.iconFrame:Hide()
         return
     end
-    if not currentSpellTexture and currentSpellID and C_Spell and C_Spell.GetSpellInfo then
+    if not currentSpellTexture and currentSpellID then
         local info = C_Spell.GetSpellInfo(currentSpellID)
         currentSpellTexture = info and info.iconID or currentSpellTexture
     end
@@ -522,7 +522,7 @@ function Cast:UNIT_SPELLCAST_START(event, unit, castGUID, spellID)
     castDuration = castEndTime - castStartTime
     currentSpellID = spellID
     currentSpellTexture = texture
-    if spellID and C_Spell and C_Spell.GetSpellInfo then
+    if spellID then
         local info = C_Spell.GetSpellInfo(spellID)
         currentSpellName = (info and info.name) or text or name
         currentSpellTexture = (info and info.iconID) or currentSpellTexture
@@ -532,7 +532,7 @@ function Cast:UNIT_SPELLCAST_START(event, unit, castGUID, spellID)
 
     -- Calculate latency
     local sendLag = (castSent > 0) and (GetTime() * 1000 - castSent) or 0
-    if sendLag <= 0 and GetNetStats then
+    if sendLag <= 0 then
         local _, _, home, world = GetNetStats()
         sendLag = math.max(home or 0, world or 0)
     end
@@ -597,7 +597,7 @@ function Cast:UNIT_SPELLCAST_CHANNEL_START(event, unit, castGUID, spellID)
     castDuration = castEndTime - castStartTime
     currentSpellID = spellID
     currentSpellTexture = texture
-    if spellID and C_Spell and C_Spell.GetSpellInfo then
+    if spellID then
         local info = C_Spell.GetSpellInfo(spellID)
         currentSpellName = (info and info.name) or text or name
         currentSpellTexture = (info and info.iconID) or currentSpellTexture
@@ -607,7 +607,7 @@ function Cast:UNIT_SPELLCAST_CHANNEL_START(event, unit, castGUID, spellID)
 
     -- Calculate latency
     local sendLag = (castSent > 0) and (GetTime() * 1000 - castSent) or 0
-    if sendLag <= 0 and GetNetStats then
+    if sendLag <= 0 then
         local _, _, home, world = GetNetStats()
         sendLag = math.max(home or 0, world or 0)
     end
@@ -716,10 +716,7 @@ function Cast:ApplySlotOptions()
         local slot = slots[i]
         if slot then
             local backgroundOpacity = GetDBValue("slot" .. i .. "_backgroundOpacity")
-            if backgroundOpacity == nil then
-                local legacyBackground = GetDBColorTable("slot" .. i .. "_backgroundColor")
-                backgroundOpacity = legacyBackground and legacyBackground.a or 0.8
-            end
+            if backgroundOpacity == nil then backgroundOpacity = 0.8 end
             slot.widget:SetRadius(radius * SLOT_ROOT_SCALE[i])
             slot.widget:SetBarColor(GetSlotBarColor(i))
             slot.widget:SetBackgroundColor({r = 1, g = 1, b = 1, a = backgroundOpacity})

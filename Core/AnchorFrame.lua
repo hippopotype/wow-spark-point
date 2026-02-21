@@ -1,7 +1,7 @@
 -- SparkPoint Anchor Frame
 -- Central 64x64 frame that all modules parent to, follows cursor or fixed position
 
-local addonName, addon = ...
+local _, addon = ...
 local CallbackRegistry = addon.CallbackRegistry
 local GetDBValue = addon.GetDBValue
 local GetDBBool = addon.GetDBBool

@@ -1,7 +1,7 @@
 -- SparkPoint ClassResource Module
 -- Displays class resources in either PIPS or TEXT mode near the cursor.
 
-local addonName, addon = ...
+local _, addon = ...
 local L = addon.L
 local API = addon.API
 local CallbackRegistry = addon.CallbackRegistry
@@ -24,17 +24,17 @@ local GetSpecialization = GetSpecialization
 -- Power Type Enums
 --------------------------------------------------------------------------------
 local PT = {
-	COMBO_POINTS   = (Enum and Enum.PowerType and Enum.PowerType.ComboPoints)   or 4,
-	RUNES          = (Enum and Enum.PowerType and Enum.PowerType.Runes)          or 5,
-	SOUL_SHARDS    = (Enum and Enum.PowerType and Enum.PowerType.SoulShards)     or 7,
-	HOLY_POWER     = (Enum and Enum.PowerType and Enum.PowerType.HolyPower)      or 9,
-	MAELSTROM      = (Enum and Enum.PowerType and Enum.PowerType.Maelstrom)      or 11,
-	CHI            = (Enum and Enum.PowerType and Enum.PowerType.Chi)            or 12,
-	INSANITY       = (Enum and Enum.PowerType and Enum.PowerType.Insanity)       or 13,
-	ARCANE_CHARGES = (Enum and Enum.PowerType and Enum.PowerType.ArcaneCharges)  or 16,
-	FURY           = (Enum and Enum.PowerType and Enum.PowerType.Fury)           or 17,
-	PAIN           = (Enum and Enum.PowerType and Enum.PowerType.Pain)           or 18,
-	ESSENCE        = (Enum and Enum.PowerType and Enum.PowerType.Essence)        or 19,
+	COMBO_POINTS   = Enum.PowerType.ComboPoints,
+	RUNES          = Enum.PowerType.Runes,
+	SOUL_SHARDS    = Enum.PowerType.SoulShards,
+	HOLY_POWER     = Enum.PowerType.HolyPower,
+	MAELSTROM      = Enum.PowerType.Maelstrom,
+	CHI            = Enum.PowerType.Chi,
+	INSANITY       = Enum.PowerType.Insanity,
+	ARCANE_CHARGES = Enum.PowerType.ArcaneCharges,
+	FURY           = Enum.PowerType.Fury,
+	PAIN           = Enum.PowerType.Pain,
+	ESSENCE        = Enum.PowerType.Essence,
 }
 
 -- Maelstrom Weapon aura spell ID (Enhancement Shaman)
@@ -112,7 +112,7 @@ local TEXT_POWER_CONFIG = {
 	DRUID = {
 		[2] = PT.COMBO_POINTS,
 		[4] = PT.COMBO_POINTS,
-		[1] = (Enum and Enum.PowerType and Enum.PowerType.LunarPower) or 8,
+		[1] = Enum.PowerType.LunarPower,
 	},
 	PALADIN = { default = PT.HOLY_POWER },
 	MONK = { [3] = PT.CHI },
@@ -232,7 +232,7 @@ end
 
 function ClassResource:DetectTextPowerType()
 	local _, classTag = UnitClass("player")
-	local spec = GetSpecialization and GetSpecialization() or 0
+	local spec = GetSpecialization() or 0
 
 	local classConfig = TEXT_POWER_CONFIG[classTag]
 	if not classConfig then
@@ -268,7 +268,7 @@ function ClassResource:ApplyTextOptions()
 	textFrame.powerText:SetFont(font, fontSize, fontOutline)
 
 	local r, g, b, a
-	if GetDBBool and GetDBBool("classresource_useClassColor") and API and API.GetPlayerClassColor then
+	if GetDBBool("classresource_useClassColor") then
 		r, g, b, a = API.GetPlayerClassColor()
 	else
 		r, g, b, a = GetDBColor("classresource_fontColor")
@@ -300,12 +300,8 @@ function ClassResource:UpdateTextMode()
 	if currentTextSource == "POWER" and currentTextPowerType then
 		powerValue = NormalizePowerValue(UnitPower("player", currentTextPowerType))
 	elseif currentTextSource == "MAELSTROM_WEAPON" then
-		if C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID then
-			local aura = C_UnitAuras.GetPlayerAuraBySpellID(MAELSTROM_WEAPON_SPELL_ID)
-			powerValue = aura and (aura.applications or 0) or 0
-		else
-			powerValue = 0
-		end
+		local aura = C_UnitAuras.GetPlayerAuraBySpellID(MAELSTROM_WEAPON_SPELL_ID)
+		powerValue = aura and (aura.applications or 0) or 0
 	end
 
 	local powerString = tostring(powerValue)
@@ -335,9 +331,6 @@ local function GetRunePower()
 end
 
 local function GetMaelstromWeaponPower()
-	if not C_UnitAuras or not C_UnitAuras.GetPlayerAuraBySpellID then
-		return 0, 5
-	end
 	local aura = C_UnitAuras.GetPlayerAuraBySpellID(MAELSTROM_WEAPON_SPELL_ID)
 	if not aura then return 0, 5 end
 	return (aura.applications or 0), 5
@@ -590,7 +583,7 @@ local function DetectActiveClass()
 	if not cfg then return nil, nil end
 
 	if classTag == "SHAMAN" then
-		local spec = GetSpecialization and GetSpecialization() or 0
+		local spec = GetSpecialization() or 0
 		if spec ~= 2 then return nil, nil end
 	end
 

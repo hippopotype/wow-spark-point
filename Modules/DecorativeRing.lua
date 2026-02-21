@@ -1,7 +1,7 @@
 -- SparkPoint Ring Module
 -- Displays a decorative rotating ring around the cursor
 
-local addonName, addon = ...
+local _, addon = ...
 local L = addon.L
 local API = addon.API
 local CallbackRegistry = addon.CallbackRegistry
@@ -35,18 +35,15 @@ local RING_TEXTURE_DEFINITIONS = {
 	{ key = "decorative_ring_2", file = "decorative_ring_2.tga", label = "Decorative Ring 2" },
 }
 
-local RING_TEXTURES = {}
 local RING_TEXTURE_PATHS = {}
 local RING_TEXTURE_OPTIONS = {}
 for _, def in ipairs(RING_TEXTURE_DEFINITIONS) do
-	RING_TEXTURES[def.key] = def.label
 	RING_TEXTURE_PATHS[def.key] = addon.addonFolder .. "\\Textures\\" .. def.file
 	RING_TEXTURE_OPTIONS[#RING_TEXTURE_OPTIONS + 1] = { value = def.key, label = def.label }
 end
 
 local DEFAULT_TEXTURE_KEY = (RING_TEXTURE_DEFINITIONS[1] and RING_TEXTURE_DEFINITIONS[1].key) or "decorative_ring_1"
 
-Ring.TEXTURES = RING_TEXTURES
 Ring.TEXTURE_OPTIONS = RING_TEXTURE_OPTIONS
 
 local function SetTextureSmooth(texture, texturePath)

@@ -1,7 +1,7 @@
 -- SparkPoint Slot Provider Registry
 -- Generic interface for inner ring slot data providers (GCD, future swing/cooldown)
 
-local addonName, addon = ...
+local _, addon = ...
 
 local SlotProviders = {}
 addon.SlotProviders = SlotProviders
