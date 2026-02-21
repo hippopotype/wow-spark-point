@@ -332,8 +332,8 @@ local function BuildSettingsPanel()
     local cpCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Class Resource"] or "Class Resource")
 
     AddSlider(cpCategory, "classresource_fontSize", L["Class Resource Font Size"] or "Class Resource Font Size", 8, 32, 1)
-    AddSlider(cpCategory, "classresource_offsetX", L["Class Resource Horizontal Offset"] or "Class Resource Horizontal Offset", -50, 50, 1)
-    AddSlider(cpCategory, "classresource_offsetY", L["Class Resource Vertical Offset"] or "Class Resource Vertical Offset", -50, 50, 1)
+    AddSlider(cpCategory, "classresource_offsetX", L["Class Resource Horizontal Offset"] or "Class Resource Horizontal Offset", -200, 200, 1)
+    AddSlider(cpCategory, "classresource_offsetY", L["Class Resource Vertical Offset"] or "Class Resource Vertical Offset", -200, 200, 1)
     AddDropdown(cpCategory, "classresource_font", L["Class Resource Font"] or "Class Resource Font", {
         { value = "Fonts\\FRIZQT__.TTF", label = "Friz Quadrata" },
         { value = "Fonts\\ARIALN.TTF", label = "Arial Narrow" },

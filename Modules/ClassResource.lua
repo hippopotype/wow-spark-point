@@ -49,6 +49,29 @@ local VISIBILITY_OPTIONS = {
     CASTING = "CASTING",
 }
 
+local function IsPlayerCastingNow()
+    local castName = UnitCastingInfo("player")
+    if castName ~= nil then
+        return true
+    end
+
+    local channelName = UnitChannelInfo("player")
+    if channelName ~= nil then
+        return true
+    end
+
+    -- Fall back to Cast module visibility, which already handles cast lifecycle details.
+    local castModule = addon.Modules and addon.Modules.CastObj
+    if castModule and castModule.GetFrame then
+        local castFrame = castModule:GetFrame()
+        if castFrame and castFrame:IsShown() then
+            return true
+        end
+    end
+
+    return false
+end
+
 local function IsSecret(value)
     return issecretvalue and issecretvalue(value)
 end
@@ -87,7 +110,7 @@ function ClassResource:ShouldBeVisible()
     elseif setting == VISIBILITY_OPTIONS.HAS_TARGET then
         return UnitExists("target")
     elseif setting == VISIBILITY_OPTIONS.CASTING then
-        return UnitCastingInfo("player") ~= nil or UnitChannelInfo("player") ~= nil
+        return IsPlayerCastingNow()
     end
     return true
 end
@@ -291,6 +314,21 @@ function ClassResource:UNIT_SPELLCAST_CHANNEL_UPDATE(event, unit)
     self:UpdatePower()
 end
 
+function ClassResource:UNIT_SPELLCAST_EMPOWER_START(event, unit)
+    if unit ~= "player" then return end
+    self:UpdatePower()
+end
+
+function ClassResource:UNIT_SPELLCAST_EMPOWER_STOP(event, unit)
+    if unit ~= "player" then return end
+    self:UpdatePower()
+end
+
+function ClassResource:UNIT_SPELLCAST_EMPOWER_UPDATE(event, unit)
+    if unit ~= "player" then return end
+    self:UpdatePower()
+end
+
 --------------------------------------------------------------------------------
 -- ApplyOptions: Update visuals from settings
 --------------------------------------------------------------------------------
@@ -362,6 +400,9 @@ local function EnableModule(enabled)
         EL:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_START", "player")
         EL:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_STOP", "player")
         EL:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_UPDATE", "player")
+        EL:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_START", "player")
+        EL:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_STOP", "player")
+        EL:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_UPDATE", "player")
         EL:RegisterUnitEvent("UNIT_POWER_UPDATE", "player")
         EL:RegisterUnitEvent("UNIT_MAXPOWER", "player")
 
