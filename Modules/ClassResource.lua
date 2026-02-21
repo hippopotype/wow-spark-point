@@ -12,6 +12,7 @@ local UnitExists = UnitExists
 local InCombatLockdown = InCombatLockdown
 local UnitCastingInfo = UnitCastingInfo
 local UnitChannelInfo = UnitChannelInfo
+local GetTime = GetTime
 
 --------------------------------------------------------------------------------
 -- Event Frame
@@ -46,10 +47,14 @@ local CLASS_RESOURCE_FRAME = {
 
 local copyFrame
 local copyTextures = {}
+local copyTextureBySource = {}
 local sourceFrame
 local isEnabled = false
 local updateTimer = 0
 local UPDATE_INTERVAL = 0.05
+local RENDER_TRANSIENT = "TRANSIENT"
+local renderSerial = 0
+local renderTicket = 0
 
 local function IsPlayerCastingNow()
 	if UnitCastingInfo("player") then return true end
@@ -89,19 +94,43 @@ local function EnsureCopyFrame()
 	copyFrame:Hide()
 end
 
-local function GetCopyTexture(index)
-	local tex = copyTextures[index]
+local function AcquireCopyTexture(sourceRegion)
+	local tex = copyTextureBySource[sourceRegion]
 	if tex then return tex end
 
 	tex = copyFrame:CreateTexture(nil, "ARTWORK")
-	copyTextures[index] = tex
+	copyTextureBySource[sourceRegion] = tex
+	copyTextures[#copyTextures + 1] = tex
 	return tex
 end
 
-local function HideUnusedTextures(startIndex)
-	for i = startIndex, #copyTextures do
+local function HideAllCopyTextures()
+	for i = 1, #copyTextures do
 		copyTextures[i]:Hide()
 	end
+end
+
+local function QueueRender()
+	if not isEnabled then return end
+	renderTicket = renderTicket + 1
+	local ticket = renderTicket
+
+	local function RunRenderAttempt(attempt)
+		if ticket ~= renderTicket then return end
+		if not isEnabled then return end
+
+		ClassResource:UpdateVisibility()
+		if not copyFrame or not sourceFrame or not sourceFrame:IsShown() then return end
+
+		local renderState = ClassResource:RenderCopy()
+		if renderState ~= true and attempt < 3 then
+			C_Timer.After(0, function()
+				RunRenderAttempt(attempt + 1)
+			end)
+		end
+	end
+
+	RunRenderAttempt(1)
 end
 
 local function IsRenderableTexture(region)
@@ -192,14 +221,14 @@ end
 function ClassResource:RenderCopy()
 	if not copyFrame then return false end
 	if not sourceFrame or not sourceFrame:IsShown() then
-		HideUnusedTextures(1)
+		HideAllCopyTextures()
 		return false
 	end
 
 	local srcLeft, srcRight, srcTop, srcBottom = sourceFrame:GetLeft(), sourceFrame:GetRight(), sourceFrame:GetTop(), sourceFrame:GetBottom()
 	if not srcLeft or not srcRight or not srcTop or not srcBottom then
-		HideUnusedTextures(1)
-		return false
+		-- Resource frames can report nil geometry for a frame while updating.
+		return RENDER_TRANSIENT
 	end
 
 	local srcCenterX = (srcLeft + srcRight) * 0.5
@@ -208,22 +237,36 @@ function ClassResource:RenderCopy()
 	local regions = {}
 	CollectTextures(sourceFrame, regions)
 
+	renderSerial = renderSerial + 1
+	local serial = renderSerial
 	local used = 0
 	for i = 1, #regions do
 		local src = regions[i]
 		local l, r, t, b = src:GetLeft(), src:GetRight(), src:GetTop(), src:GetBottom()
 		if l and r and t and b and r > l and t > b then
 			used = used + 1
-			local dst = GetCopyTexture(used)
+			local dst = AcquireCopyTexture(src)
 			ApplyTextureVisuals(dst, src)
 			dst:ClearAllPoints()
 			dst:SetSize(r - l, t - b)
 			dst:SetPoint("CENTER", copyFrame, "CENTER", ((l + r) * 0.5) - srcCenterX, ((t + b) * 0.5) - srcCenterY)
+			dst._renderSerial = serial
 			dst:Show()
 		end
 	end
 
-	HideUnusedTextures(used + 1)
+	if used == 0 then
+		-- Keep previous draw state during brief internal frame reconfiguration.
+		return RENDER_TRANSIENT
+	end
+
+	for i = 1, #copyTextures do
+		local tex = copyTextures[i]
+		if tex._renderSerial ~= serial then
+			tex:Hide()
+		end
+	end
+
 	return used > 0
 end
 
@@ -247,20 +290,15 @@ function ClassResource:UpdateVisibility()
 		return
 	end
 
-	local hasVisuals = self:RenderCopy()
-	if hasVisuals then
-		copyFrame:Show()
-		AnchorFrame:Show("classresource")
-	else
-		copyFrame:Hide()
-		AnchorFrame:Hide("classresource")
-	end
+	copyFrame:Show()
+	AnchorFrame:Show("classresource")
 end
 
 function ClassResource:Refresh()
 	sourceFrame = GetCurrentClassResourceFrame()
 	self:ApplyLayout()
 	self:UpdateVisibility()
+	QueueRender()
 end
 
 local function OnUpdate(self, elapsed)
@@ -296,6 +334,7 @@ end
 function ClassResource:UNIT_POWER_UPDATE(event, unit)
 	if unit ~= "player" then return end
 	self:UpdateVisibility()
+	QueueRender()
 end
 
 function ClassResource:UNIT_MAXPOWER(event, unit)
@@ -305,10 +344,12 @@ end
 
 function ClassResource:PLAYER_REGEN_DISABLED()
 	self:UpdateVisibility()
+	QueueRender()
 end
 
 function ClassResource:PLAYER_REGEN_ENABLED()
 	self:UpdateVisibility()
+	QueueRender()
 end
 
 function ClassResource:PLAYER_TARGET_CHANGED()
@@ -318,56 +359,67 @@ end
 function ClassResource:UNIT_SPELLCAST_START(event, unit)
 	if unit ~= "player" then return end
 	self:UpdateVisibility()
+	QueueRender()
 end
 
 function ClassResource:UNIT_SPELLCAST_STOP(event, unit)
 	if unit ~= "player" then return end
 	self:UpdateVisibility()
+	QueueRender()
 end
 
 function ClassResource:UNIT_SPELLCAST_INTERRUPTED(event, unit)
 	if unit ~= "player" then return end
 	self:UpdateVisibility()
+	QueueRender()
 end
 
 function ClassResource:UNIT_SPELLCAST_FAILED(event, unit)
 	if unit ~= "player" then return end
 	self:UpdateVisibility()
+	QueueRender()
 end
 
 function ClassResource:UNIT_SPELLCAST_FAILED_QUIET(event, unit)
 	if unit ~= "player" then return end
 	self:UpdateVisibility()
+	QueueRender()
 end
 
 function ClassResource:UNIT_SPELLCAST_CHANNEL_START(event, unit)
 	if unit ~= "player" then return end
 	self:UpdateVisibility()
+	QueueRender()
 end
 
 function ClassResource:UNIT_SPELLCAST_CHANNEL_STOP(event, unit)
 	if unit ~= "player" then return end
 	self:UpdateVisibility()
+	QueueRender()
 end
 
 function ClassResource:UNIT_SPELLCAST_CHANNEL_UPDATE(event, unit)
 	if unit ~= "player" then return end
 	self:UpdateVisibility()
+	QueueRender()
 end
 
 function ClassResource:UNIT_SPELLCAST_EMPOWER_START(event, unit)
 	if unit ~= "player" then return end
 	self:UpdateVisibility()
+	QueueRender()
 end
 
 function ClassResource:UNIT_SPELLCAST_EMPOWER_STOP(event, unit)
 	if unit ~= "player" then return end
 	self:UpdateVisibility()
+	QueueRender()
 end
 
 function ClassResource:UNIT_SPELLCAST_EMPOWER_UPDATE(event, unit)
 	if unit ~= "player" then return end
 	self:UpdateVisibility()
+	QueueRender()
 end
 
 --------------------------------------------------------------------------------
