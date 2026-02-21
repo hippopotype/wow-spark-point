@@ -44,6 +44,16 @@ local function SetTextureSmooth(texture, texturePath)
     SafeCall(texture, "SetTexelSnappingBias", 0)
 end
 
+local function BuildTexturePath(self, base)
+    if not base then
+        return nil
+    end
+    if self.useThicknessSuffix then
+        return addon.addonFolder .. "\\Textures\\" .. base .. "_" .. self.thickness .. ".png"
+    end
+    return addon.addonFolder .. "\\Textures\\" .. base .. ".png"
+end
+
 --------------------------------------------------------------------------------
 -- DonutWidget:Create(config) -> donut
 --
@@ -186,40 +196,43 @@ function DonutWidget:SetThickness(thickness)
     local clamped = ClampThickness(thickness)
     self.thickness = clamped
 
-    local function BuildTexturePath(base)
-        if not base then
-            return nil
-        end
-        if self.useThicknessSuffix then
-            return addon.addonFolder .. "\\Textures\\" .. base .. "_" .. clamped .. ".png"
-        end
-        return addon.addonFolder .. "\\Textures\\" .. base .. ".png"
-    end
-
     if self.backgroundBase then
-        local backgroundPath = BuildTexturePath(self.backgroundBase)
+        local backgroundPath = BuildTexturePath(self, self.backgroundBase)
         SetTextureSmooth(self.background, backgroundPath)
         self.background:Show()
     else
         self.background:Hide()
     end
 
-    local progressPath = BuildTexturePath(self.progressBase)
+    local progressPath = BuildTexturePath(self, self.progressBase)
     SetTextureSmooth(self.foreground, progressPath)
     SafeCall(self.cooldown, "SetSwipeTexture", progressPath)
 
     if self.overlayBase then
-        local overlayPath = BuildTexturePath(self.overlayBase)
+        local overlayPath = BuildTexturePath(self, self.overlayBase)
         SetTextureSmooth(self.overlay, overlayPath)
     end
 
     if self.frameBase then
-        local framePath = BuildTexturePath(self.frameBase)
+        local framePath = BuildTexturePath(self, self.frameBase)
         SetTextureSmooth(self.frameTex, framePath)
         self.frameTex:Show()
     else
         self.frameTex:Hide()
     end
+end
+
+--------------------------------------------------------------------------------
+-- SetOverlayTextureBase: Swap overlay texture family at runtime
+--------------------------------------------------------------------------------
+function DonutWidget:SetOverlayTextureBase(base)
+    self.overlayBase = base
+    if not self.overlayBase then
+        self.overlay:Hide()
+        return
+    end
+    local overlayPath = BuildTexturePath(self, self.overlayBase)
+    SetTextureSmooth(self.overlay, overlayPath)
 end
 
 --------------------------------------------------------------------------------

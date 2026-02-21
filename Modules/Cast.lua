@@ -46,6 +46,11 @@ local currentSpellID
 local currentSpellTexture
 local spellIconEnabled = false
 local pendingVisuals = false
+local interruptFlashToken = 0
+local interruptFlashActive = false
+local INTERRUPT_FLASH_DURATION = 0.2
+local CAST_OVERLAY_DEFAULT = "cast_glow"
+local CAST_OVERLAY_INTERRUPT = "cast_error"
 
 -- Inner ring slots
 local slots = {}  -- {widget, provider, providerID} per slot
@@ -262,6 +267,10 @@ end
 -- OnUpdate Handler
 --------------------------------------------------------------------------------
 local function OnUpdate(self, elapsed)
+    if interruptFlashActive then
+        return
+    end
+
     if not isCasting or castDuration == 0 then
         Cast:Hide()
         return
@@ -365,6 +374,7 @@ function Cast:Show()
         end
         latencyDonut:Show()
         if castDonut then
+            castDonut:SetOverlayTextureBase(CAST_OVERLAY_DEFAULT)
             castDonut:Show()
             castDonut:SetOverlayShown(true)
             castDonut:SetOverlayAlpha(0)
@@ -372,6 +382,9 @@ function Cast:Show()
     end
     if castFrame.frameTexture then
         castFrame.frameTexture:Show()
+    end
+    if castFrame.sparkTexture then
+        castFrame.sparkTexture:Show()
     end
 
     pendingVisuals = true
@@ -397,10 +410,13 @@ end
 function Cast:Hide()
     if not castFrame then return end
 
+    interruptFlashToken = interruptFlashToken + 1
+    interruptFlashActive = false
     isCasting = false
     currentCastGUID = nil
     pendingVisuals = false
     if castDonut then
+        castDonut:SetOverlayTextureBase(CAST_OVERLAY_DEFAULT)
         castDonut:Hide()
         castDonut:SetOverlayShown(false)
     end
@@ -409,6 +425,9 @@ function Cast:Hide()
     end
     if castFrame.frameTexture then
         castFrame.frameTexture:Hide()
+    end
+    if castFrame.sparkTexture then
+        castFrame.sparkTexture:Hide()
     end
     -- Hide inner ring slots
     for i = 1, NUM_SLOTS do
@@ -435,6 +454,52 @@ function Cast:Hide()
     end
 end
 
+function Cast:ShowInterruptFlash(castGUID)
+    if castGUID and castGUID ~= currentCastGUID then
+        return
+    end
+    if not castDonut or not castFrame or not isCasting then
+        self:Hide()
+        return
+    end
+
+    interruptFlashToken = interruptFlashToken + 1
+    interruptFlashActive = true
+    local flashToken = interruptFlashToken
+
+    -- Stop cast progress lifecycle from racing this brief flash.
+    isCasting = false
+    castDuration = 0
+    castStartTime = 0
+    castEndTime = 0
+    currentCastGUID = nil
+
+    castDonut:SetOverlayTextureBase(CAST_OVERLAY_INTERRUPT)
+    -- Cooldown swipe textures continue animating after SetCooldown; zero fill now.
+    castDonut:SetAngle(0)
+    castDonut:SetOverlayColor({r = 1, g = 1, b = 1, a = 1})
+    castDonut:SetOverlayShown(true)
+    castDonut:SetOverlayAlpha(1)
+    if latencyDonut then
+        latencyDonut:SetAngle(0)
+        latencyDonut:Hide()
+    end
+    if castFrame.sparkTexture then
+        castFrame.sparkTexture:Hide()
+    end
+    castDonut:Show()
+    castFrame:Show()
+    AnchorFrame:Show("cast")
+
+    C_Timer.After(INTERRUPT_FLASH_DURATION, function()
+        if flashToken ~= interruptFlashToken then return end
+        if castDonut then
+            castDonut:SetOverlayTextureBase(CAST_OVERLAY_DEFAULT)
+        end
+        Cast:Hide()
+    end)
+end
+
 --------------------------------------------------------------------------------
 -- Event Handlers
 --------------------------------------------------------------------------------
@@ -445,6 +510,8 @@ end
 
 function Cast:UNIT_SPELLCAST_START(event, unit, castGUID, spellID)
     if unit ~= "player" then return end
+    interruptFlashToken = interruptFlashToken + 1
+    interruptFlashActive = false
 
     local name, text, texture, startTimeMS, endTimeMS = UnitCastingInfo("player")
     if not name then return end
@@ -477,6 +544,7 @@ end
 
 function Cast:UNIT_SPELLCAST_STOP(event, unit, castGUID, spellID)
     if unit ~= "player" then return end
+    if interruptFlashActive then return end
     if castGUID == currentCastGUID then
         self:Hide()
     end
@@ -485,21 +553,21 @@ end
 function Cast:UNIT_SPELLCAST_INTERRUPTED(event, unit, castGUID, spellID)
     if unit ~= "player" then return end
     if castGUID == currentCastGUID then
-        self:Hide()
+        self:ShowInterruptFlash(castGUID)
     end
 end
 
 function Cast:UNIT_SPELLCAST_FAILED(event, unit, castGUID, spellID)
     if unit ~= "player" then return end
     if castGUID == currentCastGUID then
-        self:Hide()
+        self:ShowInterruptFlash(castGUID)
     end
 end
 
 function Cast:UNIT_SPELLCAST_FAILED_QUIET(event, unit, castGUID, spellID)
     if unit ~= "player" then return end
     if castGUID == currentCastGUID then
-        self:Hide()
+        self:ShowInterruptFlash(castGUID)
     end
 end
 
@@ -517,6 +585,8 @@ end
 
 function Cast:UNIT_SPELLCAST_CHANNEL_START(event, unit, castGUID, spellID)
     if unit ~= "player" then return end
+    interruptFlashToken = interruptFlashToken + 1
+    interruptFlashActive = false
 
     local name, text, texture, startTimeMS, endTimeMS = UnitChannelInfo("player")
     if not name then return end
@@ -549,6 +619,7 @@ end
 
 function Cast:UNIT_SPELLCAST_CHANNEL_STOP(event, unit, castGUID, spellID)
     if unit ~= "player" then return end
+    if interruptFlashActive then return end
     if castGUID == currentCastGUID then
         self:Hide()
     end
@@ -725,7 +796,7 @@ function Cast:ApplyOptions()
                 backgroundColor = backgroundColor,
                 backgroundTextureBase = "cast_background",
                 progressTextureBase = "cast_fill",
-                overlayTextureBase = "cast_glow",
+                overlayTextureBase = CAST_OVERLAY_DEFAULT,
                 frameTextureBase = nil,
             })
             castDonut:AttachTo(castFrame)
@@ -744,6 +815,7 @@ function Cast:ApplyOptions()
 
     -- Update glow overlay color
     if castDonut then
+        castDonut:SetOverlayTextureBase(CAST_OVERLAY_DEFAULT)
         castDonut:SetOverlayColor(glowColor)
     end
 
