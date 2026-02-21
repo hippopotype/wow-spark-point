@@ -63,33 +63,10 @@ addon.DefaultValues = {
     slot3_backgroundOpacity = 0.8,
 
     -- ClassResource module settings
-    classresource_font = "Fonts\\FRIZQT__.TTF",
-    classresource_fontSize = 16,
-    classresource_fontOutline = "",
-    classresource_fontColor = {r = 1, g = 1, b = 1, a = 1},
+    classresource_scale = 1,
     classresource_offsetX = 0,
     classresource_offsetY = 0,
     classresource_visibility = "ALWAYS",
-    classresource_useClassColor = false,
-    classresource_mode = "TEXT",
-
-    -- ClassResource bars mode settings
-    classresource_bars_width = 180,
-    classresource_bars_height = 14,
-    classresource_bars_spacing = 4,
-    classresource_bars_offsetX = 0,
-    classresource_bars_offsetY = 0,
-    classresource_bars_showSecondary = true,
-    classresource_bars_showText = true,
-    classresource_bars_textStyle = "PERCENT",
-    classresource_bars_font = "Fonts\\FRIZQT__.TTF",
-    classresource_bars_fontSize = 11,
-    classresource_bars_fontOutline = "",
-    classresource_bars_barColor = {r = 0.25, g = 0.7, b = 1, a = 1},
-    classresource_bars_backgroundColor = {r = 0, g = 0, b = 0, a = 0.45},
-    classresource_bars_useClassColor = false,
-    classresource_bars_usePowerColor = true,
-    classresource_bars_texture = "AUTO",
 
     -- Ring module settings
     ring_texture = "165624",

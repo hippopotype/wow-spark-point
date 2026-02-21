@@ -1,5 +1,4 @@
 -- SparkPoint Color Overrides Mixin
--- Minimal color picker row implementation (adapted from EnhanceQoL LibEQOL)
 
 local addonName, addon = ...
 
