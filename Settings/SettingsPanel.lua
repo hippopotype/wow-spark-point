@@ -331,6 +331,11 @@ local function BuildSettingsPanel()
     ------------------------------------------------------------------------
     local cpCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Class Resource"] or "Class Resource")
 
+    AddDropdown(cpCategory, "classresource_mode", L["Class Resource Mode"] or "Class Resource Mode", {
+        { value = "TEXT", label = L["Class Resource Mode Text"] or "Text" },
+        { value = "PIPS", label = L["Class Resource Mode Pips"] or "Pips" },
+    }, L["Class Resource Mode Tooltip"] or "Switch between text and pips class resource display")
+
     AddDropdown(cpCategory, "classresource_visibility", L["Class Resource Visibility"] or "Class Resource Visibility", {
         { value = "ALWAYS", label = L["Visibility Always"] or "Always" },
         { value = "IN_COMBAT", label = L["Visibility In Combat"] or "In Combat" },
@@ -338,12 +343,36 @@ local function BuildSettingsPanel()
         { value = "HAS_TARGET", label = L["Visibility Has Target"] or "Has Target" },
         { value = "CASTING", label = L["Visibility While Casting"] or "While Casting" },
     }, L["Class Resource Visibility Tooltip"] or "When to show class resource")
-    AddSlider(cpCategory, "classresource_scale", L["Class Resource Scale"] or "Class Resource Scale", 0.5, 2, 0.05,
-        L["Class Resource Scale Tooltip"] or "Scale for the Blizzard class-resource frame")
-    AddSlider(cpCategory, "classresource_opacity", L["Class Resource Opacity"] or "Class Resource Opacity", 0, 1, 0.05,
-        L["Class Resource Opacity Tooltip"] or "Opacity for the class-resource copy frame")
-    AddSlider(cpCategory, "classresource_offsetX", L["Class Resource Horizontal Offset"] or "Class Resource Horizontal Offset", -300, 300, 1)
-    AddSlider(cpCategory, "classresource_offsetY", L["Class Resource Vertical Offset"] or "Class Resource Vertical Offset", -300, 300, 1)
+
+	local cpTextCategory = Settings.RegisterVerticalLayoutSubcategory(cpCategory, L["Class Resource Text Mode"] or "Text Mode")
+	AddSlider(cpTextCategory, "classresource_fontSize", L["Class Resource Font Size"] or "Class Resource Font Size", 8, 48, 1)
+	AddSlider(cpTextCategory, "classresource_textOffsetX", L["Class Resource Text Horizontal Offset"] or "Class Resource Text Horizontal Offset", -300, 300, 1)
+	AddSlider(cpTextCategory, "classresource_textOffsetY", L["Class Resource Text Vertical Offset"] or "Class Resource Text Vertical Offset", -300, 300, 1)
+	AddDropdown(cpTextCategory, "classresource_font", L["Class Resource Font"] or "Class Resource Font", {
+		{ value = "Fonts\\FRIZQT__.TTF", label = "Friz Quadrata" },
+		{ value = "Fonts\\ARIALN.TTF", label = "Arial Narrow" },
+		{ value = "Fonts\\MORPHEUS.ttf", label = "Morpheus" },
+		{ value = "Fonts\\SKURRI.TTF", label = "Skurri" },
+	})
+	AddDropdown(cpTextCategory, "classresource_fontOutline", L["Class Resource Font Outline"] or "Class Resource Font Outline", {
+		{ value = "", label = "None" },
+		{ value = "OUTLINE", label = "Outline" },
+		{ value = "THICKOUTLINE", label = "Thick Outline" },
+		{ value = "MONOCHROME", label = "Monochrome" },
+		{ value = "MONOCHROME,OUTLINE", label = "Mono + Outline" },
+		{ value = "MONOCHROME,THICKOUTLINE", label = "Mono + Thick Outline" },
+	})
+	AddColor(cpTextCategory, "classresource_fontColor", L["Class Resource Font Color"] or "Class Resource Font Color")
+	AddCheckbox(cpTextCategory, "classresource_useClassColor", L["Class Resource Use Class Color"] or "Class Resource Use Class Color",
+		L["Class Resource Use Class Color Tooltip"] or "Override class resource text color with your class color")
+
+	local cpPipsCategory = Settings.RegisterVerticalLayoutSubcategory(cpCategory, L["Class Resource Pips Mode"] or "Pips Mode")
+	AddSlider(cpPipsCategory, "classresource_scale", L["Class Resource Scale"] or "Class Resource Scale", 0.5, 2, 0.05,
+		L["Class Resource Scale Tooltip"] or "Scale for the Blizzard class-resource frame")
+	AddSlider(cpPipsCategory, "classresource_opacity", L["Class Resource Opacity"] or "Class Resource Opacity", 0, 1, 0.05,
+		L["Class Resource Opacity Tooltip"] or "Opacity for the class-resource copy frame")
+	AddSlider(cpPipsCategory, "classresource_offsetX", L["Class Resource Horizontal Offset"] or "Class Resource Horizontal Offset", -300, 300, 1)
+	AddSlider(cpPipsCategory, "classresource_offsetY", L["Class Resource Vertical Offset"] or "Class Resource Vertical Offset", -300, 300, 1)
 
     ------------------------------------------------------------------------
     -- Ring Settings Subcategory

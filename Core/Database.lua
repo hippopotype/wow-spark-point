@@ -63,6 +63,14 @@ addon.DefaultValues = {
     slot3_backgroundOpacity = 0.8,
 
     -- ClassResource module settings
+    classresource_mode = "PIPS",
+    classresource_font = "Fonts\\FRIZQT__.TTF",
+    classresource_fontSize = 16,
+    classresource_fontOutline = "",
+    classresource_fontColor = {r = 1, g = 1, b = 1, a = 1},
+    classresource_useClassColor = false,
+    classresource_textOffsetX = 0,
+    classresource_textOffsetY = 0,
     classresource_scale = 1,
     classresource_opacity = 1,
     classresource_offsetX = 0,

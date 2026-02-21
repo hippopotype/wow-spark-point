@@ -1,12 +1,14 @@
 -- SparkPoint ClassResource Module
--- Displays class resource pips near the cursor anchor.
--- Reads power directly from WoW APIs for immediate, accurate display.
+-- Displays class resources in either PIPS or TEXT mode near the cursor.
 
 local addonName, addon = ...
 local L = addon.L
+local API = addon.API
 local CallbackRegistry = addon.CallbackRegistry
 local AnchorFrame = addon.AnchorFrame
 local GetDBValue = addon.GetDBValue
+local GetDBBool = addon.GetDBBool
+local GetDBColor = addon.GetDBColor
 
 local UnitClass       = UnitClass
 local UnitPower       = UnitPower
@@ -26,8 +28,12 @@ local PT = {
 	RUNES          = (Enum and Enum.PowerType and Enum.PowerType.Runes)          or 5,
 	SOUL_SHARDS    = (Enum and Enum.PowerType and Enum.PowerType.SoulShards)     or 7,
 	HOLY_POWER     = (Enum and Enum.PowerType and Enum.PowerType.HolyPower)      or 9,
+	MAELSTROM      = (Enum and Enum.PowerType and Enum.PowerType.Maelstrom)      or 11,
 	CHI            = (Enum and Enum.PowerType and Enum.PowerType.Chi)            or 12,
+	INSANITY       = (Enum and Enum.PowerType and Enum.PowerType.Insanity)       or 13,
 	ARCANE_CHARGES = (Enum and Enum.PowerType and Enum.PowerType.ArcaneCharges)  or 16,
+	FURY           = (Enum and Enum.PowerType and Enum.PowerType.Fury)           or 17,
+	PAIN           = (Enum and Enum.PowerType and Enum.PowerType.Pain)           or 18,
 	ESSENCE        = (Enum and Enum.PowerType and Enum.PowerType.Essence)        or 19,
 }
 
@@ -43,10 +49,6 @@ local PIP_TEXTURE_FALLBACK = "Interface\\Buttons\\WHITE8x8"
 
 --------------------------------------------------------------------------------
 -- Per-class pip configuration
--- powerEnum : Enum.PowerType value; nil for isRune / isMaelstrom special cases
--- maxCount  : default pip count (overridden live by UnitPowerMax)
--- fillColor : active pip color  {r,g,b,a}
--- emptyColor: inactive pip color {r,g,b,a}
 --------------------------------------------------------------------------------
 local CLASS_CONFIG = {
 	PALADIN = {
@@ -105,6 +107,30 @@ local CLASS_CONFIG = {
 	},
 }
 
+local TEXT_POWER_CONFIG = {
+	ROGUE = { default = PT.COMBO_POINTS },
+	DRUID = {
+		[2] = PT.COMBO_POINTS,
+		[4] = PT.COMBO_POINTS,
+		[1] = (Enum and Enum.PowerType and Enum.PowerType.LunarPower) or 8,
+	},
+	PALADIN = { default = PT.HOLY_POWER },
+	MONK = { [3] = PT.CHI },
+	DEATHKNIGHT = { default = PT.RUNES },
+	WARLOCK = { default = PT.SOUL_SHARDS },
+	MAGE = { [1] = PT.ARCANE_CHARGES },
+	DEMONHUNTER = {
+		[1] = PT.FURY,
+		[2] = PT.PAIN,
+	},
+	EVOKER = { default = PT.ESSENCE },
+	PRIEST = { [3] = PT.INSANITY },
+	SHAMAN = {
+		[1] = PT.MAELSTROM,
+		[2] = PT.MAELSTROM,
+	},
+}
+
 -- Visual dimensions (pixels at scale 1)
 local PIP_SIZE    = 14
 local PIP_SPACING = 3
@@ -117,6 +143,9 @@ local EL = CreateFrame("Frame")
 local ClassResource = {}
 addon.Modules.ClassResourceObj = ClassResource
 
+local MODE_TEXT = "TEXT"
+local MODE_PIPS = "PIPS"
+
 local VISIBILITY = {
 	ALWAYS        = "ALWAYS",
 	IN_COMBAT     = "IN_COMBAT",
@@ -126,14 +155,27 @@ local VISIBILITY = {
 }
 
 local isEnabled  = false
-local container  = nil         -- pip container frame, child of AnchorFrame
-local pips       = {}          -- { [i] = { frame=Texture, bg=Texture, fill=Texture } }
-local pipMax     = 0           -- current max pip count rendered
-local activeCfg  = nil         -- active CLASS_CONFIG entry
+local container  = nil
+local pips       = {}
+local pipMax     = 0
+local activeCfg  = nil
+
+local textFrame = nil
+local currentTextSource = nil
+local currentTextPowerType = nil
+local lastTextValue = nil
 
 --------------------------------------------------------------------------------
 -- Visibility
 --------------------------------------------------------------------------------
+local function GetCurrentMode()
+	local mode = GetDBValue("classresource_mode")
+	if mode == MODE_TEXT then
+		return MODE_TEXT
+	end
+	return MODE_PIPS
+end
+
 local function IsPlayerCasting()
 	return UnitCastingInfo("player") ~= nil or UnitChannelInfo("player") ~= nil
 end
@@ -148,8 +190,138 @@ function ClassResource:ShouldBeVisible()
 end
 
 --------------------------------------------------------------------------------
--- Power Sampling
--- All reads happen here against live WoW API; no Blizzard frame state used.
+-- Shared helpers
+--------------------------------------------------------------------------------
+local function NormalizePowerValue(value)
+	if value == nil then return 0 end
+	if type(value) == "number" then return value end
+
+	local s = tostring(value) or "0"
+	local n = tonumber(s)
+	if n then return n end
+
+	local token = s:match("[-+]?%d+%.?%d*")
+	return tonumber(token) or 0
+end
+
+local function IsPowerTypeUsable(powerType)
+	if powerType == nil then return false end
+	local maxPower = NormalizePowerValue(UnitPowerMax("player", powerType))
+	return maxPower > 0
+end
+
+--------------------------------------------------------------------------------
+-- Text Mode
+--------------------------------------------------------------------------------
+local function EnsureTextFrame()
+	if textFrame then return end
+
+	local anchor = AnchorFrame:GetFrame()
+	if not anchor then return end
+
+	textFrame = CreateFrame("Frame", nil, anchor)
+	textFrame:SetFrameStrata("HIGH")
+	textFrame:SetFrameLevel((anchor:GetFrameLevel() or 1) + 20)
+	textFrame:SetSize(1, 1)
+	textFrame:Hide()
+
+	textFrame.powerText = textFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+	textFrame.powerText:SetPoint("CENTER", textFrame, "CENTER", 0, 0)
+	textFrame.powerText:SetText("0")
+end
+
+function ClassResource:DetectTextPowerType()
+	local _, classTag = UnitClass("player")
+	local spec = GetSpecialization and GetSpecialization() or 0
+
+	local classConfig = TEXT_POWER_CONFIG[classTag]
+	if not classConfig then
+		currentTextSource = nil
+		currentTextPowerType = nil
+		return
+	end
+
+	local powerType = classConfig[spec] or classConfig.default
+
+	-- Enhancement Shaman uses Maelstrom Weapon aura stacks (not UnitPower-based).
+	if classTag == "SHAMAN" and spec == 2 then
+		currentTextSource = "MAELSTROM_WEAPON"
+		currentTextPowerType = nil
+		return
+	end
+
+	if IsPowerTypeUsable(powerType) then
+		currentTextSource = "POWER"
+		currentTextPowerType = powerType
+	else
+		currentTextSource = nil
+		currentTextPowerType = nil
+	end
+end
+
+function ClassResource:ApplyTextOptions()
+	if not textFrame then return end
+
+	local font = GetDBValue("classresource_font") or "Fonts\\FRIZQT__.TTF"
+	local fontSize = GetDBValue("classresource_fontSize") or 16
+	local fontOutline = GetDBValue("classresource_fontOutline") or ""
+	textFrame.powerText:SetFont(font, fontSize, fontOutline)
+
+	local r, g, b, a
+	if GetDBBool and GetDBBool("classresource_useClassColor") and API and API.GetPlayerClassColor then
+		r, g, b, a = API.GetPlayerClassColor()
+	else
+		r, g, b, a = GetDBColor("classresource_fontColor")
+	end
+	textFrame.powerText:SetTextColor(r, g, b, a)
+end
+
+function ClassResource:UpdateTextMode()
+	if not isEnabled then return end
+	if not textFrame then return end
+
+	if not self:ShouldBeVisible() then
+		textFrame:Hide()
+		AnchorFrame:Hide("classresource")
+		return
+	end
+
+	if not currentTextSource then
+		self:DetectTextPowerType()
+	end
+
+	if not currentTextSource then
+		textFrame:Hide()
+		AnchorFrame:Hide("classresource")
+		return
+	end
+
+	local powerValue = 0
+	if currentTextSource == "POWER" and currentTextPowerType then
+		powerValue = NormalizePowerValue(UnitPower("player", currentTextPowerType))
+	elseif currentTextSource == "MAELSTROM_WEAPON" then
+		if C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID then
+			local aura = C_UnitAuras.GetPlayerAuraBySpellID(MAELSTROM_WEAPON_SPELL_ID)
+			powerValue = aura and (aura.applications or 0) or 0
+		else
+			powerValue = 0
+		end
+	end
+
+	local powerString = tostring(powerValue)
+	if powerString ~= lastTextValue then
+		lastTextValue = powerString
+		textFrame.powerText:SetText(powerString)
+	end
+
+	if not textFrame:IsShown() then
+		textFrame:Show()
+	end
+	AnchorFrame:Show("classresource")
+end
+
+--------------------------------------------------------------------------------
+-- PIPS Mode (current implementation)
 --------------------------------------------------------------------------------
 local function GetRunePower()
 	local ready = 0
@@ -185,28 +357,11 @@ local function ReadPower()
 	local pEnum = activeCfg.powerEnum
 	if not pEnum then return 0, 0 end
 
-	local function NormalizePowerValue(value)
-		if value == nil then return 0 end
-		if type(value) == "number" then return value end
-
-		-- Secret values can stringify to non-plain numerics depending on client build.
-		local s = tostring(value) or "0"
-		local n = tonumber(s)
-		if n then return n end
-
-		-- Fallback: extract first numeric token from the string representation.
-		local token = s:match("[-+]?%d+%.?%d*")
-		return tonumber(token) or 0
-	end
-
 	local cur = NormalizePowerValue(UnitPower("player", pEnum))
 	local max = NormalizePowerValue(UnitPowerMax("player", pEnum))
 	return cur, max
 end
 
---------------------------------------------------------------------------------
--- Pip Widget
---------------------------------------------------------------------------------
 local function EnsureContainer()
 	if container then return end
 	local anchor = AnchorFrame:GetFrame()
@@ -271,9 +426,9 @@ local function LayoutPips(cfg, count)
 	local x0    = -(total / 2) + (PIP_SIZE / 2)
 
 	for i = 1, count do
-			local p  = GetPip(i)
+		local p = GetPip(i)
 		if p then
-			local x  = x0 + (i - 1) * (PIP_SIZE + PIP_SPACING)
+			local x = x0 + (i - 1) * (PIP_SIZE + PIP_SPACING)
 
 			p.frame:SetSize(PIP_SIZE, PIP_SIZE)
 			p.frame:ClearAllPoints()
@@ -293,7 +448,6 @@ local function LayoutPips(cfg, count)
 		end
 	end
 
-	-- Hide any surplus pips from a previous larger layout
 	for i = count + 1, #pips do
 		local p = pips[i]
 		if p then p.frame:Hide(); p.bg:Hide(); p.fill:Hide() end
@@ -316,7 +470,6 @@ local function ApplyPipState(current, max)
 		return
 	end
 
-	-- Rebuild layout when max changes (e.g. Chi varies by spec, Druid form)
 	if max ~= pipMax then
 		if max > 0 then
 			LayoutPips(activeCfg, max)
@@ -354,27 +507,56 @@ end
 -- Layout and Visibility
 --------------------------------------------------------------------------------
 function ClassResource:ApplyLayout()
-	if not container then return end
 	local anchor = AnchorFrame:GetFrame()
 	if not anchor then return end
 
 	local offsetX = GetDBValue("classresource_offsetX") or 0
 	local offsetY = GetDBValue("classresource_offsetY") or 0
-	local scale   = GetDBValue("classresource_scale")   or 1
+	local scale   = GetDBValue("classresource_scale") or 1
 	local opacity = GetDBValue("classresource_opacity")
 	if opacity == nil then opacity = 1 end
 
-	container:SetParent(anchor)
-	container:ClearAllPoints()
-	container:SetPoint("CENTER", anchor, "CENTER", offsetX, offsetY)
-	container:SetScale(scale)
-	container:SetAlpha(opacity)
-	container:SetFrameStrata("HIGH")
-	container:SetFrameLevel((anchor:GetFrameLevel() or 1) + 20)
+	if container then
+		container:SetParent(anchor)
+		container:ClearAllPoints()
+		container:SetPoint("CENTER", anchor, "CENTER", offsetX, offsetY)
+		container:SetScale(scale)
+		container:SetAlpha(opacity)
+		container:SetFrameStrata("HIGH")
+		container:SetFrameLevel((anchor:GetFrameLevel() or 1) + 20)
+	end
+
+	if textFrame then
+		local textOffsetX = GetDBValue("classresource_textOffsetX") or 0
+		local textOffsetY = GetDBValue("classresource_textOffsetY") or 0
+		textFrame:SetParent(anchor)
+		textFrame:ClearAllPoints()
+		textFrame:SetPoint("CENTER", anchor, "CENTER", textOffsetX, textOffsetY)
+		textFrame:SetScale(1)
+		textFrame:SetAlpha(1)
+		textFrame:SetFrameStrata("HIGH")
+		textFrame:SetFrameLevel((anchor:GetFrameLevel() or 1) + 20)
+	end
 end
 
 function ClassResource:UpdateVisibility()
-	if not isEnabled or not activeCfg then
+	if not isEnabled then
+		if container then container:Hide() end
+		if textFrame then textFrame:Hide() end
+		AnchorFrame:Hide("classresource")
+		return
+	end
+
+	if GetCurrentMode() == MODE_TEXT then
+		if container then container:Hide() end
+		HidePips()
+		self:UpdateTextMode()
+		return
+	end
+
+	if textFrame then textFrame:Hide() end
+
+	if not activeCfg then
 		if container then container:Hide() end
 		AnchorFrame:Hide("classresource")
 		return
@@ -391,6 +573,7 @@ function ClassResource:UpdateVisibility()
 end
 
 function ClassResource:SyncPower()
+	if GetCurrentMode() ~= MODE_PIPS then return end
 	if not isEnabled or not activeCfg then return end
 	local current, max = ReadPower()
 	ApplyPipState(current, max)
@@ -406,37 +589,44 @@ local function DetectActiveClass()
 	local cfg = CLASS_CONFIG[classTag]
 	if not cfg then return nil, nil end
 
-	-- Shaman: Maelstrom Weapon is Enhancement-only (spec 2)
 	if classTag == "SHAMAN" then
 		local spec = GetSpecialization and GetSpecialization() or 0
 		if spec ~= 2 then return nil, nil end
 	end
-
-	-- For Druids: activeCfg is always set; SyncPower hides pips when
-	-- UnitPowerMax returns 0 (non-feral forms without combo points).
 
 	return classTag, cfg
 end
 
 function ClassResource:Refresh()
 	EnsureContainer()
+	EnsureTextFrame()
 
 	local _, cfg = DetectActiveClass()
-	activeCfg   = cfg
-	pipMax      = 0  -- force LayoutPips on next SyncPower
+	activeCfg = cfg
+	pipMax = 0
 	for i = 1, #pips do
 		pips[i].styleReady = false
 	end
 
 	if activeCfg then
 		LayoutPips(activeCfg, activeCfg.maxCount)
-		self:ApplyLayout()
 	else
 		HidePips()
 	end
 
+	currentTextPowerType = nil
+	currentTextSource = nil
+	lastTextValue = nil
+
+	self:ApplyTextOptions()
+	self:ApplyLayout()
 	self:UpdateVisibility()
-	self:SyncPower()
+
+	if GetCurrentMode() == MODE_PIPS then
+		self:SyncPower()
+	else
+		self:UpdateTextMode()
+	end
 end
 
 --------------------------------------------------------------------------------
@@ -451,30 +641,38 @@ function ClassResource:PLAYER_SPECIALIZATION_CHANGED()
 end
 
 function ClassResource:UPDATE_SHAPESHIFT_FORM()
-	-- Druid form changes affect combo point availability
-	self:SyncPower()
+	self:Refresh()
 end
 
 function ClassResource:UNIT_POWER_UPDATE(event, unit)
 	if unit ~= "player" then return end
-	self:SyncPower()
+	if GetCurrentMode() == MODE_TEXT then
+		self:UpdateTextMode()
+	else
+		self:SyncPower()
+	end
 end
 
 function ClassResource:UNIT_MAXPOWER(event, unit)
 	if unit ~= "player" then return end
-	-- Max can change (e.g. Chi count differs by talent, Druid form changes)
-	self:SyncPower()
+	if GetCurrentMode() == MODE_TEXT then
+		self:Refresh()
+	else
+		self:SyncPower()
+	end
 end
 
 function ClassResource:UNIT_DISPLAYPOWER(event, unit)
 	if unit ~= "player" then return end
-	-- Power type display change (Druid entering/leaving forms, etc.)
 	self:Refresh()
 end
 
 function ClassResource:UNIT_AURA(event, unit)
 	if unit ~= "player" then return end
-	-- Maelstrom Weapon stacks tracked as an aura
+	if GetCurrentMode() == MODE_TEXT then
+		self:UpdateTextMode()
+		return
+	end
 	if activeCfg and activeCfg.isMaelstrom then
 		self:SyncPower()
 	end
@@ -568,8 +766,11 @@ local function EnableModule(enabled)
 	else
 		EL:UnregisterAllEvents()
 		if container then container:Hide() end
+		if textFrame then textFrame:Hide() end
 		AnchorFrame:Hide("classresource")
-		activeCfg   = nil
+		activeCfg = nil
+		currentTextSource = nil
+		currentTextPowerType = nil
 		HidePips()
 	end
 end
@@ -584,11 +785,31 @@ end)
 -- Setting Callbacks
 --------------------------------------------------------------------------------
 for _, key in ipairs({ "classresource_scale", "classresource_opacity",
-                       "classresource_offsetX", "classresource_offsetY" }) do
+	                   "classresource_offsetX", "classresource_offsetY" }) do
 	CallbackRegistry:RegisterSettingCallback(key, function()
 		ClassResource:ApplyLayout()
 	end)
 end
+
+for _, key in ipairs({ "classresource_textOffsetX", "classresource_textOffsetY" }) do
+	CallbackRegistry:RegisterSettingCallback(key, function()
+		ClassResource:ApplyLayout()
+	end)
+end
+
+for _, key in ipairs({ "classresource_font", "classresource_fontSize", "classresource_fontOutline",
+	                   "classresource_fontColor", "classresource_useClassColor" }) do
+	CallbackRegistry:RegisterSettingCallback(key, function()
+		ClassResource:ApplyTextOptions()
+		if GetCurrentMode() == MODE_TEXT then
+			ClassResource:UpdateTextMode()
+		end
+	end)
+end
+
+CallbackRegistry:RegisterSettingCallback("classresource_mode", function()
+	ClassResource:Refresh()
+end)
 
 CallbackRegistry:RegisterSettingCallback("classresource_visibility", function()
 	ClassResource:UpdateVisibility()
@@ -600,7 +821,7 @@ end)
 addon.ControlCenter:AddModule({
 	name        = L["Class Resource"] or "Class Resource",
 	dbKey       = "moduleEnabled_ClassResource",
-	description = L["Class Resource Description"] or "Displays class resource pips near the cursor",
+	description = L["Class Resource Description"] or "Displays class resources near the cursor",
 	toggleFunc  = EnableModule,
 	categoryID  = 1,
 	uiOrder     = 3,
