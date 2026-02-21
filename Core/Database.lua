@@ -64,6 +64,7 @@ addon.DefaultValues = {
 
     -- ClassResource module settings
     classresource_scale = 1,
+    classresource_opacity = 1,
     classresource_offsetX = 0,
     classresource_offsetY = 0,
     classresource_visibility = "ALWAYS",

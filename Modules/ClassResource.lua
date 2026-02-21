@@ -1,5 +1,5 @@
 -- SparkPoint ClassResource Module
--- Mirrors Blizzard class-resource frames near the cursor without reparenting originals.
+-- Copies Blizzard class-resource visuals near the cursor without reparenting originals.
 
 local addonName, addon = ...
 local L = addon.L
@@ -44,8 +44,8 @@ local CLASS_RESOURCE_FRAME = {
 	WARLOCK = "WarlockPowerFrame",
 }
 
-local mirrorFrame
-local mirrorTextures = {}
+local copyFrame
+local copyTextures = {}
 local sourceFrame
 local isEnabled = false
 local updateTimer = 0
@@ -76,31 +76,31 @@ local function GetCurrentClassResourceFrame()
 	return _G[frameName]
 end
 
-local function EnsureMirrorFrame()
-	if mirrorFrame then return end
+local function EnsureCopyFrame()
+	if copyFrame then return end
 
 	local anchor = AnchorFrame:GetFrame()
 	if not anchor then return end
 
-	mirrorFrame = CreateFrame("Frame", nil, anchor)
-	mirrorFrame:SetFrameStrata("HIGH")
-	mirrorFrame:SetFrameLevel((anchor:GetFrameLevel() or 1) + 20)
-	mirrorFrame:SetSize(1, 1)
-	mirrorFrame:Hide()
+	copyFrame = CreateFrame("Frame", nil, anchor)
+	copyFrame:SetFrameStrata("HIGH")
+	copyFrame:SetFrameLevel((anchor:GetFrameLevel() or 1) + 20)
+	copyFrame:SetSize(1, 1)
+	copyFrame:Hide()
 end
 
-local function GetMirrorTexture(index)
-	local tex = mirrorTextures[index]
+local function GetCopyTexture(index)
+	local tex = copyTextures[index]
 	if tex then return tex end
 
-	tex = mirrorFrame:CreateTexture(nil, "ARTWORK")
-	mirrorTextures[index] = tex
+	tex = copyFrame:CreateTexture(nil, "ARTWORK")
+	copyTextures[index] = tex
 	return tex
 end
 
 local function HideUnusedTextures(startIndex)
-	for i = startIndex, #mirrorTextures do
-		mirrorTextures[i]:Hide()
+	for i = startIndex, #copyTextures do
+		copyTextures[i]:Hide()
 	end
 end
 
@@ -168,8 +168,8 @@ function ClassResource:ShouldBeVisible()
 end
 
 function ClassResource:ApplyLayout()
-	EnsureMirrorFrame()
-	if not mirrorFrame then return end
+	EnsureCopyFrame()
+	if not copyFrame then return end
 
 	local anchor = AnchorFrame:GetFrame()
 	if not anchor then return end
@@ -177,17 +177,20 @@ function ClassResource:ApplyLayout()
 	local offsetX = GetDBValue("classresource_offsetX") or 0
 	local offsetY = GetDBValue("classresource_offsetY") or 0
 	local scale = GetDBValue("classresource_scale") or 1
+	local opacity = GetDBValue("classresource_opacity")
+	if opacity == nil then opacity = 1 end
 
-	mirrorFrame:SetParent(anchor)
-	mirrorFrame:ClearAllPoints()
-	mirrorFrame:SetPoint("CENTER", anchor, "CENTER", offsetX, offsetY)
-	mirrorFrame:SetScale(scale)
-	mirrorFrame:SetFrameStrata("HIGH")
-	mirrorFrame:SetFrameLevel((anchor:GetFrameLevel() or 1) + 20)
+	copyFrame:SetParent(anchor)
+	copyFrame:ClearAllPoints()
+	copyFrame:SetPoint("CENTER", anchor, "CENTER", offsetX, offsetY)
+	copyFrame:SetScale(scale)
+	copyFrame:SetAlpha(opacity)
+	copyFrame:SetFrameStrata("HIGH")
+	copyFrame:SetFrameLevel((anchor:GetFrameLevel() or 1) + 20)
 end
 
-function ClassResource:RenderMirror()
-	if not mirrorFrame then return false end
+function ClassResource:RenderCopy()
+	if not copyFrame then return false end
 	if not sourceFrame or not sourceFrame:IsShown() then
 		HideUnusedTextures(1)
 		return false
@@ -211,11 +214,11 @@ function ClassResource:RenderMirror()
 		local l, r, t, b = src:GetLeft(), src:GetRight(), src:GetTop(), src:GetBottom()
 		if l and r and t and b and r > l and t > b then
 			used = used + 1
-			local dst = GetMirrorTexture(used)
+			local dst = GetCopyTexture(used)
 			ApplyTextureVisuals(dst, src)
 			dst:ClearAllPoints()
 			dst:SetSize(r - l, t - b)
-			dst:SetPoint("CENTER", mirrorFrame, "CENTER", ((l + r) * 0.5) - srcCenterX, ((t + b) * 0.5) - srcCenterY)
+			dst:SetPoint("CENTER", copyFrame, "CENTER", ((l + r) * 0.5) - srcCenterX, ((t + b) * 0.5) - srcCenterY)
 			dst:Show()
 		end
 	end
@@ -225,31 +228,31 @@ function ClassResource:RenderMirror()
 end
 
 function ClassResource:UpdateVisibility()
-	if not isEnabled or not mirrorFrame then
-		if mirrorFrame then mirrorFrame:Hide() end
+	if not isEnabled or not copyFrame then
+		if copyFrame then copyFrame:Hide() end
 		AnchorFrame:Hide("classresource")
 		return
 	end
 
 	if not self:ShouldBeVisible() then
-		mirrorFrame:Hide()
+		copyFrame:Hide()
 		AnchorFrame:Hide("classresource")
 		return
 	end
 
 	sourceFrame = GetCurrentClassResourceFrame()
 	if not sourceFrame then
-		mirrorFrame:Hide()
+		copyFrame:Hide()
 		AnchorFrame:Hide("classresource")
 		return
 	end
 
-	local hasVisuals = self:RenderMirror()
+	local hasVisuals = self:RenderCopy()
 	if hasVisuals then
-		mirrorFrame:Show()
+		copyFrame:Show()
 		AnchorFrame:Show("classresource")
 	else
-		mirrorFrame:Hide()
+		copyFrame:Hide()
 		AnchorFrame:Hide("classresource")
 	end
 end
@@ -400,7 +403,7 @@ local function EnableModule(enabled)
 	else
 		EL:SetScript("OnUpdate", nil)
 		EL:UnregisterAllEvents()
-		if mirrorFrame then mirrorFrame:Hide() end
+		if copyFrame then copyFrame:Hide() end
 		AnchorFrame:Hide("classresource")
 	end
 end
@@ -413,6 +416,7 @@ end)
 
 local settingKeys = {
 	"classresource_scale",
+	"classresource_opacity",
 	"classresource_offsetX",
 	"classresource_offsetY",
 }

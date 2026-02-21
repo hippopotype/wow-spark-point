@@ -340,6 +340,8 @@ local function BuildSettingsPanel()
     }, L["Class Resource Visibility Tooltip"] or "When to show class resource")
     AddSlider(cpCategory, "classresource_scale", L["Class Resource Scale"] or "Class Resource Scale", 0.5, 2, 0.05,
         L["Class Resource Scale Tooltip"] or "Scale for the Blizzard class-resource frame")
+    AddSlider(cpCategory, "classresource_opacity", L["Class Resource Opacity"] or "Class Resource Opacity", 0, 1, 0.05,
+        L["Class Resource Opacity Tooltip"] or "Opacity for the class-resource copy frame")
     AddSlider(cpCategory, "classresource_offsetX", L["Class Resource Horizontal Offset"] or "Class Resource Horizontal Offset", -300, 300, 1)
     AddSlider(cpCategory, "classresource_offsetY", L["Class Resource Vertical Offset"] or "Class Resource Vertical Offset", -300, 300, 1)
 
