@@ -454,8 +454,29 @@ local function BuildSettingsPanel()
 		L["Cast Ring Visibility Tooltip"] or "When to show the cast ring shell"
 	)
 
-	AddCheckbox(castCategory, "cast_spellTextEnabled", L["Cast Show Spell Name"] or "Cast Show Spell Name", L["Show Spell Name Tooltip"] or "Display the spell name above the ring")
+	AddColor(castCategory, "cast_barColor", L["Cast Bar Color"] or "Cast Bar Color")
+	AddCheckbox(
+		castCategory,
+		"cast_useClassColor",
+		L["Cast Use Class Color"] or "Cast Use Class Color",
+		L["Cast Use Class Color Tooltip"] or "Override cast colors with your class color"
+	)
+	AddSlider(
+		castCategory,
+		"cast_backgroundOpacity",
+		L["Cast Background Opacity"] or "Cast Background Opacity",
+		0,
+		1,
+		0.05,
+		L["Cast Background Opacity Tooltip"] or "Opacity of the cast ring background"
+	)
+	AddSlider(castCategory, "cast_frameOpacity", L["Cast Frame Opacity"] or "Cast Frame Opacity", 0, 1, 0.05, L["Cast Frame Opacity Tooltip"] or "Opacity of the cast ring frame")
+	AddSlider(castCategory, "cast_glowOpacity", L["Cast Glow Opacity"] or "Cast Glow Opacity", 0, 1, 0.05, L["Cast Glow Opacity Tooltip"] or "Opacity of the cast glow overlay")
+	AddColor(castCategory, "cast_sparkColor", L["Cast Spark Color"] or "Cast Spark Color")
+	AddColor(castCategory, "cast_latencyColor", L["Cast Latency Color"] or "Cast Latency Color")
 
+	AddCheckbox(castCategory, "cast_spellTextEnabled", L["Cast Show Spell Name"] or "Cast Show Spell Name", L["Show Spell Name Tooltip"] or "Display the spell name above the ring")
+	AddColor(castCategory, "cast_spellTextColor", L["Cast Spell Text Color"] or "Cast Spell Text Color")
 	AddSlider(castCategory, "cast_spellTextSize", L["Cast Spell Text Size"] or "Cast Spell Text Size", 8, 24, 1)
 
 	AddDropdown(castCategory, "cast_spellTextFont", L["Cast Spell Text Font"] or "Cast Spell Text Font", {
@@ -476,28 +497,6 @@ local function BuildSettingsPanel()
 
 	AddSlider(castCategory, "cast_spellTextOffsetX", L["Cast Spell Text Offset X"] or "Cast Spell Text Offset X", -60, 60, 1)
 	AddSlider(castCategory, "cast_spellTextOffsetY", L["Cast Spell Text Offset Y"] or "Cast Spell Text Offset Y", -240, 240, 1)
-
-	AddColor(castCategory, "cast_barColor", L["Cast Bar Color"] or "Cast Bar Color")
-	AddSlider(
-		castCategory,
-		"cast_backgroundOpacity",
-		L["Cast Background Opacity"] or "Cast Background Opacity",
-		0,
-		1,
-		0.05,
-		L["Cast Background Opacity Tooltip"] or "Opacity of the cast ring background"
-	)
-	AddSlider(castCategory, "cast_frameOpacity", L["Cast Frame Opacity"] or "Cast Frame Opacity", 0, 1, 0.05, L["Cast Frame Opacity Tooltip"] or "Opacity of the cast ring frame")
-	AddSlider(castCategory, "cast_glowOpacity", L["Cast Glow Opacity"] or "Cast Glow Opacity", 0, 1, 0.05, L["Cast Glow Opacity Tooltip"] or "Opacity of the cast glow overlay")
-	AddColor(castCategory, "cast_sparkColor", L["Cast Spark Color"] or "Cast Spark Color")
-	AddColor(castCategory, "cast_latencyColor", L["Cast Latency Color"] or "Cast Latency Color")
-	AddColor(castCategory, "cast_spellTextColor", L["Cast Spell Text Color"] or "Cast Spell Text Color")
-	AddCheckbox(
-		castCategory,
-		"cast_useClassColor",
-		L["Cast Use Class Color"] or "Cast Use Class Color",
-		L["Cast Use Class Color Tooltip"] or "Override cast colors with your class color"
-	)
 
 	------------------------------------------------------------------------
 	-- Inner Ring Slots Settings Subcategory
