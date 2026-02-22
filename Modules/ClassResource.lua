@@ -6,6 +6,7 @@ local L = addon.L
 local API = addon.API
 local CallbackRegistry = addon.CallbackRegistry
 local AnchorFrame = addon.AnchorFrame
+local Visibility = addon.Visibility
 local GetDBValue = addon.GetDBValue
 local GetDBBool = addon.GetDBBool
 local GetDBColor = addon.GetDBColor
@@ -13,10 +14,6 @@ local GetDBColor = addon.GetDBColor
 local UnitClass       = UnitClass
 local UnitPower       = UnitPower
 local UnitPowerMax    = UnitPowerMax
-local UnitExists      = UnitExists
-local InCombatLockdown = InCombatLockdown
-local UnitCastingInfo = UnitCastingInfo
-local UnitChannelInfo = UnitChannelInfo
 local GetRuneCooldown = GetRuneCooldown
 local GetSpecialization = GetSpecialization
 
@@ -146,14 +143,6 @@ addon.Modules.ClassResourceObj = ClassResource
 local MODE_TEXT = "TEXT"
 local MODE_PIPS = "PIPS"
 
-local VISIBILITY = {
-	ALWAYS        = "ALWAYS",
-	IN_COMBAT     = "IN_COMBAT",
-	OUT_OF_COMBAT = "OUT_OF_COMBAT",
-	HAS_TARGET    = "HAS_TARGET",
-	CASTING       = "CASTING",
-}
-
 local isEnabled  = false
 local container  = nil
 local pips       = {}
@@ -174,19 +163,6 @@ local function GetCurrentMode()
 		return MODE_TEXT
 	end
 	return MODE_PIPS
-end
-
-local function IsPlayerCasting()
-	return UnitCastingInfo("player") ~= nil or UnitChannelInfo("player") ~= nil
-end
-
-function ClassResource:ShouldBeVisible()
-	local vis = GetDBValue("classresource_visibility") or VISIBILITY.ALWAYS
-	if vis == VISIBILITY.IN_COMBAT     then return InCombatLockdown() and true or false end
-	if vis == VISIBILITY.OUT_OF_COMBAT then return not InCombatLockdown() end
-	if vis == VISIBILITY.HAS_TARGET    then return UnitExists("target") end
-	if vis == VISIBILITY.CASTING       then return IsPlayerCasting() end
-	return true
 end
 
 --------------------------------------------------------------------------------
@@ -280,7 +256,7 @@ function ClassResource:UpdateTextMode()
 	if not isEnabled then return end
 	if not textFrame then return end
 
-	if not self:ShouldBeVisible() then
+	if not Visibility:ShouldShow("classresource") then
 		textFrame:Hide()
 		AnchorFrame:Hide("classresource")
 		return
@@ -596,7 +572,7 @@ function ClassResource:UpdateVisibility()
 		return
 	end
 
-	if not self:ShouldBeVisible() then
+	if not Visibility:ShouldShow("classresource") then
 		if container then container:Hide() end
 		AnchorFrame:Hide("classresource")
 		return
@@ -712,63 +688,6 @@ function ClassResource:UNIT_AURA(event, unit)
 	end
 end
 
-function ClassResource:PLAYER_REGEN_DISABLED()
-	self:UpdateVisibility()
-end
-
-function ClassResource:PLAYER_REGEN_ENABLED()
-	self:UpdateVisibility()
-end
-
-function ClassResource:PLAYER_TARGET_CHANGED()
-	self:UpdateVisibility()
-end
-
-function ClassResource:UNIT_SPELLCAST_START(event, unit)
-	if unit ~= "player" then return end
-	self:UpdateVisibility()
-end
-
-function ClassResource:UNIT_SPELLCAST_STOP(event, unit)
-	if unit ~= "player" then return end
-	self:UpdateVisibility()
-end
-
-function ClassResource:UNIT_SPELLCAST_INTERRUPTED(event, unit)
-	if unit ~= "player" then return end
-	self:UpdateVisibility()
-end
-
-function ClassResource:UNIT_SPELLCAST_FAILED(event, unit)
-	if unit ~= "player" then return end
-	self:UpdateVisibility()
-end
-
-function ClassResource:UNIT_SPELLCAST_FAILED_QUIET(event, unit)
-	if unit ~= "player" then return end
-	self:UpdateVisibility()
-end
-
-function ClassResource:UNIT_SPELLCAST_CHANNEL_START(event, unit)
-	if unit ~= "player" then return end
-	self:UpdateVisibility()
-end
-
-function ClassResource:UNIT_SPELLCAST_CHANNEL_STOP(event, unit)
-	if unit ~= "player" then return end
-	self:UpdateVisibility()
-end
-
-function ClassResource:UNIT_SPELLCAST_EMPOWER_START(event, unit)
-	if unit ~= "player" then return end
-	self:UpdateVisibility()
-end
-
-function ClassResource:UNIT_SPELLCAST_EMPOWER_STOP(event, unit)
-	if unit ~= "player" then return end
-	self:UpdateVisibility()
-end
-
 --------------------------------------------------------------------------------
 -- Module Lifecycle
 --------------------------------------------------------------------------------
@@ -779,22 +698,10 @@ local function EnableModule(enabled)
 		EL:RegisterEvent("PLAYER_ENTERING_WORLD")
 		EL:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
 		EL:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
-		EL:RegisterEvent("PLAYER_REGEN_DISABLED")
-		EL:RegisterEvent("PLAYER_REGEN_ENABLED")
-		EL:RegisterEvent("PLAYER_TARGET_CHANGED")
 		EL:RegisterUnitEvent("UNIT_DISPLAYPOWER",              "player")
 		EL:RegisterUnitEvent("UNIT_POWER_UPDATE",              "player")
 		EL:RegisterUnitEvent("UNIT_MAXPOWER",                  "player")
 		EL:RegisterUnitEvent("UNIT_AURA",                      "player")
-		EL:RegisterUnitEvent("UNIT_SPELLCAST_START",           "player")
-		EL:RegisterUnitEvent("UNIT_SPELLCAST_STOP",            "player")
-		EL:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTED",     "player")
-		EL:RegisterUnitEvent("UNIT_SPELLCAST_FAILED",          "player")
-		EL:RegisterUnitEvent("UNIT_SPELLCAST_FAILED_QUIET",    "player")
-		EL:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_START",   "player")
-		EL:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_STOP",    "player")
-		EL:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_START",   "player")
-		EL:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_STOP",    "player")
 
 		ClassResource:Refresh()
 	else
@@ -848,6 +755,12 @@ end)
 CallbackRegistry:RegisterSettingCallback("classresource_visibility", function()
 	ClassResource:UpdateVisibility()
 end)
+CallbackRegistry:RegisterSettingCallback("classresource_visibilitySource", function()
+	ClassResource:UpdateVisibility()
+end)
+CallbackRegistry:RegisterSettingCallback("visibility_mode", function()
+	ClassResource:UpdateVisibility()
+end)
 
 for _, key in ipairs({ "classresource_fillColor", "classresource_fillUseClassColor" }) do
 	CallbackRegistry:RegisterSettingCallback(key, function()
@@ -857,6 +770,10 @@ for _, key in ipairs({ "classresource_fillColor", "classresource_fillUseClassCol
 		end
 	end)
 end
+
+CallbackRegistry:Register("VisibilityContextChanged", function()
+	ClassResource:UpdateVisibility()
+end, ClassResource)
 
 --------------------------------------------------------------------------------
 -- Module Registration

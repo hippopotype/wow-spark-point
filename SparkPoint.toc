@@ -10,6 +10,7 @@
 Core\Initialization.lua
 Core\API.lua
 Core\Database.lua
+Core\Visibility.lua
 Core\ModuleRegistry.lua
 Core\SlotProviders.lua
 Core\AnchorFrame.lua

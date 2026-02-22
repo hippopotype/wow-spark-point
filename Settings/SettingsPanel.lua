@@ -175,6 +175,18 @@ local function BuildSettingsPanel()
         return initializer
     end
 
+	local visibilityModeOptions = {
+		{ value = "ALWAYS", label = L["Visibility Always"] or "Always" },
+		{ value = "IN_COMBAT", label = L["Visibility In Combat"] or "In Combat" },
+		{ value = "OUT_OF_COMBAT", label = L["Visibility Out of Combat"] or "Out of Combat" },
+		{ value = "HAS_TARGET", label = L["Visibility Has Target"] or "Has Target" },
+		{ value = "CASTING", label = L["Visibility While Casting"] or "While Casting" },
+	}
+	local visibilitySourceOptions = {
+		{ value = "INHERIT", label = L["Visibility Inherit"] or "Inherit" },
+		{ value = "CUSTOM", label = L["Visibility Custom"] or "Custom" },
+	}
+
     ------------------------------------------------------------------------
     -- General Settings
     ------------------------------------------------------------------------
@@ -186,6 +198,10 @@ local function BuildSettingsPanel()
 
     AddSlider(category, "offset_y", L["Anchor Vertical Offset"] or "Anchor Vertical Offset", -64, 0, 1,
         L["Vertical Offset Tooltip"] or "Vertical offset from cursor position")
+
+	local visibilityCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Visibility"] or "Visibility")
+	AddDropdown(visibilityCategory, "visibility_mode", L["Addon Visibility"] or "Addon Visibility", visibilityModeOptions,
+		L["Addon Visibility Tooltip"] or "Default visibility rule used by modules set to inherit")
 
     ------------------------------------------------------------------------
     -- Module Toggles
@@ -264,6 +280,10 @@ local function BuildSettingsPanel()
 
     AddCheckbox(castCategory, "cast_reverseChanneling", L["Cast Reverse Channeling"] or "Cast Reverse Channeling",
         L["Reverse Channeling Tooltip"] or "Reverse the direction for channeled spells")
+	AddDropdown(castCategory, "cast_visibilitySource", L["Visibility Source"] or "Visibility Source", visibilitySourceOptions,
+		L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility")
+	AddDropdown(castCategory, "cast_visibility", L["Cast Ring Visibility"] or "Cast Ring Visibility", visibilityModeOptions,
+		L["Cast Ring Visibility Tooltip"] or "When to show the cast ring shell")
 
     AddCheckbox(castCategory, "cast_spellTextEnabled", L["Cast Show Spell Name"] or "Cast Show Spell Name",
         L["Show Spell Name Tooltip"] or "Display the spell name above the ring")
@@ -336,13 +356,10 @@ local function BuildSettingsPanel()
         { value = "PIPS", label = L["Class Resource Mode Pips"] or "Pips" },
     }, L["Class Resource Mode Tooltip"] or "Switch between text and pips class resource display")
 
-    AddDropdown(cpCategory, "classresource_visibility", L["Class Resource Visibility"] or "Class Resource Visibility", {
-        { value = "ALWAYS", label = L["Visibility Always"] or "Always" },
-        { value = "IN_COMBAT", label = L["Visibility In Combat"] or "In Combat" },
-        { value = "OUT_OF_COMBAT", label = L["Visibility Out of Combat"] or "Out of Combat" },
-        { value = "HAS_TARGET", label = L["Visibility Has Target"] or "Has Target" },
-        { value = "CASTING", label = L["Visibility While Casting"] or "While Casting" },
-    }, L["Class Resource Visibility Tooltip"] or "When to show class resource")
+	AddDropdown(cpCategory, "classresource_visibilitySource", L["Visibility Source"] or "Visibility Source", visibilitySourceOptions,
+		L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility")
+    AddDropdown(cpCategory, "classresource_visibility", L["Class Resource Visibility"] or "Class Resource Visibility",
+		visibilityModeOptions, L["Class Resource Visibility Tooltip"] or "When to show class resource")
 
 	local cpTextCategory = Settings.RegisterVerticalLayoutSubcategory(cpCategory, L["Class Resource Text Mode"] or "Text Mode")
 	AddSlider(cpTextCategory, "classresource_fontSize", L["Class Resource Font Size"] or "Class Resource Font Size", 8, 48, 1)

@@ -15,6 +15,7 @@ addon.DefaultValues = {
     offset_y = -12,
     position_x = 400,
     position_y = 400,
+    visibility_mode = "ALWAYS",
 
     -- Module enable flags
     moduleEnabled_Cast = true,
@@ -35,6 +36,8 @@ addon.DefaultValues = {
 
     cast_reverseChanneling = false,
     cast_useClassColor = false,
+    cast_visibilitySource = "INHERIT",
+    cast_visibility = "ALWAYS",
     cast_spellTextEnabled = false,
     cast_spellTextFont = "Fonts\\FRIZQT__.TTF",
     cast_spellTextSize = 12,
@@ -64,6 +67,8 @@ addon.DefaultValues = {
 
     -- ClassResource module settings
     classresource_mode = "PIPS",
+    classresource_visibilitySource = "INHERIT",
+    classresource_visibility = "ALWAYS",
     classresource_font = "Fonts\\FRIZQT__.TTF",
     classresource_fontSize = 16,
     classresource_fontOutline = "",
@@ -76,7 +81,6 @@ addon.DefaultValues = {
     classresource_fillUseClassColor = false,
     classresource_offsetX = 0,
     classresource_offsetY = 0,
-    classresource_visibility = "ALWAYS",
 
     -- Ring module settings
     ring_texture = "decorative_ring_1",

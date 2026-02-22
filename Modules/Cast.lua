@@ -7,6 +7,7 @@ local API = addon.API
 local DonutWidget = addon.DonutWidget
 local CallbackRegistry = addon.CallbackRegistry
 local AnchorFrame = addon.AnchorFrame
+local Visibility = addon.Visibility
 local GetDBValue = addon.GetDBValue
 local GetDBBool = addon.GetDBBool
 local GetDBColor = addon.GetDBColor
@@ -105,6 +106,10 @@ local function SetTextureSmooth(texture, texturePath)
     if texture.SetTexelSnappingBias then
         texture:SetTexelSnappingBias(0)
     end
+end
+
+local function IsCastVisibilityAllowed()
+	return (not Visibility) or Visibility:ShouldShow("cast")
 end
 
 --------------------------------------------------------------------------------
@@ -272,7 +277,6 @@ local function OnUpdate(self, elapsed)
     end
 
     if not isCasting or castDuration == 0 then
-        Cast:Hide()
         return
     end
 
@@ -363,6 +367,11 @@ function Cast:Show()
     if not castFrame then return end
 
     isCasting = true
+    if not IsCastVisibilityAllowed() then
+        if castFrame then castFrame:Hide() end
+        AnchorFrame:Hide("cast")
+        return
+    end
     AnchorFrame:Show("cast")
 
     -- Show latency indicator
@@ -407,6 +416,97 @@ function Cast:Show()
     castFrame:Show()
 end
 
+function Cast:UpdateShellVisibility()
+    if not castFrame then return end
+
+    local allowed = moduleEnabled and IsCastVisibilityAllowed()
+    if not allowed then
+        if castDonut then
+            castDonut:Hide()
+            castDonut:SetOverlayShown(false)
+            castDonut:SetOverlayAlpha(0)
+            castDonut:SetAngle(0)
+        end
+        if latencyDonut then
+            latencyDonut:Hide()
+        end
+        if castFrame.frameTexture then
+            castFrame.frameTexture:Hide()
+        end
+        if castFrame.sparkTexture then
+            castFrame.sparkTexture:Hide()
+        end
+        if castFrame.spellText then
+            castFrame.spellText:Hide()
+        end
+        if castFrame.iconFrame then
+            castFrame.iconFrame:Hide()
+            if castFrame.iconFrame.cooldown then
+                castFrame.iconFrame.cooldown:Hide()
+            end
+        end
+        for i = 1, NUM_SLOTS do
+            if slots[i] then
+                slots[i].widget:Hide()
+            end
+        end
+        castFrame:Hide()
+        AnchorFrame:Hide("cast")
+        if addon.Modules.RingObj and addon.Modules.RingObj.Hide then
+            addon.Modules.RingObj:Hide("cast")
+        end
+        return
+    end
+
+    AnchorFrame:Show("cast")
+    castFrame:Show()
+
+    if isCasting and not interruptFlashActive then
+        self:Show()
+        return
+    end
+
+    if castDonut then
+        castDonut:Show()
+        if not isCasting and not interruptFlashActive then
+            castDonut:SetOverlayTextureBase(CAST_OVERLAY_DEFAULT)
+            castDonut:SetOverlayShown(false)
+            castDonut:SetOverlayAlpha(0)
+            castDonut:SetAngle(0)
+        end
+    end
+    if castFrame.frameTexture then
+        castFrame.frameTexture:Show()
+    end
+
+    if not isCasting and not interruptFlashActive then
+        if latencyDonut then
+            latencyDonut:Hide()
+        end
+        if castFrame.sparkTexture then
+            castFrame.sparkTexture:Hide()
+        end
+        if castFrame.spellText then
+            castFrame.spellText:Hide()
+        end
+        if castFrame.iconFrame then
+            castFrame.iconFrame:Hide()
+            if castFrame.iconFrame.cooldown then
+                castFrame.iconFrame.cooldown:Hide()
+            end
+        end
+    end
+
+    for i = 1, NUM_SLOTS do
+        local slot = slots[i]
+        if slot and slot.provider then
+            slot.widget:Show()
+        elseif slot then
+            slot.widget:Hide()
+        end
+    end
+end
+
 function Cast:Hide()
     if not castFrame then return end
 
@@ -417,29 +517,19 @@ function Cast:Hide()
     pendingVisuals = false
     if castDonut then
         castDonut:SetOverlayTextureBase(CAST_OVERLAY_DEFAULT)
-        castDonut:Hide()
+        castDonut:SetAngle(0)
         castDonut:SetOverlayShown(false)
+        castDonut:SetOverlayAlpha(0)
     end
     if latencyDonut then
         latencyDonut:Hide()
     end
-    if castFrame.frameTexture then
-        castFrame.frameTexture:Hide()
-    end
     if castFrame.sparkTexture then
         castFrame.sparkTexture:Hide()
-    end
-    -- Hide inner ring slots
-    for i = 1, NUM_SLOTS do
-        if slots[i] then
-            slots[i].widget:Hide()
-        end
     end
     castDuration = 0
     castStartTime = 0
     castEndTime = 0
-    castFrame:Hide()
-    AnchorFrame:Hide("cast")
 
     -- Notify Ring module to hide
     if addon.Modules.RingObj and addon.Modules.RingObj.Hide then
@@ -452,6 +542,8 @@ function Cast:Hide()
             castFrame.iconFrame.cooldown:Hide()
         end
     end
+
+    self:UpdateShellVisibility()
 end
 
 function Cast:ShowInterruptFlash(castGUID)
@@ -459,6 +551,10 @@ function Cast:ShowInterruptFlash(castGUID)
         return
     end
     if not castDonut or not castFrame or not isCasting then
+        self:Hide()
+        return
+    end
+    if not IsCastVisibilityAllowed() then
         self:Hide()
         return
     end
@@ -700,7 +796,7 @@ function Cast:ApplySlotAssignments()
     -- assigned/non-NONE slots stay mounted while cast ring is visible.
     for i = 1, NUM_SLOTS do
         local slot = slots[i]
-        if slot and slot.provider and isCasting then
+        if slot and slot.provider and moduleEnabled and IsCastVisibilityAllowed() then
             slot.widget:Show()
         elseif slot then
             slot.widget:Hide()
@@ -868,6 +964,7 @@ function Cast:ApplyOptions()
     end
 
     -- No frame-level pinning; rely on natural draw order.
+    self:UpdateShellVisibility()
 end
 
 --------------------------------------------------------------------------------
@@ -985,6 +1082,7 @@ local function EnableModule(enabled)
         EL:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_UPDATE", "player")
 
         Cast:ApplySlotAssignments()
+        Cast:UpdateShellVisibility()
     else
         EL:UnregisterAllEvents()
         Cast:Hide()
@@ -1018,6 +1116,16 @@ for _, key in ipairs(settingKeys) do
         Cast:ApplyOptions()
     end)
 end
+
+for _, key in ipairs({ "visibility_mode", "cast_visibilitySource", "cast_visibility" }) do
+    CallbackRegistry:RegisterSettingCallback(key, function()
+        Cast:UpdateShellVisibility()
+    end)
+end
+
+CallbackRegistry:Register("VisibilityContextChanged", function()
+    Cast:UpdateShellVisibility()
+end, Cast)
 
 -- Slot provider assignment callbacks
 for i = 1, NUM_SLOTS do
