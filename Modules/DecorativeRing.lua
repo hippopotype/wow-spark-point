@@ -15,7 +15,6 @@ local GetDBColor = addon.GetDBColor
 -- Module State
 --------------------------------------------------------------------------------
 local ringFrame
-local showRequests = {}
 local isEnabled = false
 
 local rad = math.rad
@@ -95,20 +94,16 @@ local function OnShow(self)
 end
 
 --------------------------------------------------------------------------------
--- Show/Hide with Request System
+-- Visibility
 --------------------------------------------------------------------------------
-function Ring:Show(requester)
+function Ring:Show()
     if not ringFrame then return end
     if not isEnabled then return end
-
-    showRequests[requester or "default"] = true
     self:UpdateVisibility()
 end
 
-function Ring:Hide(requester)
+function Ring:Hide()
     if not ringFrame then return end
-
-    showRequests[requester or "default"] = nil
     self:UpdateVisibility()
 end
 
@@ -119,9 +114,6 @@ function Ring:UpdateVisibility()
 		return
 	end
 
-	-- Visibility policy now drives ring display directly.
-	-- The show/hide request API is kept for compatibility with callers (e.g. Cast),
-	-- but requests no longer gate visibility.
 	if IsVisibilityAllowed() then
 		ringFrame:Show()
 	else
@@ -206,7 +198,6 @@ local function EnableModule(enabled)
         if ringFrame then
             ringFrame:Hide()
         end
-        showRequests = {}
     end
 end
 

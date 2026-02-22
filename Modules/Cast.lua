@@ -412,11 +412,6 @@ function Cast:Show()
         end
     end
 
-    -- Notify Ring module to show
-    if addon.Modules.RingObj and addon.Modules.RingObj.Show then
-        addon.Modules.RingObj:Show("cast")
-    end
-
     castFrame:Show()
 end
 
@@ -456,9 +451,6 @@ function Cast:UpdateShellVisibility()
         end
         castFrame:Hide()
         AnchorFrame:Hide("cast")
-        if addon.Modules.RingObj and addon.Modules.RingObj.Hide then
-            addon.Modules.RingObj:Hide("cast")
-        end
         return
     end
 
@@ -534,11 +526,6 @@ function Cast:Hide()
     castDuration = 0
     castStartTime = 0
     castEndTime = 0
-
-    -- Notify Ring module to hide
-    if addon.Modules.RingObj and addon.Modules.RingObj.Hide then
-        addon.Modules.RingObj:Hide("cast")
-    end
 
     if castFrame.iconFrame then
         castFrame.iconFrame:Hide()
