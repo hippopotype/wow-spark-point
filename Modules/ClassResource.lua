@@ -42,9 +42,9 @@ local MAELSTROM_WEAPON_SPELL_ID = 344179
 
 -- Unified pip texture.
 -- Place your custom art at these paths (or change constants below).
-local PIP_TEXTURE_FRAME_PATH = "Interface\\AddOns\\SparkPoint\\Textures\\ClassResourcePipFrame.png"
-local PIP_TEXTURE_BG_PATH = "Interface\\AddOns\\SparkPoint\\Textures\\ClassResourcePipBg.png"
-local PIP_TEXTURE_FILL_PATH = "Interface\\AddOns\\SparkPoint\\Textures\\ClassResourcePipFill.png"
+local PIP_TEXTURE_FRAME_PATH = "Interface\\AddOns\\SparkPoint\\Textures\\class_resource_frame.png"
+local PIP_TEXTURE_BG_PATH = "Interface\\AddOns\\SparkPoint\\Textures\\class_resource_background.png"
+local PIP_TEXTURE_FILL_PATH = "Interface\\AddOns\\SparkPoint\\Textures\\class_resource_fill.png"
 local PIP_TEXTURE_FALLBACK = "Interface\\Buttons\\WHITE8x8"
 
 --------------------------------------------------------------------------------
@@ -389,9 +389,23 @@ local function ConfigurePipTextures(p, cfg)
 	p.frame:SetTexCoord(0, 1, 0, 1)
 	p.bg:SetTexCoord(0, 1, 0, 1)
 	p.fill:SetTexCoord(0, 1, 0, 1)
-	p.frame:SetTexture(PIP_TEXTURE_FRAME_PATH)
-	p.bg:SetTexture(PIP_TEXTURE_BG_PATH)
-	p.fill:SetTexture(PIP_TEXTURE_FILL_PATH)
+
+	local function SetTextureSmooth(tex, path)
+		local ok = pcall(tex.SetTexture, tex, path, nil, nil, "TRILINEAR")
+		if not ok then
+			tex:SetTexture(path)
+		end
+		if tex.SetSnapToPixelGrid then
+			tex:SetSnapToPixelGrid(false)
+		end
+		if tex.SetTexelSnappingBias then
+			tex:SetTexelSnappingBias(0)
+		end
+	end
+
+	SetTextureSmooth(p.frame, PIP_TEXTURE_FRAME_PATH)
+	SetTextureSmooth(p.bg, PIP_TEXTURE_BG_PATH)
+	SetTextureSmooth(p.fill, PIP_TEXTURE_FILL_PATH)
 
 	if not p.frame:GetTexture() then
 		p.frame:SetTexture(PIP_TEXTURE_FALLBACK)
