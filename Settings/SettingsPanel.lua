@@ -9,11 +9,13 @@ local SetDBValue = addon.SetDBValue
 local GetDBBool = addon.GetDBBool
 local GetDBColor = addon.GetDBColor
 local GetProfileMode = addon.GetProfileMode
+local GetActiveProfileMode = addon.GetActiveProfileMode
 
 --------------------------------------------------------------------------------
 -- Settings Panel Setup
 --------------------------------------------------------------------------------
 local ADDON_TITLE = "Spark Point"
+local PROFILE_MODE_CONFIRM_POPUP = "SPARKPOINT_CONFIRM_PROFILE_MODE_CHANGE"
 
 local function BuildSettingsPanel()
     -- Create main settings category
@@ -203,6 +205,43 @@ local function BuildSettingsPanel()
 
 	local profilesCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Profiles"] or "Profiles")
 	do
+		local suppressProfileModeCallback = false
+		local function GetModeLabel(mode)
+			if mode == "CLASS" then
+				return L["Profile Mode Class"] or "Class Specific"
+			end
+			return L["Profile Mode Global"] or "Global"
+		end
+
+		if StaticPopupDialogs and not StaticPopupDialogs[PROFILE_MODE_CONFIRM_POPUP] then
+			StaticPopupDialogs[PROFILE_MODE_CONFIRM_POPUP] = {
+				text = L["Profile Mode Change Confirm"] or "Changing profile mode will reload the interface. Continue?",
+				button1 = ACCEPT,
+				button2 = CANCEL,
+				OnAccept = function(self, data)
+					if not data then return end
+					if addon.SetProfileMode then
+						addon.SetProfileMode(data.newMode, true)
+					end
+				end,
+				OnCancel = function(self, data)
+					if not data then return end
+					if addon.DBRoot then
+						addon.DBRoot.profileMode = data.oldMode
+					end
+					if data.setting and data.setting.SetValue then
+						suppressProfileModeCallback = true
+						data.setting:SetValue(data.oldMode)
+						suppressProfileModeCallback = false
+					end
+				end,
+				timeout = 0,
+				whileDead = true,
+				hideOnEscape = true,
+				preferredIndex = STATICPOPUP_NUMDIALOGS,
+			}
+		end
+
 		local defaultValue = (addon.RootDefaultValues and addon.RootDefaultValues.profileMode) or "GLOBAL"
 		local setting = Settings.RegisterAddOnSetting(
 			profilesCategory,
@@ -214,8 +253,25 @@ local function BuildSettingsPanel()
 			defaultValue
 		)
 		setting:SetValueChangedCallback(function(_, value)
+			if suppressProfileModeCallback then
+				return
+			end
 			if addon.SetProfileMode then
-				addon.SetProfileMode(value, true)
+				local oldMode = GetActiveProfileMode and GetActiveProfileMode() or (GetProfileMode and GetProfileMode()) or "GLOBAL"
+				local newMode = value
+				if oldMode == newMode then
+					return
+				end
+
+				if StaticPopup_Show then
+					StaticPopup_Show(PROFILE_MODE_CONFIRM_POPUP, GetModeLabel(newMode), nil, {
+						oldMode = oldMode,
+						newMode = newMode,
+						setting = setting,
+					})
+				else
+					addon.SetProfileMode(newMode, true)
+				end
 			end
 		end)
 		Settings.CreateDropdown(profilesCategory, setting, function()

@@ -5,6 +5,7 @@ local _, addon = ...
 
 local DB           -- Active profile table (used by modules/settings)
 local RootDB       -- SavedVariables root
+local ActiveProfileMode
 
 --------------------------------------------------------------------------------
 -- Helpers
@@ -71,6 +72,7 @@ end
 
 local function ActivateProfile(triggerCallbacks)
 	DB = ResolveActiveProfileTable() or {}
+	ActiveProfileMode = NormalizeProfileMode(RootDB and RootDB.profileMode)
 	ApplyDefaults(DB, addon.DefaultValues)
 	addon.DB = DB
 
@@ -105,6 +107,13 @@ function addon.GetProfileMode()
 	return NormalizeProfileMode(RootDB.profileMode)
 end
 
+function addon.GetActiveProfileMode()
+	if ActiveProfileMode then
+		return ActiveProfileMode
+	end
+	return addon.GetProfileMode()
+end
+
 function addon.GetProfileKey()
 	local mode = addon.GetProfileMode()
 	if mode == (addon.ProfileModes and addon.ProfileModes.CLASS or "CLASS") then
@@ -116,7 +125,7 @@ end
 function addon.SetProfileMode(mode, userInput)
 	EnsureRootSchema()
 	local normalized = NormalizeProfileMode(mode)
-	local oldMode = addon.GetProfileMode()
+	local oldMode = addon.GetActiveProfileMode and addon.GetActiveProfileMode() or addon.GetProfileMode()
 	RootDB.profileMode = normalized
 	ActivateProfile(true)
 
