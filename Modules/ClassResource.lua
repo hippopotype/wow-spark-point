@@ -417,13 +417,40 @@ local function ConfigurePipTextures(p, cfg)
 		p.fill:SetTexture(PIP_TEXTURE_FALLBACK)
 	end
 
-	local fc = cfg.fillColor
+	local function GetPipFillColor()
+		if GetDBBool("classresource_fillUseClassColor") then
+			return API.GetPlayerClassColor()
+		end
+
+		local customFill = GetDBValue("classresource_fillColor")
+		if customFill then
+			return GetDBColor("classresource_fillColor")
+		end
+
+		local fc = cfg and cfg.fillColor
+		if fc then
+			return fc.r, fc.g, fc.b, fc.a
+		end
+		return 1, 1, 1, 1
+	end
+
+	local fr, fg, fb, fa = GetPipFillColor()
 	local ec = cfg.emptyColor
 	p.frame:SetVertexColor(1, 1, 1, 0.95)
 	p.bg:SetVertexColor(ec.r, ec.g, ec.b, ec.a)
-	p.fill:SetVertexColor(fc.r, fc.g, fc.b, fc.a)
+	p.fill:SetVertexColor(fr, fg, fb, fa)
 
 	p.styleReady = true
+end
+
+function ClassResource:ApplyPipVisualOptions()
+	if not activeCfg then return end
+	for i = 1, #pips do
+		local p = pips[i]
+		if p then
+			ConfigurePipTextures(p, activeCfg)
+		end
+	end
 end
 
 local function LayoutPips(cfg, count)
@@ -821,6 +848,15 @@ end)
 CallbackRegistry:RegisterSettingCallback("classresource_visibility", function()
 	ClassResource:UpdateVisibility()
 end)
+
+for _, key in ipairs({ "classresource_fillColor", "classresource_fillUseClassColor" }) do
+	CallbackRegistry:RegisterSettingCallback(key, function()
+		ClassResource:ApplyPipVisualOptions()
+		if GetCurrentMode() == MODE_PIPS then
+			ClassResource:SyncPower()
+		end
+	end)
+end
 
 --------------------------------------------------------------------------------
 -- Module Registration

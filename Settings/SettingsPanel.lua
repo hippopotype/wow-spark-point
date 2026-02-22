@@ -371,6 +371,11 @@ local function BuildSettingsPanel()
 		L["Class Resource Scale Tooltip"] or "Scale for the Blizzard class-resource frame")
 	AddSlider(cpPipsCategory, "classresource_opacity", L["Class Resource Opacity"] or "Class Resource Opacity", 0, 1, 0.05,
 		L["Class Resource Opacity Tooltip"] or "Opacity for the class-resource copy frame")
+	AddColor(cpPipsCategory, "classresource_fillColor", L["Class Resource Fill Color"] or "Class Resource Fill Color",
+		L["Class Resource Fill Color Tooltip"] or "Color for active class resource pips")
+	AddCheckbox(cpPipsCategory, "classresource_fillUseClassColor",
+		L["Class Resource Use Class Color"] or "Class Resource Use Class Color",
+		L["Class Resource Use Class Color Tooltip"] or "Override class resource pip fill color with your class color")
 	AddSlider(cpPipsCategory, "classresource_offsetX", L["Class Resource Horizontal Offset"] or "Class Resource Horizontal Offset", -300, 300, 1)
 	AddSlider(cpPipsCategory, "classresource_offsetY", L["Class Resource Vertical Offset"] or "Class Resource Vertical Offset", -300, 300, 1)
 

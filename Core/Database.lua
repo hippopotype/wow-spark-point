@@ -73,6 +73,7 @@ addon.DefaultValues = {
     classresource_textOffsetY = 0,
     classresource_scale = 1,
     classresource_opacity = 1,
+    classresource_fillUseClassColor = false,
     classresource_offsetX = 0,
     classresource_offsetY = 0,
     classresource_visibility = "ALWAYS",
