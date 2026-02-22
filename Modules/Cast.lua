@@ -163,6 +163,26 @@ local function ApplySpellIconMask()
         iconFrame.iconMaskAttached = true
     end
 
+    -- Cooldown swipe uses its own texture regions; mask them too so the
+    -- progress sweep stays circular inside the spell icon silhouette.
+    if iconFrame.cooldown and not iconFrame.cooldownMaskAttached then
+        local maskedAny = false
+        local regionCount = select("#", iconFrame.cooldown:GetRegions())
+        for i = 1, regionCount do
+            local region = select(i, iconFrame.cooldown:GetRegions())
+            if region and region.GetObjectType and region:GetObjectType() == "Texture" and region.AddMaskTexture then
+                local ok = pcall(region.AddMaskTexture, region, mask)
+                if ok then
+                    maskedAny = true
+                end
+            end
+        end
+        -- Cooldown regions can be created lazily; only mark attached if we actually masked one.
+        if maskedAny then
+            iconFrame.cooldownMaskAttached = true
+        end
+    end
+
     return true
 end
 
@@ -182,6 +202,24 @@ local function LayoutSpellIconErrorOverlay()
     overlay:ClearAllPoints()
     overlay:SetPoint("TOPLEFT", icon, "TOPLEFT", -expand, expand)
     overlay:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", expand, -expand)
+end
+
+local function LayoutSpellIconCooldown()
+    if not castFrame or not castFrame.iconFrame or not castFrame.iconFrame.icon or not castFrame.iconFrame.cooldown then
+        return
+    end
+
+    local icon = castFrame.iconFrame.icon
+    local cooldown = castFrame.iconFrame.cooldown
+    local iconSize = icon:GetWidth() or SPELL_ICON_MASK_BASE_SIZE
+    local expand = math.floor((iconSize / SPELL_ICON_MASK_BASE_SIZE) * SPELL_ICON_MASK_BASE_EXPAND + 0.5)
+    if expand < 0 then
+        expand = 0
+    end
+
+    cooldown:ClearAllPoints()
+    cooldown:SetPoint("TOPLEFT", icon, "TOPLEFT", -expand, expand)
+    cooldown:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", expand, -expand)
 end
 
 function Cast:SetSpellIconEnabled(enabled)
@@ -226,16 +264,18 @@ function Cast:ApplyIconOptions()
     if showCooldown then
         if not castFrame.iconFrame.cooldown then
             castFrame.iconFrame.cooldown = CreateFrame("Cooldown", nil, castFrame.iconFrame, "CooldownFrameTemplate")
-            castFrame.iconFrame.cooldown:SetAllPoints(castFrame.iconFrame.icon)
             castFrame.iconFrame.cooldown:SetDrawEdge(false)
             castFrame.iconFrame.cooldown:SetHideCountdownNumbers(true)
+            pcall(castFrame.iconFrame.cooldown.SetSwipeTexture, castFrame.iconFrame.cooldown, SPELL_ICON_MASK_PATH)
         end
+        LayoutSpellIconCooldown()
         castFrame.iconFrame.cooldown:Show()
     elseif castFrame.iconFrame.cooldown then
         castFrame.iconFrame.cooldown:Hide()
     end
 
     castFrame.iconMaskReady = ApplySpellIconMask()
+    LayoutSpellIconCooldown()
     LayoutSpellIconErrorOverlay()
     self:UpdateIconCooldown()
 end
@@ -292,6 +332,9 @@ function Cast:UpdateIconCooldown()
         return
     end
     castFrame.iconFrame.cooldown:SetCooldown(castStartTime / 1000, castDuration / 1000)
+    if castFrame.iconMaskReady and not castFrame.iconFrame.cooldownMaskAttached then
+        ApplySpellIconMask()
+    end
     castFrame.iconFrame.cooldown:Show()
 end
 
@@ -1060,9 +1103,10 @@ function Cast:Initialize()
 
     if not castFrame.iconFrame.cooldown then
         castFrame.iconFrame.cooldown = CreateFrame("Cooldown", nil, castFrame.iconFrame, "CooldownFrameTemplate")
-        castFrame.iconFrame.cooldown:SetAllPoints(castFrame.iconFrame.icon)
         castFrame.iconFrame.cooldown:SetDrawEdge(false)
         castFrame.iconFrame.cooldown:SetHideCountdownNumbers(true)
+        pcall(castFrame.iconFrame.cooldown.SetSwipeTexture, castFrame.iconFrame.cooldown, SPELL_ICON_MASK_PATH)
+        LayoutSpellIconCooldown()
         castFrame.iconFrame.cooldown:Hide()
     end
 
