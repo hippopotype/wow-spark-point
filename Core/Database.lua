@@ -42,6 +42,17 @@ local function GetPlayerClassKey()
 	return classTag or "UNKNOWN"
 end
 
+local function GetClassDisplayName(classTag)
+	if not classTag then return "Unknown" end
+	if LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[classTag] then
+		return LOCALIZED_CLASS_NAMES_MALE[classTag]
+	end
+	if LOCALIZED_CLASS_NAMES_FEMALE and LOCALIZED_CLASS_NAMES_FEMALE[classTag] then
+		return LOCALIZED_CLASS_NAMES_FEMALE[classTag]
+	end
+	return classTag
+end
+
 local function EnsureRootSchema()
 	SparkPointDB = SparkPointDB or {}
 	RootDB = SparkPointDB
@@ -115,11 +126,129 @@ function addon.GetActiveProfileMode()
 end
 
 function addon.GetProfileKey()
-	local mode = addon.GetProfileMode()
+	local mode = addon.GetActiveProfileMode and addon.GetActiveProfileMode() or addon.GetProfileMode()
 	if mode == (addon.ProfileModes and addon.ProfileModes.CLASS or "CLASS") then
 		return "CLASS:" .. GetPlayerClassKey()
 	end
 	return "GLOBAL"
+end
+
+function addon.GetProfileDisplayName(profileKey)
+	if profileKey == "GLOBAL" then
+		return "Global"
+	end
+	local classTag = type(profileKey) == "string" and profileKey:match("^CLASS:(.+)$")
+	if classTag then
+		return "Class: " .. GetClassDisplayName(classTag)
+	end
+	return tostring(profileKey or "Unknown")
+end
+
+function addon.GetAvailableProfileSources()
+	EnsureRootSchema()
+
+	local activeKey = addon.GetProfileKey()
+	local list = {}
+
+	if activeKey ~= "GLOBAL" and RootDB.profiles.global then
+		list[#list + 1] = {
+			key = "GLOBAL",
+			label = addon.GetProfileDisplayName("GLOBAL"),
+		}
+	end
+
+	local classKeys = {}
+	for classTag in pairs(RootDB.profiles.class or {}) do
+		classKeys[#classKeys + 1] = classTag
+	end
+	table.sort(classKeys)
+
+	for _, classTag in ipairs(classKeys) do
+		local key = "CLASS:" .. classTag
+		if key ~= activeKey then
+			list[#list + 1] = {
+				key = key,
+				label = addon.GetProfileDisplayName(key),
+			}
+		end
+	end
+
+	return list
+end
+
+local function ResolveProfileTableByKey(profileKey)
+	if not RootDB or not RootDB.profiles then return nil end
+	if profileKey == "GLOBAL" then
+		return RootDB.profiles.global
+	end
+
+	local classTag = type(profileKey) == "string" and profileKey:match("^CLASS:(.+)$")
+	if classTag then
+		return RootDB.profiles.class and RootDB.profiles.class[classTag]
+	end
+
+	return nil
+end
+
+local function ClearTable(t)
+	for k in pairs(t) do
+		t[k] = nil
+	end
+end
+
+function addon.CopyProfileFrom(profileKey, userInput)
+	EnsureRootSchema()
+	if not DB then
+		ActivateProfile(false)
+	end
+
+	local activeKey = addon.GetProfileKey()
+	if not profileKey or profileKey == "NONE" or profileKey == activeKey then
+		return false
+	end
+
+	local source = ResolveProfileTableByKey(profileKey)
+	if type(source) ~= "table" then
+		return false
+	end
+
+	ClearTable(DB)
+	for k, v in pairs(source) do
+		DB[k] = DeepCopy(v)
+	end
+	ApplyDefaults(DB, addon.DefaultValues)
+
+	-- Sync module enabled states immediately (module toggles are not settings callbacks).
+	local controlCenter = addon.ControlCenter
+	if controlCenter and controlCenter.GetAllModules then
+		for _, moduleData in ipairs(controlCenter:GetAllModules()) do
+			local dbKey = moduleData and moduleData.dbKey
+			if dbKey and DB[dbKey] ~= nil then
+				local shouldEnable = DB[dbKey] == true
+				local isEnabled = moduleData.isEnabled == true
+				if shouldEnable ~= isEnabled then
+					if shouldEnable then
+						controlCenter:EnableModule(dbKey)
+					else
+						controlCenter:DisableModule(dbKey)
+					end
+				end
+			end
+		end
+	end
+
+	for dbKey, value in pairs(DB) do
+		addon.CallbackRegistry:Trigger("SettingChanged." .. dbKey, value, userInput and true or false)
+	end
+	addon.CallbackRegistry:Trigger("ProfileChanged", addon.GetActiveProfileMode and addon.GetActiveProfileMode() or addon.GetProfileMode(), activeKey)
+
+	if DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+		local srcLabel = addon.GetProfileDisplayName(profileKey)
+		local dstLabel = addon.GetProfileDisplayName(activeKey)
+		DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff33ff99SparkPoint|r: Copied settings from %s to %s.", srcLabel, dstLabel))
+	end
+
+	return true
 end
 
 function addon.SetProfileMode(mode, userInput)

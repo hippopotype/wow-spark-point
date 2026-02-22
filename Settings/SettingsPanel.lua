@@ -16,6 +16,7 @@ local GetActiveProfileMode = addon.GetActiveProfileMode
 --------------------------------------------------------------------------------
 local ADDON_TITLE = "Spark Point"
 local PROFILE_MODE_CONFIRM_POPUP = "SPARKPOINT_CONFIRM_PROFILE_MODE_CHANGE"
+local PROFILE_COPY_CONFIRM_POPUP = "SPARKPOINT_CONFIRM_PROFILE_COPY"
 
 local function BuildSettingsPanel()
     -- Create main settings category
@@ -206,6 +207,7 @@ local function BuildSettingsPanel()
 	local profilesCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Profiles"] or "Profiles")
 	do
 		local suppressProfileModeCallback = false
+		local suppressProfileCopyCallback = false
 		local function GetModeLabel(mode)
 			if mode == "CLASS" then
 				return L["Profile Mode Class"] or "Class Specific"
@@ -233,6 +235,43 @@ local function BuildSettingsPanel()
 						suppressProfileModeCallback = true
 						data.setting:SetValue(data.oldMode)
 						suppressProfileModeCallback = false
+					end
+				end,
+				timeout = 0,
+				whileDead = true,
+				hideOnEscape = true,
+				preferredIndex = STATICPOPUP_NUMDIALOGS,
+			}
+		end
+
+		if StaticPopupDialogs and not StaticPopupDialogs[PROFILE_COPY_CONFIRM_POPUP] then
+			StaticPopupDialogs[PROFILE_COPY_CONFIRM_POPUP] = {
+				text = L["Profile Copy Confirm"] or "Copy settings from %s to %s? This will overwrite the current profile settings.",
+				button1 = ACCEPT,
+				button2 = CANCEL,
+				OnAccept = function(self, data)
+					if not data then return end
+					if addon.CopyProfileFrom then
+						addon.CopyProfileFrom(data.sourceKey, true)
+					end
+					if addon.DBRoot then
+						addon.DBRoot.profileCopySource = "NONE"
+					end
+					if data.setting and data.setting.SetValue then
+						suppressProfileCopyCallback = true
+						data.setting:SetValue("NONE")
+						suppressProfileCopyCallback = false
+					end
+				end,
+				OnCancel = function(self, data)
+					if not data then return end
+					if addon.DBRoot then
+						addon.DBRoot.profileCopySource = "NONE"
+					end
+					if data.setting and data.setting.SetValue then
+						suppressProfileCopyCallback = true
+						data.setting:SetValue("NONE")
+						suppressProfileCopyCallback = false
 					end
 				end,
 				timeout = 0,
@@ -280,6 +319,55 @@ local function BuildSettingsPanel()
 			container:Add("CLASS", L["Profile Mode Class"] or "Class Specific")
 			return container:GetData()
 		end, L["Profile Mode Tooltip"] or "Changing this reloads the UI.")
+
+		local copySetting = Settings.RegisterAddOnSetting(
+			profilesCategory,
+			addonName .. "_profileCopySource",
+			"profileCopySource",
+			RootDB,
+			Settings.VarType.String,
+			L["Copy Settings From"] or "Copy Settings From",
+			(addon.RootDefaultValues and addon.RootDefaultValues.profileCopySource) or "NONE"
+		)
+		copySetting:SetValueChangedCallback(function(_, value)
+			if suppressProfileCopyCallback then
+				return
+			end
+			local sourceKey = value
+			if not sourceKey or sourceKey == "NONE" then
+				return
+			end
+
+			local sourceLabel = addon.GetProfileDisplayName and addon.GetProfileDisplayName(sourceKey) or tostring(sourceKey)
+			local targetLabel = addon.GetProfileDisplayName and addon.GetProfileDisplayName(addon.GetProfileKey and addon.GetProfileKey() or "GLOBAL") or "Current Profile"
+
+			if StaticPopup_Show then
+				StaticPopup_Show(PROFILE_COPY_CONFIRM_POPUP, sourceLabel, targetLabel, {
+					sourceKey = sourceKey,
+					setting = copySetting,
+				})
+			else
+				if addon.CopyProfileFrom then
+					addon.CopyProfileFrom(sourceKey, true)
+				end
+				if addon.DBRoot then
+					addon.DBRoot.profileCopySource = "NONE"
+				end
+				suppressProfileCopyCallback = true
+				copySetting:SetValue("NONE")
+				suppressProfileCopyCallback = false
+			end
+		end)
+		Settings.CreateDropdown(profilesCategory, copySetting, function()
+			local container = Settings.CreateControlTextContainer()
+			container:Add("NONE", L["Copy Profile Select"] or "Select Profile...")
+			if addon.GetAvailableProfileSources then
+				for _, entry in ipairs(addon.GetAvailableProfileSources()) do
+					container:Add(entry.key, entry.label)
+				end
+			end
+			return container:GetData()
+		end, L["Copy Settings From Tooltip"] or "Copy settings from another existing profile into the current profile")
 	end
 
 	local visibilityCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Visibility"] or "Visibility")

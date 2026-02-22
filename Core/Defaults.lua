@@ -11,6 +11,7 @@ addon.ProfileModes = {
 -- Root SavedVariables defaults (non-profile-scoped)
 addon.RootDefaultValues = {
 	profileMode = addon.ProfileModes.GLOBAL,
+	profileCopySource = "NONE",
 }
 
 -- Profile-scoped defaults
