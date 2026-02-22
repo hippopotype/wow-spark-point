@@ -2,7 +2,7 @@
 ## Title: Spark Point
 ## Notes: Cast ring around cursor.
 ## Author: Magic (EU-BurningLegion)
-## Version: 1.0.3
+## Version: 1.1.0
 ## SavedVariables: SparkPointDB
 ## IconTexture: Interface\Icons\inv_arathordungeon_fragment_color6
 
