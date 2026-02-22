@@ -9,6 +9,7 @@
 # Core (load order matters)
 Core\Initialization.lua
 Core\API.lua
+Core\Defaults.lua
 Core\Database.lua
 Core\Visibility.lua
 Core\ModuleRegistry.lua

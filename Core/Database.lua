@@ -1,181 +1,180 @@
 -- SparkPoint Database System
--- Centralized defaults and DialogueUI-style getters/setters
+-- Lightweight profiles: one global shared profile or one profile per class.
 
 local _, addon = ...
 
-local DB
+local DB           -- Active profile table (used by modules/settings)
+local RootDB       -- SavedVariables root
 
 --------------------------------------------------------------------------------
--- Default Values (all settings with their defaults)
+-- Helpers
 --------------------------------------------------------------------------------
-addon.DefaultValues = {
-    -- Global/anchor settings
-    attachToMouse = true,
-    offset_x = 12,
-    offset_y = -12,
-    position_x = 400,
-    position_y = 400,
-    visibility_mode = "ALWAYS",
+local function DeepCopy(value)
+	if type(value) ~= "table" then
+		return value
+	end
+	local out = {}
+	for k, v in pairs(value) do
+		out[k] = DeepCopy(v)
+	end
+	return out
+end
 
-    -- Module enable flags
-    moduleEnabled_Cast = true,
-    moduleEnabled_ClassResource = true,
-    moduleEnabled_Ring = true,
-    moduleEnabled_SpellIcon = true,
+local function ApplyDefaults(target, defaults)
+	for dbKey, defaultValue in pairs(defaults or {}) do
+		if target[dbKey] == nil then
+			target[dbKey] = DeepCopy(defaultValue)
+		end
+	end
+end
 
-    -- Cast module settings
-    cast_radius = 22,
-    cast_thickness = 20,
-    cast_barColor = {r = 1, g = 1, b = 1, a = 0.8},
-    cast_backgroundOpacity = 0.8,
-    cast_frameOpacity = 0.8,
-    cast_glowOpacity = 0.8,
-    cast_sparkColor = {r = 0.9, g = 0.8, b = 1, a = 1},
-    cast_sparkScale = 0.5,
-    cast_latencyColor = {r = 1, g = 0, b = 0, a = 1},
+local function NormalizeProfileMode(mode)
+	local ProfileModes = addon.ProfileModes or {}
+	if mode == ProfileModes.CLASS then
+		return ProfileModes.CLASS
+	end
+	return ProfileModes.GLOBAL or "GLOBAL"
+end
 
-    cast_reverseChanneling = false,
-    cast_useClassColor = false,
-    cast_visibilitySource = "INHERIT",
-    cast_visibility = "ALWAYS",
-    cast_spellTextEnabled = false,
-    cast_spellTextFont = "Fonts\\FRIZQT__.TTF",
-    cast_spellTextSize = 12,
-    cast_spellTextOutline = "",
-    cast_spellTextColor = {r = 1, g = 1, b = 1, a = 0.8},
-    cast_spellTextOffsetX = 0,
-    cast_spellTextOffsetY = 0,
+local function GetPlayerClassKey()
+	local _, classTag = UnitClass("player")
+	return classTag or "UNKNOWN"
+end
 
-    -- GCD provider settings
-    gcd_sparkColor = {r = 0.9, g = 0.8, b = 1, a = 1},
-    gcd_useClassColor = false,
+local function EnsureRootSchema()
+	SparkPointDB = SparkPointDB or {}
+	RootDB = SparkPointDB
+	addon.DBRoot = RootDB
 
-    -- Inner ring slot settings
-    slot1_provider = "GCD",
-    slot2_provider = "NONE",
-    slot3_provider = "NONE",
+	ApplyDefaults(RootDB, addon.RootDefaultValues)
 
-    slot1_barColor = {r = 1, g = 1, b = 1, a = 0.8},
-    slot1_useClassColor = false,
-    slot1_backgroundOpacity = 0.8,
-    slot2_barColor = {r = 1, g = 1, b = 1, a = 0.8},
-    slot2_useClassColor = false,
-    slot2_backgroundOpacity = 0.8,
-    slot3_barColor = {r = 1, g = 1, b = 1, a = 0.8},
-    slot3_useClassColor = false,
-    slot3_backgroundOpacity = 0.8,
+	RootDB.profiles = RootDB.profiles or {}
+	RootDB.profiles.global = RootDB.profiles.global or {}
+	RootDB.profiles.class = RootDB.profiles.class or {}
+end
 
-    -- ClassResource module settings
-    classresource_mode = "PIPS",
-    classresource_visibilitySource = "INHERIT",
-    classresource_visibility = "ALWAYS",
-    classresource_font = "Fonts\\FRIZQT__.TTF",
-    classresource_fontSize = 16,
-    classresource_fontOutline = "",
-    classresource_fontColor = {r = 1, g = 1, b = 1, a = 1},
-    classresource_useClassColor = false,
-    classresource_textOffsetX = 0,
-    classresource_textOffsetY = 0,
-    classresource_scale = 1,
-    classresource_opacity = 1,
-    classresource_fillUseClassColor = false,
-    classresource_offsetX = 0,
-    classresource_offsetY = 0,
+local function ResolveActiveProfileTable()
+	if not RootDB then return nil end
 
-    -- Ring module settings
-    ring_texture = "decorative_ring_1",
-    ring_color = {r = 0, g = 1, b = 0, a = 0.5},
-    ring_width = 75,
-    ring_rotate = true,
-    ring_useClassColor = false,
-    ring_classColorAlpha = 0.5,
-    ring_visibilitySource = "INHERIT",
-    ring_visibility = "ALWAYS",
+	local mode = NormalizeProfileMode(RootDB.profileMode)
+	RootDB.profileMode = mode
 
-    -- SpellIcon module settings (NEW)
-    spellicon_size = 32,
-    spellicon_offsetX = 0,
-    spellicon_offsetY = -40,
-    spellicon_castProgressSwipe = true,
-}
+	if mode == (addon.ProfileModes and addon.ProfileModes.CLASS or "CLASS") then
+		local classKey = GetPlayerClassKey()
+		RootDB.profiles.class[classKey] = RootDB.profiles.class[classKey] or {}
+		return RootDB.profiles.class[classKey]
+	end
+
+	RootDB.profiles.global = RootDB.profiles.global or {}
+	return RootDB.profiles.global
+end
+
+local function ActivateProfile(triggerCallbacks)
+	DB = ResolveActiveProfileTable() or {}
+	ApplyDefaults(DB, addon.DefaultValues)
+	addon.DB = DB
+
+	if triggerCallbacks then
+		for dbKey, value in pairs(DB) do
+			addon.CallbackRegistry:Trigger("SettingChanged." .. dbKey, value, false)
+		end
+		addon.CallbackRegistry:Trigger("ProfileChanged", addon.GetProfileMode(), addon.GetProfileKey())
+	end
+end
 
 --------------------------------------------------------------------------------
 -- Database Loading
 --------------------------------------------------------------------------------
 function addon:LoadDatabase()
-    SparkPointDB = SparkPointDB or {}
-    DB = SparkPointDB
-    addon.DB = DB
+	EnsureRootSchema()
+	ActivateProfile(false)
 
-    -- Apply defaults for missing keys
-    for dbKey, defaultValue in pairs(addon.DefaultValues) do
-        if DB[dbKey] == nil then
-            -- Deep copy tables
-            if type(defaultValue) == "table" then
-                DB[dbKey] = {}
-                for k, v in pairs(defaultValue) do
-                    DB[dbKey][k] = v
-                end
-            else
-                DB[dbKey] = defaultValue
-            end
-        end
-    end
+	-- Trigger initial setting callbacks for active profile
+	for dbKey, value in pairs(DB) do
+		addon.CallbackRegistry:Trigger("SettingChanged." .. dbKey, value, false)
+	end
+end
 
-    -- Trigger initial setting callbacks
-    for dbKey, value in pairs(DB) do
-        addon.CallbackRegistry:Trigger("SettingChanged." .. dbKey, value, false)
-    end
+--------------------------------------------------------------------------------
+-- Profile API
+--------------------------------------------------------------------------------
+function addon.GetProfileMode()
+	if not RootDB then
+		return NormalizeProfileMode((addon.RootDefaultValues and addon.RootDefaultValues.profileMode) or nil)
+	end
+	return NormalizeProfileMode(RootDB.profileMode)
+end
+
+function addon.GetProfileKey()
+	local mode = addon.GetProfileMode()
+	if mode == (addon.ProfileModes and addon.ProfileModes.CLASS or "CLASS") then
+		return "CLASS:" .. GetPlayerClassKey()
+	end
+	return "GLOBAL"
+end
+
+function addon.SetProfileMode(mode, userInput)
+	EnsureRootSchema()
+	local normalized = NormalizeProfileMode(mode)
+	local oldMode = addon.GetProfileMode()
+	RootDB.profileMode = normalized
+	ActivateProfile(true)
+
+	addon.CallbackRegistry:Trigger("SettingChanged.profileMode", normalized, userInput)
+
+	-- Blizzard Settings controls are bound to the old active profile table reference.
+	-- Keep this lightweight and reliable: reload to rebuild controls against the new DB.
+	if ReloadUI and (not InCombatLockdown or not InCombatLockdown()) then
+		ReloadUI()
+	else
+		addon.CallbackRegistry:Trigger("ProfileReloadRequired", normalized)
+		if DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+			DEFAULT_CHAT_FRAME:AddMessage("|cff33ff99SparkPoint|r: Profile mode changed. Reload UI to fully apply settings panel bindings.")
+		end
+	end
+
+	return oldMode ~= normalized
 end
 
 --------------------------------------------------------------------------------
 -- Database Access Functions (DialogueUI-style)
 --------------------------------------------------------------------------------
 function addon.GetDBValue(dbKey)
-    return DB and DB[dbKey]
+	return DB and DB[dbKey]
 end
 
 function addon.SetDBValue(dbKey, value, userInput)
-    if DB then
-        -- Deep copy tables
-        if type(value) == "table" then
-            DB[dbKey] = {}
-            for k, v in pairs(value) do
-                DB[dbKey][k] = v
-            end
-        else
-            DB[dbKey] = value
-        end
-        addon.CallbackRegistry:Trigger("SettingChanged." .. dbKey, value, userInput)
-    end
+	if DB then
+		DB[dbKey] = DeepCopy(value)
+		addon.CallbackRegistry:Trigger("SettingChanged." .. dbKey, value, userInput)
+	end
 end
 
 function addon.GetDBBool(dbKey)
-    return DB and DB[dbKey] == true
+	return DB and DB[dbKey] == true
 end
 
 function addon.FlipDBBool(dbKey)
-    addon.SetDBValue(dbKey, not addon.GetDBBool(dbKey), true)
+	addon.SetDBValue(dbKey, not addon.GetDBBool(dbKey), true)
 end
 
 -- Color helpers
 function addon.GetDBColor(dbKey)
-    local c = DB and DB[dbKey]
-    if c then
-        return c.r or 1, c.g or 1, c.b or 1, c.a or 1
-    end
-    return 1, 1, 1, 1
+	local c = DB and DB[dbKey]
+	if c then
+		return c.r or 1, c.g or 1, c.b or 1, c.a or 1
+	end
+	return 1, 1, 1, 1
 end
 
 function addon.SetDBColor(dbKey, r, g, b, a)
-    addon.SetDBValue(dbKey, {r = r, g = g, b = b, a = a or 1}, true)
+	addon.SetDBValue(dbKey, {r = r, g = g, b = b, a = a or 1}, true)
 end
 
--- Get color as table
 function addon.GetDBColorTable(dbKey)
-    local c = DB and DB[dbKey]
-    if c then
-        return {r = c.r or 1, g = c.g or 1, b = c.b or 1, a = c.a or 1}
-    end
-    return {r = 1, g = 1, b = 1, a = 1}
+	local c = DB and DB[dbKey]
+	if c then
+		return {r = c.r or 1, g = c.g or 1, b = c.b or 1, a = c.a or 1}
+	end
+	return {r = 1, g = 1, b = 1, a = 1}
 end

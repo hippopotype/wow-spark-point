@@ -8,6 +8,7 @@ local GetDBValue = addon.GetDBValue
 local SetDBValue = addon.SetDBValue
 local GetDBBool = addon.GetDBBool
 local GetDBColor = addon.GetDBColor
+local GetProfileMode = addon.GetProfileMode
 
 --------------------------------------------------------------------------------
 -- Settings Panel Setup
@@ -21,6 +22,7 @@ local function BuildSettingsPanel()
 
     -- Get the database table
     local DB = addon.DB
+    local RootDB = addon.DBRoot or {}
 
     ------------------------------------------------------------------------
     -- Helper function to create a checkbox
@@ -198,6 +200,31 @@ local function BuildSettingsPanel()
 
     AddSlider(category, "offset_y", L["Anchor Vertical Offset"] or "Anchor Vertical Offset", -256, 0, 1,
         L["Vertical Offset Tooltip"] or "Vertical offset from cursor position")
+
+	local profilesCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Profiles"] or "Profiles")
+	do
+		local defaultValue = (addon.RootDefaultValues and addon.RootDefaultValues.profileMode) or "GLOBAL"
+		local setting = Settings.RegisterAddOnSetting(
+			profilesCategory,
+			addonName .. "_profileMode",
+			"profileMode",
+			RootDB,
+			Settings.VarType.String,
+			L["Profile Mode"] or "Profile Mode",
+			defaultValue
+		)
+		setting:SetValueChangedCallback(function(_, value)
+			if addon.SetProfileMode then
+				addon.SetProfileMode(value, true)
+			end
+		end)
+		Settings.CreateDropdown(profilesCategory, setting, function()
+			local container = Settings.CreateControlTextContainer()
+			container:Add("GLOBAL", L["Profile Mode Global"] or "Global")
+			container:Add("CLASS", L["Profile Mode Class"] or "Class Specific")
+			return container:GetData()
+		end, L["Profile Mode Tooltip"] or "Changing this reloads the UI.")
+	end
 
 	local visibilityCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Visibility"] or "Visibility")
 	AddDropdown(visibilityCategory, "visibility_mode", L["Addon Visibility"] or "Addon Visibility", visibilityModeOptions,
