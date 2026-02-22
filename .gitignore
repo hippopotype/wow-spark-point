@@ -7,20 +7,15 @@
 # Clones
 .clones/
 
-# Skills
-.skills/
-
 # Sessions
 .sessions/
 
 # Private
-.private/
+*.private/
 
 # Agents
 .agents/
 .claude/
-AGENTS.md
-CLAUDE.md
 
 # Windows
 Thumbs.db
