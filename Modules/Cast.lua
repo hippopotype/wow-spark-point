@@ -18,6 +18,7 @@ local SlotProviders = addon.SlotProviders
 
 local Cast
 local SPELL_ICON_MASK_PATH = addon.addonFolder .. "\\Textures\\spell_icon_mask.png"
+local SPELL_ICON_ERROR_PATH = addon.addonFolder .. "\\Textures\\spell_icon_error.png"
 local SPELL_ICON_MASK_BASE_SIZE = 32
 local SPELL_ICON_MASK_BASE_EXPAND = 6
 
@@ -165,6 +166,24 @@ local function ApplySpellIconMask()
     return true
 end
 
+local function LayoutSpellIconErrorOverlay()
+    if not castFrame or not castFrame.iconFrame or not castFrame.iconFrame.icon or not castFrame.iconFrame.errorIcon then
+        return
+    end
+
+    local icon = castFrame.iconFrame.icon
+    local overlay = castFrame.iconFrame.errorIcon
+    local iconSize = icon:GetWidth() or SPELL_ICON_MASK_BASE_SIZE
+    local expand = math.floor((iconSize / SPELL_ICON_MASK_BASE_SIZE) * SPELL_ICON_MASK_BASE_EXPAND + 0.5)
+    if expand < 0 then
+        expand = 0
+    end
+
+    overlay:ClearAllPoints()
+    overlay:SetPoint("TOPLEFT", icon, "TOPLEFT", -expand, expand)
+    overlay:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", expand, -expand)
+end
+
 function Cast:SetSpellIconEnabled(enabled)
     spellIconEnabled = enabled == true
     if castFrame and castFrame.iconFrame then
@@ -217,11 +236,15 @@ function Cast:ApplyIconOptions()
     end
 
     castFrame.iconMaskReady = ApplySpellIconMask()
+    LayoutSpellIconErrorOverlay()
     self:UpdateIconCooldown()
 end
 
 function Cast:UpdateSpellIcon()
     if not castFrame or not castFrame.iconFrame then return end
+    if castFrame.iconFrame.errorIcon then
+        castFrame.iconFrame.errorIcon:Hide()
+    end
     if not spellIconEnabled and addon.GetDBBool("moduleEnabled_SpellIcon") then
         spellIconEnabled = true
     end
@@ -439,6 +462,9 @@ function Cast:UpdateShellVisibility()
             castFrame.spellText:Hide()
         end
         if castFrame.iconFrame then
+            if castFrame.iconFrame.errorIcon then
+                castFrame.iconFrame.errorIcon:Hide()
+            end
             castFrame.iconFrame:Hide()
             if castFrame.iconFrame.cooldown then
                 castFrame.iconFrame.cooldown:Hide()
@@ -486,6 +512,9 @@ function Cast:UpdateShellVisibility()
             castFrame.spellText:Hide()
         end
         if castFrame.iconFrame then
+            if castFrame.iconFrame.errorIcon then
+                castFrame.iconFrame.errorIcon:Hide()
+            end
             castFrame.iconFrame:Hide()
             if castFrame.iconFrame.cooldown then
                 castFrame.iconFrame.cooldown:Hide()
@@ -528,6 +557,9 @@ function Cast:Hide()
     castEndTime = 0
 
     if castFrame.iconFrame then
+        if castFrame.iconFrame.errorIcon then
+            castFrame.iconFrame.errorIcon:Hide()
+        end
         castFrame.iconFrame:Hide()
         if castFrame.iconFrame.cooldown then
             castFrame.iconFrame.cooldown:Hide()
@@ -573,6 +605,15 @@ function Cast:ShowInterruptFlash(castGUID)
     end
     if castFrame.sparkTexture then
         castFrame.sparkTexture:Hide()
+    end
+    if spellIconEnabled and castFrame.iconFrame and castFrame.iconFrame.errorIcon then
+        SetTextureSmooth(castFrame.iconFrame.errorIcon, SPELL_ICON_ERROR_PATH)
+        LayoutSpellIconErrorOverlay()
+        castFrame.iconFrame.errorIcon:Show()
+        castFrame.iconFrame:Show()
+        if castFrame.iconFrame.cooldown then
+            castFrame.iconFrame.cooldown:Hide()
+        end
     end
     castDonut:Show()
     castFrame:Show()
@@ -1000,9 +1041,15 @@ function Cast:Initialize()
     castFrame.iconFrame.icon:SetPoint("CENTER")
     castFrame.iconFrame.icon:SetTexCoord(0, 1, 0, 1)
 
+    castFrame.iconFrame.errorIcon = castFrame.iconFrame:CreateTexture(nil, "ARTWORK")
+    castFrame.iconFrame.errorIcon:SetDrawLayer("ARTWORK", 5)
+    castFrame.iconFrame.errorIcon:SetBlendMode("BLEND")
+    castFrame.iconFrame.errorIcon:Hide()
+
     -- Preload assets to avoid first-use stutter (font must be set before text)
     castFrame.iconFrame.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
     castFrame.iconFrame.icon:Hide()
+    SetTextureSmooth(castFrame.iconFrame.errorIcon, SPELL_ICON_ERROR_PATH)
 
     if not castFrame.iconFrame.cooldown then
         castFrame.iconFrame.cooldown = CreateFrame("Cooldown", nil, castFrame.iconFrame, "CooldownFrameTemplate")
