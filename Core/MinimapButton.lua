@@ -257,7 +257,7 @@ local function EnsureButton()
 	button.background = background
 
 	local icon = button:CreateTexture(nil, "ARTWORK")
-	icon:SetTexture("Interface\\Icons\\inv_arathordungeon_fragment_color6")
+	icon:SetTexture("Interface\\AddOns\\SparkPoint\\Textures\\icon.png")
 	icon:SetSize(18, 18)
 	icon:SetPoint("CENTER", button, "CENTER", 0, 0)
 	icon:SetTexCoord(0.05, 0.95, 0.05, 0.95)

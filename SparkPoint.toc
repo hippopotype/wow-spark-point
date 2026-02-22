@@ -4,7 +4,7 @@
 ## Author: Magic (EU-BurningLegion)
 ## Version: 1.1.3
 ## SavedVariables: SparkPointDB
-## IconTexture: Interface\Icons\inv_arathordungeon_fragment_color6
+## IconTexture: Interface\AddOns\SparkPoint\Textures\icon.png
 
 # Core (load order matters)
 Core\Initialization.lua
