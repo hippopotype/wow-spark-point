@@ -156,17 +156,102 @@ local function BuildSettingsPanel()
 		return initializer
 	end
 
-	local visibilityModeOptions = {
-		{ value = "ALWAYS", label = L["Visibility Always"] or "Always" },
-		{ value = "IN_COMBAT", label = L["Visibility In Combat"] or "In Combat" },
-		{ value = "OUT_OF_COMBAT", label = L["Visibility Out of Combat"] or "Out of Combat" },
-		{ value = "HAS_TARGET", label = L["Visibility Has Target"] or "Has Target" },
-		{ value = "CASTING", label = L["Visibility While Casting"] or "While Casting" },
+	local visibilityRuleOptions = {
+		{ key = "ALWAYS", label = L["Visibility Always"] or "Always" },
+		{ key = "IN_COMBAT", label = L["Visibility In Combat"] or "In Combat" },
+		{ key = "OUT_OF_COMBAT", label = L["Visibility Out of Combat"] or "Out of Combat" },
+		{ key = "HAS_TARGET", label = L["Visibility Has Target"] or "Has Target" },
+		{ key = "CASTING", label = L["Visibility While Casting"] or "While Casting" },
+		{ key = "IN_PARTY", label = L["Visibility In Party"] or "In Party" },
+		{ key = "IN_RAID", label = L["Visibility In Raid"] or "In Raid" },
+		{ key = "IN_INSTANCE", label = L["Visibility In Instanced Content"] or "In Instanced Content" },
 	}
 	local visibilitySourceOptions = {
 		{ value = "INHERIT", label = L["Visibility Inherit"] or "Inherit" },
 		{ value = "CUSTOM", label = L["Visibility Custom"] or "Custom" },
 	}
+	local visibilityRuleProxy = {}
+
+	local function GetNormalizedVisibilityRules(dbKey)
+		local value = DB[dbKey]
+		local isTable = type(value) == "table"
+		if not isTable then
+			value = addon.DefaultValues and addon.DefaultValues[dbKey]
+		end
+
+		local out = {}
+		if type(value) == "table" then
+			for _, option in ipairs(visibilityRuleOptions) do
+				if value[option.key] == true then
+					out[option.key] = true
+				end
+			end
+		end
+		if not isTable and not next(out) then
+			out.ALWAYS = true
+		end
+		return out
+	end
+
+	local function GetDefaultVisibilityRules(dbKey)
+		local defaults = addon.DefaultValues and addon.DefaultValues[dbKey]
+		local out = {}
+		if type(defaults) == "table" then
+			for _, option in ipairs(visibilityRuleOptions) do
+				if defaults[option.key] == true then
+					out[option.key] = true
+				end
+			end
+		end
+		if not next(out) then
+			out.ALWAYS = true
+		end
+		return out
+	end
+
+	local function AddVisibilityRuleGroup(parentCategory, dbKey, title, tooltip)
+		local groupCategory = title and Settings.RegisterVerticalLayoutSubcategory(parentCategory, title) or parentCategory
+		local controls = {}
+		local settings = {}
+		for _, option in ipairs(visibilityRuleOptions) do
+			local proxyKey = dbKey .. "__" .. option.key
+			local currentRules = GetNormalizedVisibilityRules(dbKey)
+			local defaultRules = GetDefaultVisibilityRules(dbKey)
+			visibilityRuleProxy[proxyKey] = currentRules[option.key] == true
+
+			local setting = Settings.RegisterAddOnSetting(
+				groupCategory,
+				addonName .. "_" .. proxyKey,
+				proxyKey,
+				visibilityRuleProxy,
+				Settings.VarType.Boolean,
+				option.label,
+				defaultRules[option.key] == true
+			)
+			setting:SetValueChangedCallback(function(_, value)
+				visibilityRuleProxy[proxyKey] = value and true or false
+
+				local nextRules = GetNormalizedVisibilityRules(dbKey)
+				if value then
+					nextRules[option.key] = true
+				else
+					nextRules[option.key] = nil
+				end
+				SetDBValue(dbKey, nextRules, true)
+			end)
+			settings[#settings + 1] = setting
+			controls[#controls + 1] = Settings.CreateCheckbox(
+				groupCategory,
+				setting,
+				tooltip or (L["Visibility Multi Select Tooltip"] or "Select one or more rules. The element shows when any selected rule is true.")
+			)
+		end
+		return {
+			category = groupCategory,
+			controls = controls,
+			settings = settings,
+		}
+	end
 
 	------------------------------------------------------------------------
 	-- General Settings
@@ -360,13 +445,7 @@ local function BuildSettingsPanel()
 	end
 
 	local visibilityCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Visibility"] or "Visibility")
-	AddDropdown(
-		visibilityCategory,
-		"visibility_mode",
-		L["Addon Visibility"] or "Addon Visibility",
-		visibilityModeOptions,
-		L["Addon Visibility Tooltip"] or "Default visibility rule used by modules set to inherit"
-	)
+	AddVisibilityRuleGroup(visibilityCategory, "visibility_mode", nil, L["Addon Visibility Tooltip"] or "Default visibility rule used by modules set to inherit")
 
 	------------------------------------------------------------------------
 	-- Module Toggles
@@ -439,20 +518,15 @@ local function BuildSettingsPanel()
 		L["Cast Reverse Channeling"] or "Cast Reverse Channeling",
 		L["Reverse Channeling Tooltip"] or "Reverse the direction for channeled spells"
 	)
+	local castVisibilityCategory = Settings.RegisterVerticalLayoutSubcategory(castCategory, L["Visibility"] or "Visibility")
 	AddDropdown(
-		castCategory,
+		castVisibilityCategory,
 		"cast_visibilitySource",
 		L["Visibility Source"] or "Visibility Source",
 		visibilitySourceOptions,
 		L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility"
 	)
-	AddDropdown(
-		castCategory,
-		"cast_visibility",
-		L["Cast Ring Visibility"] or "Cast Ring Visibility",
-		visibilityModeOptions,
-		L["Cast Ring Visibility Tooltip"] or "When to show the cast ring shell"
-	)
+	AddVisibilityRuleGroup(castVisibilityCategory, "cast_visibility", nil, L["Cast Ring Visibility Tooltip"] or "When to show the cast ring shell")
 
 	AddColor(castCategory, "cast_barColor", L["Cast Bar Color"] or "Cast Bar Color")
 	AddCheckbox(
@@ -542,20 +616,15 @@ local function BuildSettingsPanel()
 		{ value = "PIPS", label = L["Class Resource Mode Pips"] or "Pips" },
 	}, L["Class Resource Mode Tooltip"] or "Switch between text and pips class resource display")
 
+	local classResourceVisibilityCategory = Settings.RegisterVerticalLayoutSubcategory(cpCategory, L["Visibility"] or "Visibility")
 	AddDropdown(
-		cpCategory,
+		classResourceVisibilityCategory,
 		"classresource_visibilitySource",
 		L["Visibility Source"] or "Visibility Source",
 		visibilitySourceOptions,
 		L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility"
 	)
-	AddDropdown(
-		cpCategory,
-		"classresource_visibility",
-		L["Class Resource Visibility"] or "Class Resource Visibility",
-		visibilityModeOptions,
-		L["Class Resource Visibility Tooltip"] or "When to show class resource"
-	)
+	AddVisibilityRuleGroup(classResourceVisibilityCategory, "classresource_visibility", nil, L["Class Resource Visibility Tooltip"] or "When to show class resource")
 
 	local cpTextCategory = Settings.RegisterVerticalLayoutSubcategory(cpCategory, L["Class Resource Text Mode"] or "Text Mode")
 	AddSlider(cpTextCategory, "classresource_fontSize", L["Class Resource Font Size"] or "Class Resource Font Size", 8, 48, 1)
@@ -630,20 +699,15 @@ local function BuildSettingsPanel()
 
 	AddSlider(ringCategory, "ring_width", L["Decorative Ring Size"] or "Decorative Ring Size", 20, 200, 1)
 	AddCheckbox(ringCategory, "ring_rotate", L["Decorative Ring Rotate"] or "Decorative Ring Rotate", L["Rotate Tooltip"] or "Enable rotation animation")
+	local ringVisibilityCategory = Settings.RegisterVerticalLayoutSubcategory(ringCategory, L["Visibility"] or "Visibility")
 	AddDropdown(
-		ringCategory,
+		ringVisibilityCategory,
 		"ring_visibilitySource",
 		L["Visibility Source"] or "Visibility Source",
 		visibilitySourceOptions,
 		L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility"
 	)
-	AddDropdown(
-		ringCategory,
-		"ring_visibility",
-		L["Decorative Ring Visibility"] or "Decorative Ring Visibility",
-		visibilityModeOptions,
-		L["Decorative Ring Visibility Tooltip"] or "When to show the decorative ring"
-	)
+	AddVisibilityRuleGroup(ringVisibilityCategory, "ring_visibility", nil, L["Decorative Ring Visibility Tooltip"] or "When to show the decorative ring")
 	AddDropdown(ringCategory, "ring_texture", L["Decorative Ring Texture"] or "Decorative Ring Texture", ringTextureOptions)
 	AddColor(ringCategory, "ring_color", L["Decorative Ring Color"] or "Decorative Ring Color")
 	AddCheckbox(

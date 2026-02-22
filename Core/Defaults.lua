@@ -22,7 +22,7 @@ addon.DefaultValues = {
 	offset_y = -44,
 	position_x = 400,
 	position_y = 400,
-	visibility_mode = "ALWAYS",
+	visibility_mode = { ALWAYS = true },
 
 	-- Module enable flags
 	moduleEnabled_Cast = true,
@@ -43,7 +43,7 @@ addon.DefaultValues = {
 	cast_reverseChanneling = true,
 	cast_useClassColor = true,
 	cast_visibilitySource = "INHERIT",
-	cast_visibility = "ALWAYS",
+	cast_visibility = { ALWAYS = true },
 	cast_spellTextEnabled = false,
 	cast_spellTextFont = "Fonts\\FRIZQT__.TTF",
 	cast_spellTextSize = 12,
@@ -69,7 +69,7 @@ addon.DefaultValues = {
 	-- ClassResource module settings
 	classresource_mode = "PIPS",
 	classresource_visibilitySource = "INHERIT",
-	classresource_visibility = "ALWAYS",
+	classresource_visibility = { ALWAYS = true },
 	classresource_font = "Fonts\\FRIZQT__.TTF",
 	classresource_fontSize = 16,
 	classresource_fontOutline = "",
@@ -91,7 +91,7 @@ addon.DefaultValues = {
 	ring_useClassColor = false,
 	ring_classColorAlpha = 0.6,
 	ring_visibilitySource = "INHERIT",
-	ring_visibility = "ALWAYS",
+	ring_visibility = { ALWAYS = true },
 
 	-- SpellIcon module settings
 	spellicon_size = 40,
