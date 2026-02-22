@@ -14,6 +14,12 @@ local showRequests = {}
 local settingsOpenDeferred = false
 local settingsOpenFrame
 local OpenSettingsSafely
+local unlockFrame
+local unlockManualActive = false
+local unlockEditModeActive = false
+local editModeHooked = false
+local editModeEventCallbacksHooked = false
+local editModeWatcher
 
 local GetCursorPosition = GetCursorPosition
 local UIParent = UIParent
@@ -57,6 +63,16 @@ OpenSettingsSafely = function()
 end
 
 addon.OpenSettings = OpenSettingsSafely
+
+local function IsBlizzardEditModeActive()
+	if not EditModeManagerFrame then
+		return false
+	end
+	if EditModeManagerFrame.IsEditModeActive then
+		return EditModeManagerFrame:IsEditModeActive() and true or false
+	end
+	return EditModeManagerFrame:IsShown() and true or false
+end
 
 --------------------------------------------------------------------------------
 -- Show/Hide Request System
@@ -130,58 +146,195 @@ CallbackRegistry:Register("ADDON_LOADED", Initialize)
 --------------------------------------------------------------------------------
 -- Position Lock/Unlock for manual positioning
 --------------------------------------------------------------------------------
-local unlockFrame
-
-function AnchorFrame:Unlock()
-	if not unlockFrame then
-		unlockFrame = CreateFrame("Frame", nil, UIParent)
-		unlockFrame:SetSize(20, 20)
-		unlockFrame:SetFrameStrata("DIALOG")
-		unlockFrame:EnableMouse(true)
-		unlockFrame:SetMovable(true)
-		unlockFrame:RegisterForDrag("LeftButton")
-
-		local tex = unlockFrame:CreateTexture(nil, "BACKGROUND")
-		tex:SetAllPoints()
-		tex:SetColorTexture(1, 0, 0, 0.5)
-
-		unlockFrame:SetScript("OnDragStart", function(self)
-			self:StartMoving()
-		end)
-
-		unlockFrame:SetScript("OnDragStop", function(self)
-			self:StopMovingOrSizing()
-			local x, y = self:GetCenter()
-			addon.SetDBValue("position_x", x, true)
-			addon.SetDBValue("position_y", y, true)
-		end)
-
-		unlockFrame:SetScript("OnMouseDown", function(self, button)
-			if button == "RightButton" then
-				AnchorFrame:Lock()
-			end
-		end)
+local function EnsureUnlockFrame()
+	if unlockFrame then
+		return
 	end
 
-	-- Position at current anchor location
-	local x = GetDBValue("position_x") or 400
-	local y = GetDBValue("position_y") or 400
-	unlockFrame:ClearAllPoints()
-	unlockFrame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", x, y)
-	unlockFrame:Show()
+	unlockFrame = CreateFrame("Frame", nil, UIParent)
+	unlockFrame:SetSize(72, 72)
+	unlockFrame:SetFrameStrata("TOOLTIP")
+	unlockFrame:SetToplevel(true)
+	unlockFrame:SetFrameLevel(200)
+	unlockFrame:SetMovable(true)
+	unlockFrame:EnableMouse(true)
+	unlockFrame:RegisterForDrag("LeftButton")
 
+	local dragSurface
+	do
+		local ok, selection = pcall(CreateFrame, "Frame", nil, unlockFrame, "EditModeSystemSelectionTemplate")
+		if ok and selection then
+			selection:SetAllPoints()
+			selection:Show()
+			selection:EnableMouse(false)
+			if selection.SetFrameStrata then
+				selection:SetFrameStrata("TOOLTIP")
+			end
+			if selection.SetFrameLevel then
+				selection:SetFrameLevel(201)
+			end
+			unlockFrame.selection = selection
+			dragSurface = selection
+		end
+	end
+
+	if not dragSurface then
+		local bg = unlockFrame:CreateTexture(nil, "BACKGROUND")
+		bg:SetAllPoints()
+		bg:SetColorTexture(0.20, 0.45, 1.00, 0.12)
+		unlockFrame.bg = bg
+
+		local function AddEdge(point, relPoint, x, y, w, h)
+			local edge = unlockFrame:CreateTexture(nil, "BORDER")
+			edge:SetColorTexture(0.45, 0.72, 1.00, 0.95)
+			edge:SetPoint(point, unlockFrame, relPoint, x, y)
+			edge:SetSize(w, h)
+			return edge
+		end
+
+		unlockFrame.edgeTop = AddEdge("TOPLEFT", "TOPLEFT", 0, 0, 72, 2)
+		unlockFrame.edgeBottom = AddEdge("BOTTOMLEFT", "BOTTOMLEFT", 0, 0, 72, 2)
+		unlockFrame.edgeLeft = AddEdge("TOPLEFT", "TOPLEFT", 0, 0, 2, 72)
+		unlockFrame.edgeRight = AddEdge("TOPRIGHT", "TOPRIGHT", 0, 0, 2, 72)
+
+		local inner = unlockFrame:CreateTexture(nil, "ARTWORK")
+		inner:SetColorTexture(0.45, 0.72, 1.00, 0.25)
+		inner:SetSize(8, 8)
+		inner:SetPoint("CENTER")
+		unlockFrame.inner = inner
+
+		local crossH = unlockFrame:CreateTexture(nil, "ARTWORK")
+		crossH:SetColorTexture(0.45, 0.72, 1.00, 0.6)
+		crossH:SetSize(24, 1)
+		crossH:SetPoint("CENTER")
+		unlockFrame.crossH = crossH
+
+		local crossV = unlockFrame:CreateTexture(nil, "ARTWORK")
+		crossV:SetColorTexture(0.45, 0.72, 1.00, 0.6)
+		crossV:SetSize(1, 24)
+		crossV:SetPoint("CENTER")
+		unlockFrame.crossV = crossV
+
+		local label = unlockFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+		label:SetPoint("TOP", unlockFrame, "BOTTOM", 0, -4)
+		label:SetText("Spark Point")
+		label:SetTextColor(0.70, 0.85, 1.00)
+		unlockFrame.label = label
+	end
+
+	unlockFrame:SetScript("OnDragStart", function(self)
+		self:StartMoving()
+	end)
+
+	unlockFrame:SetScript("OnDragStop", function(self)
+		self:StopMovingOrSizing()
+		local x, y = self:GetCenter()
+		addon.SetDBValue("position_x", x, true)
+		addon.SetDBValue("position_y", y, true)
+	end)
+
+	unlockFrame:SetScript("OnMouseDown", function(self, button)
+		if button == "RightButton" then
+			AnchorFrame:Lock()
+		end
+	end)
+end
+
+local function RefreshUnlockHandle()
+	EnsureUnlockFrame()
+
+	local shouldShow = unlockManualActive or unlockEditModeActive
+	if shouldShow then
+		if anchor and unlockFrame.SetFrameLevel then
+			unlockFrame:SetFrameLevel((anchor:GetFrameLevel() or 0) + 50)
+		end
+		local x = GetDBValue("position_x") or 400
+		local y = GetDBValue("position_y") or 400
+		unlockFrame:ClearAllPoints()
+		unlockFrame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", x, y)
+		unlockFrame:Show()
+		if unlockFrame.selection then
+			if unlockFrame.selection.ShowHighlighted then
+				unlockFrame.selection:ShowHighlighted()
+			else
+				unlockFrame.selection:Show()
+			end
+		end
+		AnchorFrame:Show("unlock")
+	else
+		if unlockFrame.selection then
+			unlockFrame.selection:Hide()
+		end
+		unlockFrame:Hide()
+		AnchorFrame:Hide("unlock")
+	end
+end
+
+local function UpdateEditModeUnlockState()
+	unlockEditModeActive = IsBlizzardEditModeActive() and (not GetDBBool("attachToMouse"))
+	if unlockFrame or unlockEditModeActive or unlockManualActive then
+		RefreshUnlockHandle()
+	end
+end
+
+local function HookEditModeEventRegistry()
+	if editModeEventCallbacksHooked or not EventRegistry or not EventRegistry.RegisterCallback then
+		return
+	end
+	editModeEventCallbacksHooked = true
+
+	EventRegistry:RegisterCallback("EditMode.Enter", function()
+		UpdateEditModeUnlockState()
+	end, AnchorFrame)
+	EventRegistry:RegisterCallback("EditMode.Exit", function()
+		UpdateEditModeUnlockState()
+	end, AnchorFrame)
+end
+
+local function HookEditModeManager()
+	if editModeHooked or not EditModeManagerFrame or not EditModeManagerFrame.HookScript then
+		return
+	end
+	editModeHooked = true
+
+	EditModeManagerFrame:HookScript("OnShow", function()
+		UpdateEditModeUnlockState()
+	end)
+	EditModeManagerFrame:HookScript("OnHide", function()
+		UpdateEditModeUnlockState()
+	end)
+
+	UpdateEditModeUnlockState()
+end
+
+local function EnsureEditModeWatcher()
+	if editModeWatcher then
+		return
+	end
+	editModeWatcher = CreateFrame("Frame")
+	editModeWatcher:RegisterEvent("PLAYER_LOGIN")
+	editModeWatcher:RegisterEvent("ADDON_LOADED")
+	editModeWatcher:SetScript("OnEvent", function(_, event, addonNameOrNil)
+		if event == "ADDON_LOADED" and addonNameOrNil ~= "Blizzard_EditMode" then
+			return
+		end
+		HookEditModeEventRegistry()
+		HookEditModeManager()
+	end)
+end
+
+function AnchorFrame:Unlock()
 	-- Temporarily show anchor at fixed position
 	addon.SetDBValue("attachToMouse", false, false)
-	self:Show("unlock")
+	unlockManualActive = true
+	RefreshUnlockHandle()
 
 	print("SparkPoint: Drag to reposition. Right-click to lock.")
 end
 
 function AnchorFrame:Lock()
-	if unlockFrame then
-		unlockFrame:Hide()
-	end
-	self:Hide("unlock")
+	unlockManualActive = false
+	UpdateEditModeUnlockState()
 
 	print("SparkPoint: Position locked.")
 end
@@ -208,3 +361,13 @@ SlashCmdList["SPARKPOINT"] = function(msg)
 		OpenSettingsSafely()
 	end
 end
+
+CallbackRegistry:RegisterSettingCallback("attachToMouse", function()
+	UpdateEditModeUnlockState()
+end)
+
+CallbackRegistry:Register("ADDON_LOADED", function()
+	EnsureEditModeWatcher()
+	HookEditModeEventRegistry()
+	HookEditModeManager()
+end, AnchorFrame)

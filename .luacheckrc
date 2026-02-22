@@ -14,6 +14,7 @@ globals = {
     "CreateColor", "CreateFrame", "CreateFramePool", "CreateFromMixins",
     "CUSTOM_CLASS_COLORS",
     "ColorPickerFrame", "DEFAULT_CHAT_FRAME",
+    "EditModeManagerFrame",
     "GameTooltip",
     "EventRegistry",
     "GetCursorPosition", "GetNetStats", "GetRuneCooldown", "GetSpecialization", "GetTime",

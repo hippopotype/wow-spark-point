@@ -17,6 +17,7 @@
     "CreateFromMixins",
     "CUSTOM_CLASS_COLORS",
     "DEFAULT_CHAT_FRAME",
+    "EditModeManagerFrame",
     "GameTooltip",
     "Enum",
     "EventRegistry",
