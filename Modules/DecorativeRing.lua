@@ -47,7 +47,9 @@ local DEFAULT_TEXTURE_KEY = (RING_TEXTURE_DEFINITIONS[1] and RING_TEXTURE_DEFINI
 Ring.TEXTURE_OPTIONS = RING_TEXTURE_OPTIONS
 
 local function SetTextureSmooth(texture, texturePath)
-	if not texture then return end
+	if not texture then
+		return
+	end
 	local ok = pcall(texture.SetTexture, texture, texturePath, nil, nil, "TRILINEAR")
 	if not ok then
 		texture:SetTexture(texturePath)
@@ -76,39 +78,47 @@ end
 -- OnUpdate Handler (rotation animation)
 --------------------------------------------------------------------------------
 local function OnUpdate(self, elapsed)
-    local texture = self.texture
-    texture.timer = texture.timer + elapsed
-    if texture.timer > 0.02 then
-        texture.hAngle = texture.hAngle + 0.5
-        texture:SetRotation(rad(texture.hAngle))
-        texture.timer = 0
-    end
+	local texture = self.texture
+	texture.timer = texture.timer + elapsed
+	if texture.timer > 0.02 then
+		texture.hAngle = texture.hAngle + 0.5
+		texture:SetRotation(rad(texture.hAngle))
+		texture.timer = 0
+	end
 end
 
 local function OnShow(self)
-    if GetDBBool("ring_rotate") then
-        self:SetScript("OnUpdate", OnUpdate)
-    else
-        self:SetScript("OnUpdate", nil)
-    end
+	if GetDBBool("ring_rotate") then
+		self:SetScript("OnUpdate", OnUpdate)
+	else
+		self:SetScript("OnUpdate", nil)
+	end
 end
 
 --------------------------------------------------------------------------------
 -- Visibility
 --------------------------------------------------------------------------------
 function Ring:Show()
-    if not ringFrame then return end
-    if not isEnabled then return end
-    self:UpdateVisibility()
+	if not ringFrame then
+		return
+	end
+	if not isEnabled then
+		return
+	end
+	self:UpdateVisibility()
 end
 
 function Ring:Hide()
-    if not ringFrame then return end
-    self:UpdateVisibility()
+	if not ringFrame then
+		return
+	end
+	self:UpdateVisibility()
 end
 
 function Ring:UpdateVisibility()
-	if not ringFrame then return end
+	if not ringFrame then
+		return
+	end
 	if not isEnabled then
 		ringFrame:Hide()
 		return
@@ -125,36 +135,38 @@ end
 -- ApplyOptions: Update visuals from settings
 --------------------------------------------------------------------------------
 function Ring:ApplyOptions()
-    if not ringFrame then return end
+	if not ringFrame then
+		return
+	end
 
-    local textureID = GetDBValue("ring_texture")
-    local width = GetDBValue("ring_width")
-    local r, g, b, a
-    if GetDBBool("ring_useClassColor") then
-        r, g, b, a = API.GetPlayerClassColor()
-        a = GetDBValue("ring_classColorAlpha") or a
-    else
-        r, g, b, a = GetDBColor("ring_color")
-    end
+	local textureID = GetDBValue("ring_texture")
+	local width = GetDBValue("ring_width")
+	local r, g, b, a
+	if GetDBBool("ring_useClassColor") then
+		r, g, b, a = API.GetPlayerClassColor()
+		a = GetDBValue("ring_classColorAlpha") or a
+	else
+		r, g, b, a = GetDBColor("ring_color")
+	end
 
-    local texture = ringFrame.texture
-    local textureKey = NormalizeTextureKey(textureID)
+	local texture = ringFrame.texture
+	local textureKey = NormalizeTextureKey(textureID)
 	local texturePath = RING_TEXTURE_PATHS[textureKey] or RING_TEXTURE_PATHS[DEFAULT_TEXTURE_KEY]
 	SetTextureSmooth(texture, texturePath)
 
-    texture:SetVertexColor(r, g, b, a)
-    texture:SetBlendMode("ADD")
-    texture:SetSize(width, width)
-    texture:SetPoint("CENTER", ringFrame, "CENTER")
-    texture:SetRotation(rad(texture.hAngle or 0))
-    texture:Show()
+	texture:SetVertexColor(r, g, b, a)
+	texture:SetBlendMode("ADD")
+	texture:SetSize(width, width)
+	texture:SetPoint("CENTER", ringFrame, "CENTER")
+	texture:SetRotation(rad(texture.hAngle or 0))
+	texture:Show()
 
-    -- Update rotation setting
-    if GetDBBool("ring_rotate") and ringFrame:IsShown() then
-        ringFrame:SetScript("OnUpdate", OnUpdate)
-    else
-        ringFrame:SetScript("OnUpdate", nil)
-    end
+	-- Update rotation setting
+	if GetDBBool("ring_rotate") and ringFrame:IsShown() then
+		ringFrame:SetScript("OnUpdate", OnUpdate)
+	else
+		ringFrame:SetScript("OnUpdate", nil)
+	end
 
 	self:UpdateVisibility()
 end
@@ -163,55 +175,62 @@ end
 -- Initialize
 --------------------------------------------------------------------------------
 function Ring:Initialize()
-    local anchor = AnchorFrame:GetFrame()
-    if not anchor then return end
+	local anchor = AnchorFrame:GetFrame()
+	if not anchor then
+		return
+	end
 
-    ringFrame = CreateFrame("Frame", nil, anchor)
-    ringFrame:SetAllPoints()
-    ringFrame:Hide()
+	ringFrame = CreateFrame("Frame", nil, anchor)
+	ringFrame:SetAllPoints()
+	ringFrame:Hide()
 
-    -- Initialize rotation state
-    -- Create texture
-    ringFrame.texture = ringFrame:CreateTexture(nil, "ARTWORK")
-    ringFrame.texture:SetPoint("CENTER", ringFrame, "CENTER")
-    ringFrame.texture.timer = 0
-    ringFrame.texture.hAngle = 0
+	-- Initialize rotation state
+	-- Create texture
+	ringFrame.texture = ringFrame:CreateTexture(nil, "ARTWORK")
+	ringFrame.texture:SetPoint("CENTER", ringFrame, "CENTER")
+	ringFrame.texture.timer = 0
+	ringFrame.texture.hAngle = 0
 
-    -- Set scripts
-    ringFrame:SetScript("OnShow", OnShow)
+	-- Set scripts
+	ringFrame:SetScript("OnShow", OnShow)
 
-    self:ApplyOptions()
+	self:ApplyOptions()
 end
 
 --------------------------------------------------------------------------------
 -- Enable/Disable
 --------------------------------------------------------------------------------
 local function EnableModule(enabled)
-    if enabled then
-        isEnabled = true
-        if not ringFrame then
-            Ring:Initialize()
-        end
-        Ring:UpdateVisibility()
-    else
-        isEnabled = false
-        if ringFrame then
-            ringFrame:Hide()
-        end
-    end
+	if enabled then
+		isEnabled = true
+		if not ringFrame then
+			Ring:Initialize()
+		end
+		Ring:UpdateVisibility()
+	else
+		isEnabled = false
+		if ringFrame then
+			ringFrame:Hide()
+		end
+	end
 end
 
 --------------------------------------------------------------------------------
 -- Register Setting Callbacks
 --------------------------------------------------------------------------------
 local settingKeys = {
-    "ring_texture", "ring_color", "ring_width", "ring_rotate", "ring_useClassColor", "ring_classColorAlpha"
+	"ring_texture",
+	"ring_color",
+	"ring_width",
+	"ring_rotate",
+	"ring_useClassColor",
+	"ring_classColorAlpha",
 }
 
 for _, key in ipairs(settingKeys) do
-    CallbackRegistry:RegisterSettingCallback(key, function()
-        Ring:ApplyOptions()
-    end)
+	CallbackRegistry:RegisterSettingCallback(key, function()
+		Ring:ApplyOptions()
+	end)
 end
 
 for _, key in ipairs({ "visibility_mode", "ring_visibilitySource", "ring_visibility" }) do
@@ -228,10 +247,10 @@ end, Ring)
 -- Register Module
 --------------------------------------------------------------------------------
 addon.ControlCenter:AddModule({
-    name = L["Decorative Ring"] or "Decorative Ring",
-    dbKey = "moduleEnabled_Ring",
-    description = L["Decorative Ring Description"] or "Displays a decorative rotating ring around the cursor during casts",
-    toggleFunc = EnableModule,
-    categoryID = 1,
-    uiOrder = 4,
+	name = L["Decorative Ring"] or "Decorative Ring",
+	dbKey = "moduleEnabled_Ring",
+	description = L["Decorative Ring Description"] or "Displays a decorative rotating ring around the cursor during casts",
+	toggleFunc = EnableModule,
+	categoryID = 1,
+	uiOrder = 4,
 })

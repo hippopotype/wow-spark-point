@@ -3,8 +3,8 @@
 
 local _, addon = ...
 
-local DB           -- Active profile table (used by modules/settings)
-local RootDB       -- SavedVariables root
+local DB -- Active profile table (used by modules/settings)
+local RootDB -- SavedVariables root
 local ActiveProfileMode
 
 --------------------------------------------------------------------------------
@@ -43,7 +43,9 @@ local function GetPlayerClassKey()
 end
 
 local function GetClassDisplayName(classTag)
-	if not classTag then return "Unknown" end
+	if not classTag then
+		return "Unknown"
+	end
 	if LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[classTag] then
 		return LOCALIZED_CLASS_NAMES_MALE[classTag]
 	end
@@ -66,7 +68,9 @@ local function EnsureRootSchema()
 end
 
 local function ResolveActiveProfileTable()
-	if not RootDB then return nil end
+	if not RootDB then
+		return nil
+	end
 
 	local mode = NormalizeProfileMode(RootDB.profileMode)
 	RootDB.profileMode = mode
@@ -177,7 +181,9 @@ function addon.GetAvailableProfileSources()
 end
 
 local function ResolveProfileTableByKey(profileKey)
-	if not RootDB or not RootDB.profiles then return nil end
+	if not RootDB or not RootDB.profiles then
+		return nil
+	end
 	if profileKey == "GLOBAL" then
 		return RootDB.profiles.global
 	end
@@ -306,13 +312,13 @@ function addon.GetDBColor(dbKey)
 end
 
 function addon.SetDBColor(dbKey, r, g, b, a)
-	addon.SetDBValue(dbKey, {r = r, g = g, b = b, a = a or 1}, true)
+	addon.SetDBValue(dbKey, { r = r, g = g, b = b, a = a or 1 }, true)
 end
 
 function addon.GetDBColorTable(dbKey)
 	local c = DB and DB[dbKey]
 	if c then
-		return {r = c.r or 1, g = c.g or 1, b = c.b or 1, a = c.a or 1}
+		return { r = c.r or 1, g = c.g or 1, b = c.b or 1, a = c.a or 1 }
 	end
-	return {r = 1, g = 1, b = 1, a = 1}
+	return { r = 1, g = 1, b = 1, a = 1 }
 end

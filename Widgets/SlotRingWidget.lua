@@ -19,7 +19,9 @@ local function SafeCall(obj, method, ...)
 end
 
 local function SetTextureSmooth(texture, texturePath)
-	if not texture then return end
+	if not texture then
+		return
+	end
 	local ok = pcall(texture.SetTexture, texture, texturePath, nil, nil, "TRILINEAR")
 	if not ok then
 		texture:SetTexture(texturePath)
@@ -134,7 +136,7 @@ function SlotRingWidget:Create(config)
 	--------------------------------------------------------------------------
 	-- Apply initial configuration
 	--------------------------------------------------------------------------
-	setmetatable(ring, {__index = SlotRingWidget})
+	setmetatable(ring, { __index = SlotRingWidget })
 
 	ring:SetRadius(ring.radius)
 	ring:LoadTextures()
@@ -142,13 +144,13 @@ function SlotRingWidget:Create(config)
 	if config.barColor then
 		ring:SetBarColor(config.barColor)
 	else
-		ring:SetBarColor({r = 1, g = 1, b = 1, a = 0.8})
+		ring:SetBarColor({ r = 1, g = 1, b = 1, a = 0.8 })
 	end
 
 	if config.backgroundColor then
 		ring:SetBackgroundColor(config.backgroundColor)
 	else
-		ring:SetBackgroundColor({r = 0.4, g = 0.4, b = 0.4, a = 0.8})
+		ring:SetBackgroundColor({ r = 0.4, g = 0.4, b = 0.4, a = 0.8 })
 	end
 
 	if config.sparkColor then
@@ -316,7 +318,9 @@ end
 --------------------------------------------------------------------------------
 function SlotRingWidget:SetBarColor(color)
 	local a = color.a
-	if a == nil then a = 1 end
+	if a == nil then
+		a = 1
+	end
 	self.statusBar:SetStatusBarColor(color.r, color.g, color.b, a)
 	SafeCall(self.cooldown, "SetSwipeColor", color.r, color.g, color.b, a)
 	self.foreground:SetVertexColor(color.r, color.g, color.b, a)

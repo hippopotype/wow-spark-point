@@ -48,7 +48,7 @@ end
 --------------------------------------------------------------------------------
 function SlotProviders:GetDropdownOptions()
 	local options = {
-		{value = "NONE", label = addon.L and addon.L["None"] or "None"},
+		{ value = "NONE", label = addon.L and addon.L["None"] or "None" },
 	}
 
 	local ids = {}
@@ -59,7 +59,7 @@ function SlotProviders:GetDropdownOptions()
 
 	for _, id in ipairs(ids) do
 		local provider = registry[id]
-		table.insert(options, {value = id, label = provider.displayName})
+		table.insert(options, { value = id, label = provider.displayName })
 	end
 	return options
 end

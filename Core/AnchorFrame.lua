@@ -31,11 +31,15 @@ local function OpenSettingsNow()
 end
 
 local function EnsureSettingsOpenFrame()
-	if settingsOpenFrame then return end
+	if settingsOpenFrame then
+		return
+	end
 	settingsOpenFrame = CreateFrame("Frame")
 	settingsOpenFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
 	settingsOpenFrame:SetScript("OnEvent", function()
-		if not settingsOpenDeferred then return end
+		if not settingsOpenDeferred then
+			return
+		end
 		settingsOpenDeferred = false
 		OpenSettingsNow()
 	end)
@@ -57,65 +61,65 @@ end
 -- Multiple modules can request visibility; anchor hides only when all release
 --------------------------------------------------------------------------------
 function AnchorFrame:Show(requester)
-    showRequests[requester or "default"] = true
-    if anchor then
-        anchor:Show()
-    end
+	showRequests[requester or "default"] = true
+	if anchor then
+		anchor:Show()
+	end
 end
 
 function AnchorFrame:Hide(requester)
-    showRequests[requester or "default"] = nil
+	showRequests[requester or "default"] = nil
 
-    local anyVisible = false
-    for _ in pairs(showRequests) do
-        anyVisible = true
-        break
-    end
+	local anyVisible = false
+	for _ in pairs(showRequests) do
+		anyVisible = true
+		break
+	end
 
-    if not anyVisible and anchor then
-        anchor:Hide()
-    end
+	if not anyVisible and anchor then
+		anchor:Hide()
+	end
 end
 
 function AnchorFrame:IsShown()
-    return anchor and anchor:IsShown()
+	return anchor and anchor:IsShown()
 end
 
 function AnchorFrame:GetFrame()
-    return anchor
+	return anchor
 end
 
 --------------------------------------------------------------------------------
 -- OnUpdate for cursor tracking
 --------------------------------------------------------------------------------
 local function OnUpdate(self, elapsed)
-    local x, y
+	local x, y
 
-    if GetDBBool("attachToMouse") then
-        x, y = GetCursorPosition()
-        local scale = self:GetEffectiveScale()
-        x = x / scale + GetDBValue("offset_x")
-        y = y / scale + GetDBValue("offset_y")
-    else
-        x = GetDBValue("position_x")
-        y = GetDBValue("position_y")
-    end
+	if GetDBBool("attachToMouse") then
+		x, y = GetCursorPosition()
+		local scale = self:GetEffectiveScale()
+		x = x / scale + GetDBValue("offset_x")
+		y = y / scale + GetDBValue("offset_y")
+	else
+		x = GetDBValue("position_x")
+		y = GetDBValue("position_y")
+	end
 
-    self:ClearAllPoints()
-    self:SetPoint("CENTER", UIParent, "BOTTOMLEFT", x, y)
+	self:ClearAllPoints()
+	self:SetPoint("CENTER", UIParent, "BOTTOMLEFT", x, y)
 end
 
 --------------------------------------------------------------------------------
 -- Initialization
 --------------------------------------------------------------------------------
 local function Initialize()
-    anchor = CreateFrame("Frame", "SparkPointAnchor", UIParent)
-    anchor:SetSize(64, 64)
-    anchor:SetFrameStrata("HIGH")
-    anchor:SetScript("OnUpdate", OnUpdate)
-    anchor:Hide()
+	anchor = CreateFrame("Frame", "SparkPointAnchor", UIParent)
+	anchor:SetSize(64, 64)
+	anchor:SetFrameStrata("HIGH")
+	anchor:SetScript("OnUpdate", OnUpdate)
+	anchor:Hide()
 
-    AnchorFrame.frame = anchor
+	AnchorFrame.frame = anchor
 end
 
 -- Initialize when addon loads
@@ -127,57 +131,57 @@ CallbackRegistry:Register("ADDON_LOADED", Initialize)
 local unlockFrame
 
 function AnchorFrame:Unlock()
-    if not unlockFrame then
-        unlockFrame = CreateFrame("Frame", nil, UIParent)
-        unlockFrame:SetSize(20, 20)
-        unlockFrame:SetFrameStrata("DIALOG")
-        unlockFrame:EnableMouse(true)
-        unlockFrame:SetMovable(true)
-        unlockFrame:RegisterForDrag("LeftButton")
+	if not unlockFrame then
+		unlockFrame = CreateFrame("Frame", nil, UIParent)
+		unlockFrame:SetSize(20, 20)
+		unlockFrame:SetFrameStrata("DIALOG")
+		unlockFrame:EnableMouse(true)
+		unlockFrame:SetMovable(true)
+		unlockFrame:RegisterForDrag("LeftButton")
 
-        local tex = unlockFrame:CreateTexture(nil, "BACKGROUND")
-        tex:SetAllPoints()
-        tex:SetColorTexture(1, 0, 0, 0.5)
+		local tex = unlockFrame:CreateTexture(nil, "BACKGROUND")
+		tex:SetAllPoints()
+		tex:SetColorTexture(1, 0, 0, 0.5)
 
-        unlockFrame:SetScript("OnDragStart", function(self)
-            self:StartMoving()
-        end)
+		unlockFrame:SetScript("OnDragStart", function(self)
+			self:StartMoving()
+		end)
 
-        unlockFrame:SetScript("OnDragStop", function(self)
-            self:StopMovingOrSizing()
-            local x, y = self:GetCenter()
-            addon.SetDBValue("position_x", x, true)
-            addon.SetDBValue("position_y", y, true)
-        end)
+		unlockFrame:SetScript("OnDragStop", function(self)
+			self:StopMovingOrSizing()
+			local x, y = self:GetCenter()
+			addon.SetDBValue("position_x", x, true)
+			addon.SetDBValue("position_y", y, true)
+		end)
 
-        unlockFrame:SetScript("OnMouseDown", function(self, button)
-            if button == "RightButton" then
-                AnchorFrame:Lock()
-            end
-        end)
-    end
+		unlockFrame:SetScript("OnMouseDown", function(self, button)
+			if button == "RightButton" then
+				AnchorFrame:Lock()
+			end
+		end)
+	end
 
-    -- Position at current anchor location
-    local x = GetDBValue("position_x") or 400
-    local y = GetDBValue("position_y") or 400
-    unlockFrame:ClearAllPoints()
-    unlockFrame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", x, y)
-    unlockFrame:Show()
+	-- Position at current anchor location
+	local x = GetDBValue("position_x") or 400
+	local y = GetDBValue("position_y") or 400
+	unlockFrame:ClearAllPoints()
+	unlockFrame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", x, y)
+	unlockFrame:Show()
 
-    -- Temporarily show anchor at fixed position
-    addon.SetDBValue("attachToMouse", false, false)
-    self:Show("unlock")
+	-- Temporarily show anchor at fixed position
+	addon.SetDBValue("attachToMouse", false, false)
+	self:Show("unlock")
 
-    print("SparkPoint: Drag to reposition. Right-click to lock.")
+	print("SparkPoint: Drag to reposition. Right-click to lock.")
 end
 
 function AnchorFrame:Lock()
-    if unlockFrame then
-        unlockFrame:Hide()
-    end
-    self:Hide("unlock")
+	if unlockFrame then
+		unlockFrame:Hide()
+	end
+	self:Hide("unlock")
 
-    print("SparkPoint: Position locked.")
+	print("SparkPoint: Position locked.")
 end
 
 --------------------------------------------------------------------------------
@@ -187,18 +191,18 @@ SLASH_SPARKPOINT1 = "/sp"
 SLASH_SPARKPOINT2 = "/sparkpoint"
 
 SlashCmdList["SPARKPOINT"] = function(msg)
-    msg = msg:lower():trim()
+	msg = msg:lower():trim()
 
-    if msg == "unlock" then
-        AnchorFrame:Unlock()
-    elseif msg == "lock" then
-        AnchorFrame:Lock()
-    elseif msg == "reset" then
-        addon.SetDBValue("position_x", 400, true)
-        addon.SetDBValue("position_y", 400, true)
-        addon.SetDBValue("attachToMouse", true, true)
-        print("SparkPoint: Position reset to defaults.")
-    else
-        OpenSettingsSafely()
-    end
+	if msg == "unlock" then
+		AnchorFrame:Unlock()
+	elseif msg == "lock" then
+		AnchorFrame:Lock()
+	elseif msg == "reset" then
+		addon.SetDBValue("position_x", 400, true)
+		addon.SetDBValue("position_y", 400, true)
+		addon.SetDBValue("attachToMouse", true, true)
+		print("SparkPoint: Position reset to defaults.")
+	else
+		OpenSettingsSafely()
+	end
 end

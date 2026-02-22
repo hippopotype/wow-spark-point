@@ -18,19 +18,19 @@ local GetTime = GetTime
 -- GCD Spell Detection
 --------------------------------------------------------------------------------
 local CLASS_SPELLS = {
-	DRUID = 5185,        -- Healing Touch
-	PALADIN = 635,       -- Holy Light
-	PRIEST = 2050,       -- Heal
-	SHAMAN = 331,        -- Healing Wave
-	WARRIOR = 6673,      -- Battle Shout
+	DRUID = 5185, -- Healing Touch
+	PALADIN = 635, -- Holy Light
+	PRIEST = 2050, -- Heal
+	SHAMAN = 331, -- Healing Wave
+	WARRIOR = 6673, -- Battle Shout
 	DEATHKNIGHT = 45902, -- Blood Strike
-	HUNTER = 75,         -- Auto Shot
-	MAGE = 1459,         -- Arcane Intellect
-	WARLOCK = 687,       -- Demon Skin
-	ROGUE = 1752,        -- Sinister Strike
-	MONK = 100780,       -- Jab
+	HUNTER = 75, -- Auto Shot
+	MAGE = 1459, -- Arcane Intellect
+	WARLOCK = 687, -- Demon Skin
+	ROGUE = 1752, -- Sinister Strike
+	MONK = 100780, -- Jab
 	DEMONHUNTER = 162243, -- Demon's Bite
-	EVOKER = 361469,     -- Living Flame
+	EVOKER = 361469, -- Living Flame
 }
 
 --------------------------------------------------------------------------------
@@ -74,24 +74,26 @@ end
 --------------------------------------------------------------------------------
 function GCDProvider:GetProgress()
 	if not isTracking or not gcdDuration or gcdDuration == 0 then
-		return {progress = 0, active = false, show = false, barColor = GetProviderBarColor()}
+		return { progress = 0, active = false, show = false, barColor = GetProviderBarColor() }
 	end
 
 	local now = GetTime()
 	local perc = (now - gcdStartTime) / gcdDuration
 	if perc >= 1 then
 		isTracking = false
-		return {progress = 0, active = false, show = false, barColor = GetProviderBarColor()}
+		return { progress = 0, active = false, show = false, barColor = GetProviderBarColor() }
 	end
 
-	return {progress = perc, active = true, show = true, barColor = GetProviderBarColor()}
+	return { progress = perc, active = true, show = true, barColor = GetProviderBarColor() }
 end
 
 --------------------------------------------------------------------------------
 -- Provider Interface: Enable / Disable
 --------------------------------------------------------------------------------
 function GCDProvider:Enable()
-	if isEnabled then return end
+	if isEnabled then
+		return
+	end
 	isEnabled = true
 
 	EL:RegisterEvent("ACTIONBAR_UPDATE_COOLDOWN")
@@ -105,7 +107,9 @@ function GCDProvider:Enable()
 end
 
 function GCDProvider:Disable()
-	if not isEnabled then return end
+	if not isEnabled then
+		return
+	end
 	isEnabled = false
 
 	EL:UnregisterAllEvents()
@@ -142,9 +146,13 @@ function GCDProvider:SPELLS_CHANGED()
 end
 
 function GCDProvider:UNIT_SPELLCAST_START(event, unit, castGUID, spellID)
-	if unit ~= "player" then return end
+	if unit ~= "player" then
+		return
+	end
 	local id = ResolveGCDSpellID(spellID)
-	if not id then return end
+	if not id then
+		return
+	end
 	local start, duration = API.GetSpellCooldown(id)
 	if CooldownActive(start, duration) and duration <= 1.5 then
 		gcdStartTime = start
@@ -158,7 +166,9 @@ function GCDProvider:UNIT_SPELLCAST_SUCCEEDED(event, unit, castGUID, spellID)
 end
 
 function GCDProvider:ACTIONBAR_UPDATE_COOLDOWN()
-	if not gcdSpellID then return end
+	if not gcdSpellID then
+		return
+	end
 	local start, duration = API.GetSpellCooldown(gcdSpellID)
 	if CooldownActive(start, duration) and duration <= 1.5 then
 		gcdStartTime = start

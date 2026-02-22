@@ -11,9 +11,9 @@ local GetDBValue = addon.GetDBValue
 local GetDBBool = addon.GetDBBool
 local GetDBColor = addon.GetDBColor
 
-local UnitClass       = UnitClass
-local UnitPower       = UnitPower
-local UnitPowerMax    = UnitPowerMax
+local UnitClass = UnitClass
+local UnitPower = UnitPower
+local UnitPowerMax = UnitPowerMax
 local GetRuneCooldown = GetRuneCooldown
 local GetSpecialization = GetSpecialization
 
@@ -21,17 +21,17 @@ local GetSpecialization = GetSpecialization
 -- Power Type Enums
 --------------------------------------------------------------------------------
 local PT = {
-	COMBO_POINTS   = Enum.PowerType.ComboPoints,
-	RUNES          = Enum.PowerType.Runes,
-	SOUL_SHARDS    = Enum.PowerType.SoulShards,
-	HOLY_POWER     = Enum.PowerType.HolyPower,
-	MAELSTROM      = Enum.PowerType.Maelstrom,
-	CHI            = Enum.PowerType.Chi,
-	INSANITY       = Enum.PowerType.Insanity,
+	COMBO_POINTS = Enum.PowerType.ComboPoints,
+	RUNES = Enum.PowerType.Runes,
+	SOUL_SHARDS = Enum.PowerType.SoulShards,
+	HOLY_POWER = Enum.PowerType.HolyPower,
+	MAELSTROM = Enum.PowerType.Maelstrom,
+	CHI = Enum.PowerType.Chi,
+	INSANITY = Enum.PowerType.Insanity,
 	ARCANE_CHARGES = Enum.PowerType.ArcaneCharges,
-	FURY           = Enum.PowerType.Fury,
-	PAIN           = Enum.PowerType.Pain,
-	ESSENCE        = Enum.PowerType.Essence,
+	FURY = Enum.PowerType.Fury,
+	PAIN = Enum.PowerType.Pain,
+	ESSENCE = Enum.PowerType.Essence,
 }
 
 -- Maelstrom Weapon aura spell ID (Enhancement Shaman)
@@ -49,58 +49,58 @@ local PIP_TEXTURE_FALLBACK = "Interface\\Buttons\\WHITE8x8"
 --------------------------------------------------------------------------------
 local CLASS_CONFIG = {
 	PALADIN = {
-		powerEnum  = PT.HOLY_POWER,
-		maxCount   = 5,
-		fillColor  = { r=0.95, g=0.89, b=0.59, a=1.00 },
-		emptyColor = { r=0.30, g=0.28, b=0.18, a=0.40 },
+		powerEnum = PT.HOLY_POWER,
+		maxCount = 5,
+		fillColor = { r = 0.95, g = 0.89, b = 0.59, a = 1.00 },
+		emptyColor = { r = 0.30, g = 0.28, b = 0.18, a = 0.40 },
 	},
 	DEATHKNIGHT = {
-		isRune     = true,
-		maxCount   = 6,
-		fillColor  = { r=0.77, g=0.12, b=0.23, a=1.00 },
-		emptyColor = { r=0.30, g=0.06, b=0.06, a=0.40 },
+		isRune = true,
+		maxCount = 6,
+		fillColor = { r = 0.77, g = 0.12, b = 0.23, a = 1.00 },
+		emptyColor = { r = 0.30, g = 0.06, b = 0.06, a = 0.40 },
 	},
 	ROGUE = {
-		powerEnum  = PT.COMBO_POINTS,
-		maxCount   = 5,
-		fillColor  = { r=1.00, g=0.96, b=0.00, a=1.00 },
-		emptyColor = { r=0.40, g=0.38, b=0.00, a=0.40 },
+		powerEnum = PT.COMBO_POINTS,
+		maxCount = 5,
+		fillColor = { r = 1.00, g = 0.96, b = 0.00, a = 1.00 },
+		emptyColor = { r = 0.40, g = 0.38, b = 0.00, a = 0.40 },
 	},
 	DRUID = {
-		powerEnum  = PT.COMBO_POINTS,
-		maxCount   = 5,
-		fillColor  = { r=1.00, g=0.49, b=0.04, a=1.00 },
-		emptyColor = { r=0.40, g=0.20, b=0.02, a=0.40 },
+		powerEnum = PT.COMBO_POINTS,
+		maxCount = 5,
+		fillColor = { r = 1.00, g = 0.49, b = 0.04, a = 1.00 },
+		emptyColor = { r = 0.40, g = 0.20, b = 0.02, a = 0.40 },
 	},
 	MAGE = {
-		powerEnum  = PT.ARCANE_CHARGES,
-		maxCount   = 4,
-		fillColor  = { r=0.41, g=0.80, b=0.94, a=1.00 },
-		emptyColor = { r=0.16, g=0.32, b=0.38, a=0.40 },
+		powerEnum = PT.ARCANE_CHARGES,
+		maxCount = 4,
+		fillColor = { r = 0.41, g = 0.80, b = 0.94, a = 1.00 },
+		emptyColor = { r = 0.16, g = 0.32, b = 0.38, a = 0.40 },
 	},
 	MONK = {
-		powerEnum  = PT.CHI,
-		maxCount   = 5,
-		fillColor  = { r=0.00, g=1.00, b=0.59, a=1.00 },
-		emptyColor = { r=0.00, g=0.40, b=0.24, a=0.40 },
+		powerEnum = PT.CHI,
+		maxCount = 5,
+		fillColor = { r = 0.00, g = 1.00, b = 0.59, a = 1.00 },
+		emptyColor = { r = 0.00, g = 0.40, b = 0.24, a = 0.40 },
 	},
 	WARLOCK = {
-		powerEnum  = PT.SOUL_SHARDS,
-		maxCount   = 5,
-		fillColor  = { r=0.58, g=0.51, b=0.79, a=1.00 },
-		emptyColor = { r=0.23, g=0.20, b=0.32, a=0.40 },
+		powerEnum = PT.SOUL_SHARDS,
+		maxCount = 5,
+		fillColor = { r = 0.58, g = 0.51, b = 0.79, a = 1.00 },
+		emptyColor = { r = 0.23, g = 0.20, b = 0.32, a = 0.40 },
 	},
 	EVOKER = {
-		powerEnum  = PT.ESSENCE,
-		maxCount   = 6,
-		fillColor  = { r=0.20, g=0.58, b=0.50, a=1.00 },
-		emptyColor = { r=0.08, g=0.23, b=0.20, a=0.40 },
+		powerEnum = PT.ESSENCE,
+		maxCount = 6,
+		fillColor = { r = 0.20, g = 0.58, b = 0.50, a = 1.00 },
+		emptyColor = { r = 0.08, g = 0.23, b = 0.20, a = 0.40 },
 	},
 	SHAMAN = {
 		isMaelstrom = true,
-		maxCount    = 5,
-		fillColor   = { r=0.00, g=0.44, b=0.87, a=1.00 },
-		emptyColor  = { r=0.00, g=0.18, b=0.35, a=0.40 },
+		maxCount = 5,
+		fillColor = { r = 0.00, g = 0.44, b = 0.87, a = 1.00 },
+		emptyColor = { r = 0.00, g = 0.18, b = 0.35, a = 0.40 },
 	},
 }
 
@@ -129,7 +129,7 @@ local TEXT_POWER_CONFIG = {
 }
 
 -- Visual dimensions (pixels at scale 1)
-local PIP_SIZE    = 18
+local PIP_SIZE = 18
 local PIP_SPACING = 4
 
 --------------------------------------------------------------------------------
@@ -143,11 +143,11 @@ addon.Modules.ClassResourceObj = ClassResource
 local MODE_TEXT = "TEXT"
 local MODE_PIPS = "PIPS"
 
-local isEnabled  = false
-local container  = nil
-local pips       = {}
-local pipMax     = 0
-local activeCfg  = nil
+local isEnabled = false
+local container = nil
+local pips = {}
+local pipMax = 0
+local activeCfg = nil
 
 local textFrame = nil
 local currentTextSource = nil
@@ -169,19 +169,27 @@ end
 -- Shared helpers
 --------------------------------------------------------------------------------
 local function NormalizePowerValue(value)
-	if value == nil then return 0 end
-	if type(value) == "number" then return value end
+	if value == nil then
+		return 0
+	end
+	if type(value) == "number" then
+		return value
+	end
 
 	local s = tostring(value) or "0"
 	local n = tonumber(s)
-	if n then return n end
+	if n then
+		return n
+	end
 
 	local token = s:match("[-+]?%d+%.?%d*")
 	return tonumber(token) or 0
 end
 
 local function IsPowerTypeUsable(powerType)
-	if powerType == nil then return false end
+	if powerType == nil then
+		return false
+	end
 	local maxPower = NormalizePowerValue(UnitPowerMax("player", powerType))
 	return maxPower > 0
 end
@@ -190,10 +198,14 @@ end
 -- Text Mode
 --------------------------------------------------------------------------------
 local function EnsureTextFrame()
-	if textFrame then return end
+	if textFrame then
+		return
+	end
 
 	local anchor = AnchorFrame:GetFrame()
-	if not anchor then return end
+	if not anchor then
+		return
+	end
 
 	textFrame = CreateFrame("Frame", nil, anchor)
 	textFrame:SetFrameStrata("HIGH")
@@ -236,7 +248,9 @@ function ClassResource:DetectTextPowerType()
 end
 
 function ClassResource:ApplyTextOptions()
-	if not textFrame then return end
+	if not textFrame then
+		return
+	end
 
 	local font = GetDBValue("classresource_font") or "Fonts\\FRIZQT__.TTF"
 	local fontSize = GetDBValue("classresource_fontSize") or 16
@@ -253,8 +267,12 @@ function ClassResource:ApplyTextOptions()
 end
 
 function ClassResource:UpdateTextMode()
-	if not isEnabled then return end
-	if not textFrame then return end
+	if not isEnabled then
+		return
+	end
+	if not textFrame then
+		return
+	end
 
 	if not Visibility:ShouldShow("classresource") then
 		textFrame:Hide()
@@ -308,12 +326,16 @@ end
 
 local function GetMaelstromWeaponPower()
 	local aura = C_UnitAuras.GetPlayerAuraBySpellID(MAELSTROM_WEAPON_SPELL_ID)
-	if not aura then return 0, 5 end
+	if not aura then
+		return 0, 5
+	end
 	return (aura.applications or 0), 5
 end
 
 local function ReadPower()
-	if not activeCfg then return 0, 0 end
+	if not activeCfg then
+		return 0, 0
+	end
 
 	if activeCfg.isRune then
 		return GetRunePower()
@@ -324,7 +346,9 @@ local function ReadPower()
 	end
 
 	local pEnum = activeCfg.powerEnum
-	if not pEnum then return 0, 0 end
+	if not pEnum then
+		return 0, 0
+	end
 
 	local cur = NormalizePowerValue(UnitPower("player", pEnum))
 	local max = NormalizePowerValue(UnitPowerMax("player", pEnum))
@@ -332,9 +356,13 @@ local function ReadPower()
 end
 
 local function EnsureContainer()
-	if container then return end
+	if container then
+		return
+	end
 	local anchor = AnchorFrame:GetFrame()
-	if not anchor then return end
+	if not anchor then
+		return
+	end
 
 	container = CreateFrame("Frame", nil, anchor)
 	container:SetFrameStrata("HIGH")
@@ -344,12 +372,16 @@ local function EnsureContainer()
 end
 
 local function GetPip(i)
-	if pips[i] then return pips[i] end
-	if not container then return nil end
+	if pips[i] then
+		return pips[i]
+	end
+	if not container then
+		return nil
+	end
 	local p = {
 		frame = container:CreateTexture(nil, "ARTWORK", nil, 2),
-		bg    = container:CreateTexture(nil, "ARTWORK", nil, 0),
-		fill  = container:CreateTexture(nil, "ARTWORK", nil, 1),
+		bg = container:CreateTexture(nil, "ARTWORK", nil, 0),
+		fill = container:CreateTexture(nil, "ARTWORK", nil, 1),
 	}
 	p.styleReady = false
 	p.frame:Hide()
@@ -360,7 +392,9 @@ local function GetPip(i)
 end
 
 local function ConfigurePipTextures(p, cfg)
-	if not p then return end
+	if not p then
+		return
+	end
 
 	p.frame:SetTexCoord(0, 1, 0, 1)
 	p.bg:SetTexCoord(0, 1, 0, 1)
@@ -420,7 +454,9 @@ local function ConfigurePipTextures(p, cfg)
 end
 
 function ClassResource:ApplyPipVisualOptions()
-	if not activeCfg then return end
+	if not activeCfg then
+		return
+	end
 	for i = 1, #pips do
 		local p = pips[i]
 		if p then
@@ -430,10 +466,12 @@ function ClassResource:ApplyPipVisualOptions()
 end
 
 local function LayoutPips(cfg, count)
-	if not container or count < 1 then return end
+	if not container or count < 1 then
+		return
+	end
 
 	local total = count * PIP_SIZE + (count - 1) * PIP_SPACING
-	local x0    = -(total / 2) + (PIP_SIZE / 2)
+	local x0 = -(total / 2) + (PIP_SIZE / 2)
 
 	for i = 1, count do
 		local p = GetPip(i)
@@ -460,7 +498,11 @@ local function LayoutPips(cfg, count)
 
 	for i = count + 1, #pips do
 		local p = pips[i]
-		if p then p.frame:Hide(); p.bg:Hide(); p.fill:Hide() end
+		if p then
+			p.frame:Hide()
+			p.bg:Hide()
+			p.fill:Hide()
+		end
 	end
 
 	container:SetSize(total, PIP_SIZE)
@@ -470,7 +512,11 @@ end
 local function HidePips()
 	for i = 1, #pips do
 		local p = pips[i]
-		if p then p.frame:Hide(); p.bg:Hide(); p.fill:Hide() end
+		if p then
+			p.frame:Hide()
+			p.bg:Hide()
+			p.fill:Hide()
+		end
 	end
 end
 
@@ -509,7 +555,11 @@ local function ApplyPipState(current, max)
 
 	for i = max + 1, #pips do
 		local p = pips[i]
-		if p then p.frame:Hide(); p.bg:Hide(); p.fill:Hide() end
+		if p then
+			p.frame:Hide()
+			p.bg:Hide()
+			p.fill:Hide()
+		end
 	end
 end
 
@@ -518,13 +568,17 @@ end
 --------------------------------------------------------------------------------
 function ClassResource:ApplyLayout()
 	local anchor = AnchorFrame:GetFrame()
-	if not anchor then return end
+	if not anchor then
+		return
+	end
 
 	local offsetX = GetDBValue("classresource_offsetX") or 0
 	local offsetY = GetDBValue("classresource_offsetY") or 0
-	local scale   = GetDBValue("classresource_scale") or 1
+	local scale = GetDBValue("classresource_scale") or 1
 	local opacity = GetDBValue("classresource_opacity")
-	if opacity == nil then opacity = 1 end
+	if opacity == nil then
+		opacity = 1
+	end
 
 	if container then
 		container:SetParent(anchor)
@@ -551,40 +605,58 @@ end
 
 function ClassResource:UpdateVisibility()
 	if not isEnabled then
-		if container then container:Hide() end
-		if textFrame then textFrame:Hide() end
+		if container then
+			container:Hide()
+		end
+		if textFrame then
+			textFrame:Hide()
+		end
 		AnchorFrame:Hide("classresource")
 		return
 	end
 
 	if GetCurrentMode() == MODE_TEXT then
-		if container then container:Hide() end
+		if container then
+			container:Hide()
+		end
 		HidePips()
 		self:UpdateTextMode()
 		return
 	end
 
-	if textFrame then textFrame:Hide() end
+	if textFrame then
+		textFrame:Hide()
+	end
 
 	if not activeCfg then
-		if container then container:Hide() end
+		if container then
+			container:Hide()
+		end
 		AnchorFrame:Hide("classresource")
 		return
 	end
 
 	if not Visibility:ShouldShow("classresource") then
-		if container then container:Hide() end
+		if container then
+			container:Hide()
+		end
 		AnchorFrame:Hide("classresource")
 		return
 	end
 
-	if container then container:Show() end
+	if container then
+		container:Show()
+	end
 	AnchorFrame:Show("classresource")
 end
 
 function ClassResource:SyncPower()
-	if GetCurrentMode() ~= MODE_PIPS then return end
-	if not isEnabled or not activeCfg then return end
+	if GetCurrentMode() ~= MODE_PIPS then
+		return
+	end
+	if not isEnabled or not activeCfg then
+		return
+	end
 	local current, max = ReadPower()
 	ApplyPipState(current, max)
 end
@@ -594,14 +666,20 @@ end
 --------------------------------------------------------------------------------
 local function DetectActiveClass()
 	local _, classTag = UnitClass("player")
-	if not classTag then return nil, nil end
+	if not classTag then
+		return nil, nil
+	end
 
 	local cfg = CLASS_CONFIG[classTag]
-	if not cfg then return nil, nil end
+	if not cfg then
+		return nil, nil
+	end
 
 	if classTag == "SHAMAN" then
 		local spec = GetSpecialization() or 0
-		if spec ~= 2 then return nil, nil end
+		if spec ~= 2 then
+			return nil, nil
+		end
 	end
 
 	return classTag, cfg
@@ -655,7 +733,9 @@ function ClassResource:UPDATE_SHAPESHIFT_FORM()
 end
 
 function ClassResource:UNIT_POWER_UPDATE(event, unit)
-	if unit ~= "player" then return end
+	if unit ~= "player" then
+		return
+	end
 	if GetCurrentMode() == MODE_TEXT then
 		self:UpdateTextMode()
 	else
@@ -664,7 +744,9 @@ function ClassResource:UNIT_POWER_UPDATE(event, unit)
 end
 
 function ClassResource:UNIT_MAXPOWER(event, unit)
-	if unit ~= "player" then return end
+	if unit ~= "player" then
+		return
+	end
 	if GetCurrentMode() == MODE_TEXT then
 		self:Refresh()
 	else
@@ -673,12 +755,16 @@ function ClassResource:UNIT_MAXPOWER(event, unit)
 end
 
 function ClassResource:UNIT_DISPLAYPOWER(event, unit)
-	if unit ~= "player" then return end
+	if unit ~= "player" then
+		return
+	end
 	self:Refresh()
 end
 
 function ClassResource:UNIT_AURA(event, unit)
-	if unit ~= "player" then return end
+	if unit ~= "player" then
+		return
+	end
 	if GetCurrentMode() == MODE_TEXT then
 		self:UpdateTextMode()
 		return
@@ -698,16 +784,20 @@ local function EnableModule(enabled)
 		EL:RegisterEvent("PLAYER_ENTERING_WORLD")
 		EL:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
 		EL:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
-		EL:RegisterUnitEvent("UNIT_DISPLAYPOWER",              "player")
-		EL:RegisterUnitEvent("UNIT_POWER_UPDATE",              "player")
-		EL:RegisterUnitEvent("UNIT_MAXPOWER",                  "player")
-		EL:RegisterUnitEvent("UNIT_AURA",                      "player")
+		EL:RegisterUnitEvent("UNIT_DISPLAYPOWER", "player")
+		EL:RegisterUnitEvent("UNIT_POWER_UPDATE", "player")
+		EL:RegisterUnitEvent("UNIT_MAXPOWER", "player")
+		EL:RegisterUnitEvent("UNIT_AURA", "player")
 
 		ClassResource:Refresh()
 	else
 		EL:UnregisterAllEvents()
-		if container then container:Hide() end
-		if textFrame then textFrame:Hide() end
+		if container then
+			container:Hide()
+		end
+		if textFrame then
+			textFrame:Hide()
+		end
 		AnchorFrame:Hide("classresource")
 		activeCfg = nil
 		currentTextSource = nil
@@ -725,8 +815,12 @@ end)
 --------------------------------------------------------------------------------
 -- Setting Callbacks
 --------------------------------------------------------------------------------
-for _, key in ipairs({ "classresource_scale", "classresource_opacity",
-	                   "classresource_offsetX", "classresource_offsetY" }) do
+for _, key in ipairs({
+	"classresource_scale",
+	"classresource_opacity",
+	"classresource_offsetX",
+	"classresource_offsetY",
+}) do
 	CallbackRegistry:RegisterSettingCallback(key, function()
 		ClassResource:ApplyLayout()
 	end)
@@ -738,8 +832,13 @@ for _, key in ipairs({ "classresource_textOffsetX", "classresource_textOffsetY" 
 	end)
 end
 
-for _, key in ipairs({ "classresource_font", "classresource_fontSize", "classresource_fontOutline",
-	                   "classresource_fontColor", "classresource_useClassColor" }) do
+for _, key in ipairs({
+	"classresource_font",
+	"classresource_fontSize",
+	"classresource_fontOutline",
+	"classresource_fontColor",
+	"classresource_useClassColor",
+}) do
 	CallbackRegistry:RegisterSettingCallback(key, function()
 		ClassResource:ApplyTextOptions()
 		if GetCurrentMode() == MODE_TEXT then
@@ -779,10 +878,10 @@ end, ClassResource)
 -- Module Registration
 --------------------------------------------------------------------------------
 addon.ControlCenter:AddModule({
-	name        = L["Class Resource"] or "Class Resource",
-	dbKey       = "moduleEnabled_ClassResource",
+	name = L["Class Resource"] or "Class Resource",
+	dbKey = "moduleEnabled_ClassResource",
 	description = L["Class Resource Description"] or "Displays class resources near the cursor",
-	toggleFunc  = EnableModule,
-	categoryID  = 1,
-	uiOrder     = 3,
+	toggleFunc = EnableModule,
+	categoryID = 1,
+	uiOrder = 3,
 })
