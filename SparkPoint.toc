@@ -15,6 +15,7 @@ Core\Visibility.lua
 Core\ModuleRegistry.lua
 Core\SlotProviders.lua
 Core\AnchorFrame.lua
+Core\MinimapButton.lua
 
 # Widgets
 Widgets\DonutWidget.lua

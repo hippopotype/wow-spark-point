@@ -56,6 +56,8 @@ OpenSettingsSafely = function()
 	OpenSettingsNow()
 end
 
+addon.OpenSettings = OpenSettingsSafely
+
 --------------------------------------------------------------------------------
 -- Show/Hide Request System
 -- Multiple modules can request visibility; anchor hides only when all release

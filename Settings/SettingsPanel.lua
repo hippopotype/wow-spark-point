@@ -257,6 +257,27 @@ local function BuildSettingsPanel()
 	-- General Settings
 	------------------------------------------------------------------------
 	AddCheckbox(category, "attachToMouse", L["Attach to Cursor"] or "Attach to Cursor", L["Attach to Cursor Tooltip"] or "When enabled, the ring follows your cursor.")
+	AddCheckbox(
+		category,
+		"showMinimapButton",
+		L["Show Minimap Button"] or "Show Minimap Button",
+		L["Show Minimap Button Tooltip"] or "Show a Spark Point minimap button that opens settings."
+	)
+	AddCheckbox(
+		category,
+		"fadeMinimapButtonWhenNotHovered",
+		L["Fade Minimap Button"] or "Fade Minimap Button",
+		L["Fade Minimap Button Tooltip"] or "Fade the Spark Point minimap button when your cursor is not over the minimap."
+	)
+	AddSlider(
+		category,
+		"minimapButtonFadeOpacity",
+		L["Minimap Button Fade Opacity"] or "Minimap Button Fade Opacity",
+		0,
+		1,
+		0.05,
+		L["Minimap Button Fade Opacity Tooltip"] or "Opacity used when the minimap button is faded."
+	)
 
 	AddSlider(
 		category,

@@ -15,6 +15,14 @@ L["Vertical Offset Tooltip"] = "Vertical offset from cursor position"
 L["Anchor Horizontal Offset"] = "Anchor Horizontal Offset"
 L["Anchor Vertical Offset"] = "Anchor Vertical Offset"
 L["Modules"] = "Modules"
+L["Spark Point"] = "Spark Point"
+L["Show Minimap Button"] = "Show Minimap Button"
+L["Show Minimap Button Tooltip"] = "Show a Spark Point minimap button that opens settings."
+L["Minimap Button Click Tooltip"] = "Click to open settings"
+L["Fade Minimap Button"] = "Fade Minimap Button"
+L["Fade Minimap Button Tooltip"] = "Fade the Spark Point minimap button when your cursor is not over the minimap."
+L["Minimap Button Fade Opacity"] = "Minimap Button Fade Opacity"
+L["Minimap Button Fade Opacity Tooltip"] = "Opacity used when the minimap button is faded."
 
 --------------------------------------------------------------------------------
 -- Common Settings

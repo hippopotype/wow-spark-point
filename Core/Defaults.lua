@@ -22,6 +22,10 @@ addon.DefaultValues = {
 	offset_y = -44,
 	position_x = 400,
 	position_y = 400,
+	showMinimapButton = true,
+	fadeMinimapButtonWhenNotHovered = false,
+	minimapButtonFadeOpacity = 0,
+	minimapButtonAngle = 225,
 	visibility_mode = { ALWAYS = true },
 
 	-- Module enable flags
