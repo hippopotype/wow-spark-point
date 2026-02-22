@@ -6,6 +6,7 @@ local L = addon.L
 local API = addon.API
 local CallbackRegistry = addon.CallbackRegistry
 local AnchorFrame = addon.AnchorFrame
+local Visibility = addon.Visibility
 local GetDBValue = addon.GetDBValue
 local GetDBBool = addon.GetDBBool
 local GetDBColor = addon.GetDBColor
@@ -68,6 +69,10 @@ local function NormalizeTextureKey(textureValue)
 	return DEFAULT_TEXTURE_KEY
 end
 
+local function IsVisibilityAllowed()
+	return (not Visibility) or Visibility:ShouldShow("ring")
+end
+
 --------------------------------------------------------------------------------
 -- OnUpdate Handler (rotation animation)
 --------------------------------------------------------------------------------
@@ -97,23 +102,31 @@ function Ring:Show(requester)
     if not isEnabled then return end
 
     showRequests[requester or "default"] = true
-    ringFrame:Show()
+    self:UpdateVisibility()
 end
 
 function Ring:Hide(requester)
     if not ringFrame then return end
 
     showRequests[requester or "default"] = nil
+    self:UpdateVisibility()
+end
 
-    local anyVisible = false
-    for _ in pairs(showRequests) do
-        anyVisible = true
-        break
-    end
+function Ring:UpdateVisibility()
+	if not ringFrame then return end
+	if not isEnabled then
+		ringFrame:Hide()
+		return
+	end
 
-    if not anyVisible then
-        ringFrame:Hide()
-    end
+	-- Visibility policy now drives ring display directly.
+	-- The show/hide request API is kept for compatibility with callers (e.g. Cast),
+	-- but requests no longer gate visibility.
+	if IsVisibilityAllowed() then
+		ringFrame:Show()
+	else
+		ringFrame:Hide()
+	end
 end
 
 --------------------------------------------------------------------------------
@@ -150,6 +163,8 @@ function Ring:ApplyOptions()
     else
         ringFrame:SetScript("OnUpdate", nil)
     end
+
+	self:UpdateVisibility()
 end
 
 --------------------------------------------------------------------------------
@@ -185,7 +200,7 @@ local function EnableModule(enabled)
         if not ringFrame then
             Ring:Initialize()
         end
-        -- Ring shows when other modules request it (Cast)
+        Ring:UpdateVisibility()
     else
         isEnabled = false
         if ringFrame then
@@ -207,6 +222,16 @@ for _, key in ipairs(settingKeys) do
         Ring:ApplyOptions()
     end)
 end
+
+for _, key in ipairs({ "visibility_mode", "ring_visibilitySource", "ring_visibility" }) do
+	CallbackRegistry:RegisterSettingCallback(key, function()
+		Ring:UpdateVisibility()
+	end)
+end
+
+CallbackRegistry:Register("VisibilityContextChanged", function()
+	Ring:UpdateVisibility()
+end, Ring)
 
 --------------------------------------------------------------------------------
 -- Register Module

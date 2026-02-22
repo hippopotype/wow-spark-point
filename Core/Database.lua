@@ -89,6 +89,8 @@ addon.DefaultValues = {
     ring_rotate = true,
     ring_useClassColor = false,
     ring_classColorAlpha = 0.5,
+    ring_visibilitySource = "INHERIT",
+    ring_visibility = "ALWAYS",
 
     -- SpellIcon module settings (NEW)
     spellicon_size = 32,

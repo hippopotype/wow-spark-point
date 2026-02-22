@@ -409,6 +409,10 @@ local function BuildSettingsPanel()
 	AddSlider(ringCategory, "ring_width", L["Decorative Ring Size"] or "Decorative Ring Size", 20, 200, 1)
 	AddCheckbox(ringCategory, "ring_rotate", L["Decorative Ring Rotate"] or "Decorative Ring Rotate",
 		L["Rotate Tooltip"] or "Enable rotation animation")
+	AddDropdown(ringCategory, "ring_visibilitySource", L["Visibility Source"] or "Visibility Source", visibilitySourceOptions,
+		L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility")
+	AddDropdown(ringCategory, "ring_visibility", L["Decorative Ring Visibility"] or "Decorative Ring Visibility", visibilityModeOptions,
+		L["Decorative Ring Visibility Tooltip"] or "When to show the decorative ring")
 	AddDropdown(ringCategory, "ring_texture", L["Decorative Ring Texture"] or "Decorative Ring Texture", ringTextureOptions)
     AddColor(ringCategory, "ring_color", L["Decorative Ring Color"] or "Decorative Ring Color")
     AddCheckbox(ringCategory, "ring_useClassColor", L["Decorative Ring Use Class Color"] or "Decorative Ring Use Class Color",

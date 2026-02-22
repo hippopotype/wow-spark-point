@@ -168,7 +168,7 @@ end
 function Cast:SetSpellIconEnabled(enabled)
     spellIconEnabled = enabled == true
     if castFrame and castFrame.iconFrame then
-        if spellIconEnabled and isCasting then
+        if spellIconEnabled and isCasting and IsCastVisibilityAllowed() and castFrame:IsShown() then
             castFrame.iconFrame:Show()
         else
             castFrame.iconFrame:Hide()
@@ -226,6 +226,10 @@ function Cast:UpdateSpellIcon()
         spellIconEnabled = true
     end
     if not spellIconEnabled then
+        castFrame.iconFrame:Hide()
+        return
+    end
+    if not IsCastVisibilityAllowed() or not castFrame:IsShown() then
         castFrame.iconFrame:Hide()
         return
     end
