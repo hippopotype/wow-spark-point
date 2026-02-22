@@ -606,6 +606,13 @@ function Cast:ShowInterruptFlash(castGUID)
     if castFrame.sparkTexture then
         castFrame.sparkTexture:Hide()
     end
+    -- Stop inner slot progress/sparks immediately
+    for i = 1, NUM_SLOTS do
+        local slot = slots[i]
+        if slot and slot.widget then
+            slot.widget:SetProgress(0)
+        end
+    end
     if spellIconEnabled and castFrame.iconFrame and castFrame.iconFrame.errorIcon then
         SetTextureSmooth(castFrame.iconFrame.errorIcon, SPELL_ICON_ERROR_PATH)
         LayoutSpellIconErrorOverlay()
