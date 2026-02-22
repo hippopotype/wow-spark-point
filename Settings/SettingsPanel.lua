@@ -193,10 +193,10 @@ local function BuildSettingsPanel()
     AddCheckbox(category, "attachToMouse", L["Attach to Cursor"] or "Attach to Cursor",
         L["Attach to Cursor Tooltip"] or "When enabled, the ring follows your cursor.")
 
-    AddSlider(category, "offset_x", L["Anchor Horizontal Offset"] or "Anchor Horizontal Offset", 0, 64, 1,
+    AddSlider(category, "offset_x", L["Anchor Horizontal Offset"] or "Anchor Horizontal Offset", 0, 256, 1,
         L["Horizontal Offset Tooltip"] or "Horizontal offset from cursor position")
 
-    AddSlider(category, "offset_y", L["Anchor Vertical Offset"] or "Anchor Vertical Offset", -64, 0, 1,
+    AddSlider(category, "offset_y", L["Anchor Vertical Offset"] or "Anchor Vertical Offset", -256, 0, 1,
         L["Vertical Offset Tooltip"] or "Vertical offset from cursor position")
 
 	local visibilityCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Visibility"] or "Visibility")

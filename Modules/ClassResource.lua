@@ -129,8 +129,8 @@ local TEXT_POWER_CONFIG = {
 }
 
 -- Visual dimensions (pixels at scale 1)
-local PIP_SIZE    = 14
-local PIP_SPACING = 3
+local PIP_SIZE    = 18
+local PIP_SPACING = 4
 
 --------------------------------------------------------------------------------
 -- Module State
