@@ -11,7 +11,7 @@
 set -euo pipefail
 
 ADDON_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-ADDON_NAME="$(basename "$ADDON_DIR")"
+ADDON_NAME="SparkPoint"
 TOC_FILE="$ADDON_DIR/${ADDON_NAME}.toc"
 
 # ── Version ──────────────────────────────────────────────────────────────────
@@ -30,6 +30,7 @@ fi
 RELEASES_DIR="$ADDON_DIR/.releases"
 OUTPUT="$RELEASES_DIR/${ADDON_NAME}-v${VERSION}.zip"
 mkdir -p "$RELEASES_DIR"
+rm -f "$OUTPUT"
 
 # ── Staging ───────────────────────────────────────────────────────────────────
 STAGING="$(mktemp -d)"
@@ -43,11 +44,13 @@ rsync -r \
     --exclude='.clones' \
     --exclude='.skills' \
     --exclude='.agents' \
+    --exclude='.claude/' \
     --exclude='.sessions' \
     --exclude='.resources' \
     --exclude='.releases' \
     --exclude='.github' \
     --exclude='.scripts' \
+    --exclude='SparkPoint_Dev.toc' \
     --exclude='CLAUDE.md' \
     --exclude='AGENTS.md' \
     --exclude='.luacheckrc' \
