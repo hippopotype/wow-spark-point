@@ -3,6 +3,7 @@
 ## Notes: Cast ring around cursor.
 ## Author: Magic (EU-BurningLegion)
 ## Version: 1.1.4
+## X-License: GPL-3.0
 ## SavedVariables: SparkPointDB
 ## IconTexture: Interface\AddOns\SparkPoint\Textures\icon.png
 

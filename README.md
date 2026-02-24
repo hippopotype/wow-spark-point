@@ -11,7 +11,7 @@
 <p align="center">
   <!-- Replace with real badges after CurseForge/Wago projects are created -->
   <img alt="WoW Version" src="https://img.shields.io/badge/WoW-12.x%20Midnight-blue" />
-  <img alt="License" src="https://img.shields.io/badge/license-MIT-green" />
+  <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0-blue" />
 </p>
 
 <!-- TODO: replace with a real GIF or screenshot banner once recorded -->
@@ -122,4 +122,4 @@ Open via `/sp`. All settings are in the standard Blizzard Settings Panel under *
 
 ## License
 
-[MIT](LICENSE)
+[GPL-3.0](LICENSE)
