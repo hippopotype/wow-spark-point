@@ -351,7 +351,37 @@ end
 --------------------------------------------------------------------------------
 -- OnUpdate Handler
 --------------------------------------------------------------------------------
+local function UpdateSlotProviderVisuals()
+	for i = 1, NUM_SLOTS do
+		local slot = slots[i]
+		if slot and slot.provider then
+			local result = slot.provider:GetProgress()
+			slot.widget:SetBarColor(GetSlotBarColor(i, result))
+
+			-- Keep assigned slot backgrounds visible while cast module is active.
+			-- Provider activity controls the progress/spark only.
+			slot.widget:Show()
+
+			if result and result.active then
+				if result.current ~= nil and result.max ~= nil then
+					slot.widget:SetValueRange(result.current, result.max, result.progress)
+				else
+					slot.widget:SetProgress(result.progress or 0)
+				end
+			else
+				slot.widget:SetProgress(0)
+			end
+		elseif slot then
+			slot.widget:Hide()
+		end
+	end
+end
+
 local function OnUpdate(self, elapsed)
+	if castFrame and castFrame:IsShown() then
+		UpdateSlotProviderVisuals()
+	end
+
 	if interruptFlashActive then
 		return
 	end
@@ -411,30 +441,6 @@ local function OnUpdate(self, elapsed)
 		end
 		spark:SetVertexColor(r, g, b, a)
 
-		-- Update inner ring slots
-		for i = 1, NUM_SLOTS do
-			local slot = slots[i]
-			if slot and slot.provider then
-				local result = slot.provider:GetProgress()
-				slot.widget:SetBarColor(GetSlotBarColor(i, result))
-
-				-- Keep assigned slot backgrounds visible while cast module is active.
-				-- Provider activity controls the progress/spark only.
-				slot.widget:Show()
-
-				if result and result.active then
-					if result.current ~= nil and result.max ~= nil then
-						slot.widget:SetValueRange(result.current, result.max, result.progress)
-					else
-						slot.widget:SetProgress(result.progress or 0)
-					end
-				else
-					slot.widget:SetProgress(0)
-				end
-			elseif slot then
-				slot.widget:Hide()
-			end
-		end
 	else
 		Cast:Hide()
 	end

@@ -97,6 +97,7 @@ function GCDProvider:Enable()
 	isEnabled = true
 
 	EL:RegisterEvent("ACTIONBAR_UPDATE_COOLDOWN")
+	EL:RegisterEvent("SPELL_UPDATE_COOLDOWN")
 	EL:RegisterEvent("PLAYER_STARTED_MOVING")
 	EL:RegisterEvent("PLAYER_STOPPED_MOVING")
 	EL:RegisterEvent("SPELLS_CHANGED")
@@ -138,6 +139,22 @@ local function ResolveGCDSpellID(spellID)
 	return spellID
 end
 
+local function UpdateTrackingFromSpellCooldown(spellID)
+	local id = ResolveGCDSpellID(spellID)
+	if not id then
+		return
+	end
+
+	local start, duration = API.GetSpellCooldown(id)
+	if CooldownActive(start, duration) and duration <= 1.5 then
+		gcdStartTime = start
+		gcdDuration = duration
+		isTracking = true
+	else
+		isTracking = false
+	end
+end
+
 --------------------------------------------------------------------------------
 -- Event Handlers
 --------------------------------------------------------------------------------
@@ -149,37 +166,29 @@ function GCDProvider:UNIT_SPELLCAST_START(event, unit, castGUID, spellID)
 	if unit ~= "player" then
 		return
 	end
-	local id = ResolveGCDSpellID(spellID)
-	if not id then
-		return
-	end
-	local start, duration = API.GetSpellCooldown(id)
-	if CooldownActive(start, duration) and duration <= 1.5 then
-		gcdStartTime = start
-		gcdDuration = duration
-		isTracking = true
-	end
+	UpdateTrackingFromSpellCooldown(spellID)
 end
 
 function GCDProvider:UNIT_SPELLCAST_SUCCEEDED(event, unit, castGUID, spellID)
-	self:UNIT_SPELLCAST_START(event, unit, castGUID, spellID)
+	if unit ~= "player" then
+		return
+	end
+
+	UpdateTrackingFromSpellCooldown(spellID)
+
+	-- Instant casts often populate the GCD cooldown on the next update tick.
+	C_Timer.After(0, function()
+		if isEnabled then
+			GCDProvider:ACTIONBAR_UPDATE_COOLDOWN()
+		end
+	end)
 end
 
 function GCDProvider:ACTIONBAR_UPDATE_COOLDOWN()
-	if not gcdSpellID then
-		return
-	end
-	local start, duration = API.GetSpellCooldown(gcdSpellID)
-	if CooldownActive(start, duration) and duration <= 1.5 then
-		gcdStartTime = start
-		gcdDuration = duration
-		isTracking = true
-	else
-		if isTracking then
-			isTracking = false
-		end
-	end
+	UpdateTrackingFromSpellCooldown(gcdSpellID)
 end
+
+GCDProvider.SPELL_UPDATE_COOLDOWN = GCDProvider.ACTIONBAR_UPDATE_COOLDOWN
 
 function GCDProvider:PLAYER_STARTED_MOVING()
 	self:ACTIONBAR_UPDATE_COOLDOWN()
