@@ -24,6 +24,7 @@ globals = {
     "IsInGroup",
     "IsInInstance",
     "IsInRaid",
+    "IsMouseButtonDown",
     "LOCALIZED_CLASS_NAMES_FEMALE", "LOCALIZED_CLASS_NAMES_MALE",
     "MinimalSliderWithSteppersMixin",
     "Minimap",

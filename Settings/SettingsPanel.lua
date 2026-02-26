@@ -611,6 +611,52 @@ local function BuildSettingsPanel()
 	)
 	AddSlider(castCategory, "cast_frameOpacity", L["Cast Frame Opacity"] or "Cast Frame Opacity", 0, 1, 0.05, L["Cast Frame Opacity Tooltip"] or "Opacity of the cast ring frame")
 	AddSlider(castCategory, "cast_glowOpacity", L["Cast Glow Opacity"] or "Cast Glow Opacity", 0, 1, 0.05, L["Cast Glow Opacity Tooltip"] or "Opacity of the cast glow overlay")
+	local castClickFeedbackCategory = Settings.RegisterVerticalLayoutSubcategory(castCategory, L["Click Feedback"] or "Click Feedback")
+	AddCheckbox(
+		castClickFeedbackCategory,
+		"cast_clickFeedbackEnabled",
+		L["Click Feedback Enabled"] or "Enable Click Feedback",
+		L["Click Feedback Enabled Tooltip"] or "Show a ring highlight while mouse buttons are held"
+	)
+	AddCheckbox(
+		castClickFeedbackCategory,
+		"cast_clickFeedbackLeft",
+		L["Click Feedback Left"] or "Left Click",
+		L["Click Feedback Left Tooltip"] or "Trigger click feedback while holding left mouse button"
+	)
+	AddCheckbox(
+		castClickFeedbackCategory,
+		"cast_clickFeedbackRight",
+		L["Click Feedback Right"] or "Right Click",
+		L["Click Feedback Right Tooltip"] or "Trigger click feedback while holding right mouse button (camera turn)"
+	)
+	AddSlider(
+		castClickFeedbackCategory,
+		"cast_clickFeedbackOpacity",
+		L["Click Feedback Opacity"] or "Click Feedback Class Color Opacity",
+		0,
+		1,
+		0.05,
+		L["Click Feedback Opacity Tooltip"] or "Opacity of the click feedback ring"
+	)
+	AddCheckbox(
+		castClickFeedbackCategory,
+		"cast_clickFeedbackUseClassColor",
+		L["Click Feedback Use Class Color"] or "Click Feedback Use Class Color",
+		L["Click Feedback Use Class Color Tooltip"] or "Use your class color for the click feedback ring"
+	)
+	AddColor(
+		castClickFeedbackCategory,
+		"cast_clickFeedbackLeftColor",
+		L["Click Feedback Left Color"] or "Left Click Color",
+		L["Click Feedback Left Color Tooltip"] or "Color for left-click feedback when class color is disabled"
+	)
+	AddColor(
+		castClickFeedbackCategory,
+		"cast_clickFeedbackRightColor",
+		L["Click Feedback Right Color"] or "Right Click Color",
+		L["Click Feedback Right Color Tooltip"] or "Color for right-click feedback when class color is disabled"
+	)
 	AddColor(castCategory, "cast_sparkColor", L["Cast Spark Color"] or "Cast Spark Color")
 	AddColor(castCategory, "cast_latencyColor", L["Cast Latency Color"] or "Cast Latency Color")
 

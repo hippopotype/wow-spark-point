@@ -19,6 +19,7 @@ local SlotProviders = addon.SlotProviders
 local Cast
 local SPELL_ICON_MASK_PATH = addon.addonFolder .. "\\Textures\\spell_icon_mask.png"
 local SPELL_ICON_ERROR_PATH = addon.addonFolder .. "\\Textures\\spell_icon_error.png"
+local CAST_FEEDBACK_PATH = addon.addonFolder .. "\\Textures\\cast_feedback.png"
 local SPELL_ICON_MASK_BASE_SIZE = 32
 local SPELL_ICON_MASK_BASE_EXPAND = 6
 
@@ -61,10 +62,13 @@ local CAST_OVERLAY_INTERRUPT = "cast_error"
 local slots = {} -- {widget, provider, providerID} per slot
 local activeProviders = {}
 local moduleEnabled = false
+local clickFeedbackLeftDown = false
+local clickFeedbackRightDown = false
 
 local GetTime = GetTime
 local UnitCastingInfo = UnitCastingInfo
 local UnitChannelInfo = UnitChannelInfo
+local IsMouseButtonDown = IsMouseButtonDown
 local cos, sin, rad = math.cos, math.sin, math.rad
 
 local function NormalizeProviderID(providerID)
@@ -116,6 +120,15 @@ end
 
 local function IsCastVisibilityAllowed()
 	return (not Visibility) or Visibility:ShouldShow("cast")
+end
+
+local function IsAnyClickFeedbackActive()
+	if not GetDBBool("cast_clickFeedbackEnabled") then
+		return false
+	end
+	local leftActive = GetDBBool("cast_clickFeedbackLeft") and clickFeedbackLeftDown
+	local rightActive = GetDBBool("cast_clickFeedbackRight") and clickFeedbackRightDown
+	return leftActive or rightActive
 end
 
 --------------------------------------------------------------------------------
@@ -415,6 +428,37 @@ function Cast:UpdateIconCooldown()
 	castFrame.iconFrame.cooldown:Show()
 end
 
+function Cast:UpdateClickFeedbackVisual()
+	if not castFrame or not castFrame.feedbackTexture then
+		return
+	end
+
+	if not moduleEnabled or not castFrame:IsShown() or not IsCastVisibilityAllowed() or not IsAnyClickFeedbackActive() then
+		castFrame.feedbackTexture:Hide()
+		return
+	end
+
+	local r, g, b, a
+	if GetDBBool("cast_clickFeedbackUseClassColor") then
+		r, g, b, a = API.GetPlayerClassColor()
+		a = GetDBValue("cast_clickFeedbackOpacity") or a or 1
+	else
+		local useRight = clickFeedbackRightDown and GetDBBool("cast_clickFeedbackRight")
+		local useLeft = clickFeedbackLeftDown and GetDBBool("cast_clickFeedbackLeft")
+		if useRight then
+			r, g, b, a = GetDBColor("cast_clickFeedbackRightColor")
+		elseif useLeft then
+			r, g, b, a = GetDBColor("cast_clickFeedbackLeftColor")
+		else
+			r, g, b, a = 1, 1, 1, 1
+		end
+	end
+	a = a or 1
+
+	castFrame.feedbackTexture:SetVertexColor(r or 1, g or 1, b or 1, a)
+	castFrame.feedbackTexture:Show()
+end
+
 --------------------------------------------------------------------------------
 -- OnUpdate Handler
 --------------------------------------------------------------------------------
@@ -445,6 +489,17 @@ local function UpdateSlotProviderVisuals()
 end
 
 local function OnUpdate(self, elapsed)
+	local leftDown = IsMouseButtonDown and IsMouseButtonDown("LeftButton") and true or false
+	local rightDown = IsMouseButtonDown and IsMouseButtonDown("RightButton") and true or false
+	if leftDown ~= clickFeedbackLeftDown or rightDown ~= clickFeedbackRightDown then
+		clickFeedbackLeftDown = leftDown
+		clickFeedbackRightDown = rightDown
+		Cast:UpdateClickFeedbackVisual()
+	elseif castFrame and castFrame.feedbackTexture and castFrame.feedbackTexture:IsShown() then
+		-- Keep feedback synced with visibility/module state while button is held.
+		Cast:UpdateClickFeedbackVisual()
+	end
+
 	if castFrame and castFrame:IsShown() then
 		UpdateSlotProviderVisuals()
 	end
@@ -684,6 +739,9 @@ function Cast:Hide()
 	end
 	if castFrame.sparkTexture then
 		castFrame.sparkTexture:Hide()
+	end
+	if castFrame.feedbackTexture then
+		castFrame.feedbackTexture:Hide()
 	end
 	castDuration = 0
 	castStartTime = 0
@@ -1156,6 +1214,14 @@ function Cast:ApplyOptions()
 		castFrame.frameTexture:SetPoint("CENTER", castFrame.overlayFrame, "CENTER")
 		castFrame.frameTexture:Hide()
 	end
+	if castFrame.feedbackTexture then
+		SetTextureSmooth(castFrame.feedbackTexture, CAST_FEEDBACK_PATH)
+		castFrame.feedbackTexture:SetBlendMode("ADD")
+		castFrame.feedbackTexture:SetSize(radius * 2, radius * 2)
+		castFrame.feedbackTexture:ClearAllPoints()
+		castFrame.feedbackTexture:SetPoint("CENTER", castFrame.overlayFrame, "CENTER")
+		self:UpdateClickFeedbackVisual()
+	end
 
 	-- Enforce layering: slots innermost, then cast fill, then latency on top
 	-- Slots are at levels 1..NUM_SLOTS (innermost = 1)
@@ -1224,6 +1290,11 @@ function Cast:Initialize()
 	castFrame.sparkTexture:SetTexture("Interface\\CastingBar\\UI-CastingBar-Spark")
 	castFrame.sparkTexture:SetBlendMode("ADD")
 	castFrame.sparkTexture:SetSize(32, 32)
+
+	-- Create click feedback overlay texture
+	castFrame.feedbackTexture = castFrame.overlayFrame:CreateTexture(nil, "OVERLAY")
+	castFrame.feedbackTexture:SetDrawLayer("OVERLAY", 6)
+	castFrame.feedbackTexture:Hide()
 
 	-- Create cast frame overlay texture (top border)
 	castFrame.frameTexture = castFrame.overlayFrame:CreateTexture(nil, "OVERLAY")
@@ -1352,6 +1423,13 @@ local settingKeys = {
 	"cast_backgroundOpacity",
 	"cast_frameOpacity",
 	"cast_glowOpacity",
+	"cast_clickFeedbackEnabled",
+	"cast_clickFeedbackLeft",
+	"cast_clickFeedbackRight",
+	"cast_clickFeedbackOpacity",
+	"cast_clickFeedbackUseClassColor",
+	"cast_clickFeedbackLeftColor",
+	"cast_clickFeedbackRightColor",
 	"cast_sparkColor",
 	"cast_latencyColor",
 	"cast_useClassColor",
