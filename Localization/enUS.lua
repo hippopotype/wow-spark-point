@@ -135,6 +135,8 @@ L["Spell Icon Size"] = "Spell Icon Size"
 L["Spell Icon Horizontal Offset"] = "Spell Icon Horizontal Offset"
 L["Spell Icon Vertical Offset"] = "Spell Icon Vertical Offset"
 L["Cast Progress Swipe"] = "Cast Progress Swipe"
+L["Show On Instant Casts"] = "Show On Instant Casts"
+L["Show On Instant Casts Tooltip"] = "Render the spell icon briefly for instant-cast abilities"
 
 --------------------------------------------------------------------------------
 -- Cast Ring

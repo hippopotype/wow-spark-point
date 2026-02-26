@@ -102,4 +102,5 @@ addon.DefaultValues = {
 	spellicon_offsetX = 0,
 	spellicon_offsetY = 0,
 	spellicon_castProgressSwipe = false,
+	spellicon_showInstantCasts = false,
 }

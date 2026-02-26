@@ -18,6 +18,9 @@ function SpellIcon:ApplyOptions()
 	if addon.Modules.CastObj and addon.Modules.CastObj.ApplyIconOptions then
 		addon.Modules.CastObj:ApplyIconOptions()
 	end
+	if addon.Modules.CastObj and addon.Modules.CastObj.UpdateSpellIcon then
+		addon.Modules.CastObj:UpdateSpellIcon()
+	end
 end
 
 --------------------------------------------------------------------------------
@@ -43,6 +46,7 @@ local settingKeys = {
 	"spellicon_offsetX",
 	"spellicon_offsetY",
 	"spellicon_castProgressSwipe",
+	"spellicon_showInstantCasts",
 }
 
 for _, key in ipairs(settingKeys) do

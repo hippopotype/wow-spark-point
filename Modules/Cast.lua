@@ -48,6 +48,9 @@ local currentSpellID
 local currentSpellTexture
 local spellIconEnabled = false
 local pendingVisuals = false
+local instantIconActive = false
+local instantIconToken = 0
+local instantIconForcedShell = false
 local interruptFlashToken = 0
 local interruptFlashActive = false
 local INTERRUPT_FLASH_DURATION = 0.2
@@ -227,7 +230,7 @@ end
 function Cast:SetSpellIconEnabled(enabled)
 	spellIconEnabled = enabled == true
 	if castFrame and castFrame.iconFrame then
-		if spellIconEnabled and isCasting and IsCastVisibilityAllowed() and castFrame:IsShown() then
+		if spellIconEnabled and (isCasting or instantIconActive) and IsCastVisibilityAllowed() and castFrame:IsShown() then
 			castFrame.iconFrame:Show()
 		else
 			castFrame.iconFrame:Hide()
@@ -304,6 +307,10 @@ function Cast:UpdateSpellIcon()
 		castFrame.iconFrame:Hide()
 		return
 	end
+	if not isCasting and not instantIconActive then
+		castFrame.iconFrame:Hide()
+		return
+	end
 	if not currentSpellTexture and currentSpellID then
 		local info = C_Spell.GetSpellInfo(currentSpellID)
 		currentSpellTexture = info and info.iconID or currentSpellTexture
@@ -327,6 +334,66 @@ function Cast:UpdateSpellIcon()
 	castFrame.iconFrame.icon:Show()
 	castFrame.iconFrame:Show()
 	self:UpdateIconCooldown()
+end
+
+local function ShowInstantSpellIcon(spellID)
+	if not GetDBBool("spellicon_showInstantCasts") then
+		return
+	end
+	if not spellIconEnabled then
+		return
+	end
+	if not spellID then
+		return
+	end
+
+	local info = C_Spell.GetSpellInfo(spellID)
+	if not info then
+		return
+	end
+	if (info.castTime or 0) > 0 then
+		return
+	end
+
+	currentSpellID = spellID
+	currentSpellName = info.name or currentSpellName
+	currentSpellTexture = info.iconID or currentSpellTexture
+	instantIconActive = true
+	instantIconToken = instantIconToken + 1
+	local myToken = instantIconToken
+
+	-- Instant casts have no cast bar start event, so the cast shell parent may still be hidden.
+	-- Temporarily show it so the child icon frame can render, then restore via UpdateShellVisibility().
+	if castFrame and (not castFrame:IsShown()) and IsCastVisibilityAllowed() then
+		instantIconForcedShell = true
+		AnchorFrame:Show("cast")
+		castFrame:Show()
+	end
+
+	Cast:UpdateSpellIcon()
+
+	local _, gcdDuration = API.GetSpellCooldown(61304)
+	local duration = tonumber(gcdDuration) or 0
+	if duration <= 0 or duration > 2 then
+		duration = 0.35
+	end
+
+	C_Timer.After(duration, function()
+		if myToken ~= instantIconToken then
+			return
+		end
+		instantIconActive = false
+		if instantIconForcedShell then
+			instantIconForcedShell = false
+			if Cast and Cast.UpdateShellVisibility then
+				Cast:UpdateShellVisibility()
+			end
+			return
+		end
+		if not isCasting and Cast and Cast.UpdateSpellIcon then
+			Cast:UpdateSpellIcon()
+		end
+	end)
 end
 
 function Cast:UpdateIconCooldown()
@@ -440,7 +507,6 @@ local function OnUpdate(self, elapsed)
 			r, g, b, a = GetDBColor("cast_sparkColor")
 		end
 		spark:SetVertexColor(r, g, b, a)
-
 	else
 		Cast:Hide()
 	end
@@ -712,12 +778,20 @@ function Cast:UNIT_SPELLCAST_SENT(event, unit, target, castGUID, spellID)
 		return
 	end
 	castSent = GetTime() * 1000
+
+	-- SENT fires earlier than SUCCEEDED for instant abilities; pre-show to avoid visible lag.
+	if not isCasting and not interruptFlashActive and not UnitCastingInfo("player") and not UnitChannelInfo("player") then
+		ShowInstantSpellIcon(spellID)
+	end
 end
 
 function Cast:UNIT_SPELLCAST_START(event, unit, castGUID, spellID)
 	if unit ~= "player" then
 		return
 	end
+	instantIconActive = false
+	instantIconToken = instantIconToken + 1
+	instantIconForcedShell = false
 	interruptFlashToken = interruptFlashToken + 1
 	interruptFlashActive = false
 
@@ -809,6 +883,9 @@ function Cast:UNIT_SPELLCAST_CHANNEL_START(event, unit, castGUID, spellID)
 	if unit ~= "player" then
 		return
 	end
+	instantIconActive = false
+	instantIconToken = instantIconToken + 1
+	instantIconForcedShell = false
 	interruptFlashToken = interruptFlashToken + 1
 	interruptFlashActive = false
 
@@ -867,6 +944,21 @@ function Cast:UNIT_SPELLCAST_CHANNEL_UPDATE(event, unit, castGUID, spellID)
 		castDuration = castEndTime - castStartTime
 		self:UpdateIconCooldown()
 	end
+end
+
+function Cast:UNIT_SPELLCAST_SUCCEEDED(event, unit, castGUID, spellID)
+	if unit ~= "player" then
+		return
+	end
+	if isCasting or interruptFlashActive then
+		return
+	end
+	if UnitCastingInfo("player") or UnitChannelInfo("player") then
+		return
+	end
+
+	-- Refresh/confirm the instant icon window after cooldown data settles.
+	ShowInstantSpellIcon(spellID)
 end
 
 -- Evoker Empower support
@@ -1222,6 +1314,7 @@ local function EnableModule(enabled)
 		EL:RegisterUnitEvent("UNIT_SPELLCAST_FAILED", "player")
 		EL:RegisterUnitEvent("UNIT_SPELLCAST_FAILED_QUIET", "player")
 		EL:RegisterUnitEvent("UNIT_SPELLCAST_DELAYED", "player")
+		EL:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
 		EL:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_START", "player")
 		EL:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_STOP", "player")
 		EL:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_UPDATE", "player")

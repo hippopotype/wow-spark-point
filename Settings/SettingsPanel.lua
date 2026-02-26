@@ -803,6 +803,12 @@ local function BuildSettingsPanel()
 	AddSlider(iconCategory, "spellicon_offsetX", L["Spell Icon Horizontal Offset"] or "Spell Icon Horizontal Offset", -100, 100, 1)
 	AddSlider(iconCategory, "spellicon_offsetY", L["Spell Icon Vertical Offset"] or "Spell Icon Vertical Offset", -100, 100, 1)
 	AddCheckbox(iconCategory, "spellicon_castProgressSwipe", L["Cast Progress Swipe"] or "Cast Progress Swipe")
+	AddCheckbox(
+		iconCategory,
+		"spellicon_showInstantCasts",
+		L["Show On Instant Casts"] or "Show On Instant Casts",
+		L["Show On Instant Casts Tooltip"] or "Render the spell icon briefly for instant-cast abilities"
+	)
 
 	------------------------------------------------------------------------
 	-- Register main category
