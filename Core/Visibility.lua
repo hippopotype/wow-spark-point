@@ -46,6 +46,15 @@ local function NormalizeRules(rules)
 			normalized[key] = true
 		end
 	end
+	-- "ALWAYS" is an exclusive rule. If any conditional rule is selected, ignore ALWAYS.
+	if normalized[Visibility.MODES.ALWAYS] then
+		for _, key in ipairs(VisibilityRuleOrder) do
+			if key ~= Visibility.MODES.ALWAYS and normalized[key] then
+				normalized[Visibility.MODES.ALWAYS] = nil
+				break
+			end
+		end
+	end
 	return normalized
 end
 
@@ -94,7 +103,12 @@ function Visibility:EvaluateRules(rules)
 		return true
 	end
 
-	local inCombat = InCombatLockdown and InCombatLockdown() and true or false
+	local inCombat = false
+	if InCombatLockdown and InCombatLockdown() then
+		inCombat = true
+	elseif UnitAffectingCombat then
+		inCombat = UnitAffectingCombat("player") and true or false
+	end
 	local hasTarget = UnitExists and UnitExists("target") and true or false
 	local isCasting = self:IsPlayerCasting()
 	local inRaid = IsInRaid and IsInRaid() and true or false
@@ -137,6 +151,7 @@ local EL = CreateFrame("Frame")
 EL:RegisterEvent("PLAYER_ENTERING_WORLD")
 EL:RegisterEvent("PLAYER_REGEN_DISABLED")
 EL:RegisterEvent("PLAYER_REGEN_ENABLED")
+EL:RegisterUnitEvent("UNIT_FLAGS", "player")
 EL:RegisterEvent("PLAYER_TARGET_CHANGED")
 EL:RegisterEvent("GROUP_ROSTER_UPDATE")
 EL:RegisterEvent("ZONE_CHANGED_NEW_AREA")

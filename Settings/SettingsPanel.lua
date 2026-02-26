@@ -172,37 +172,46 @@ local function BuildSettingsPanel()
 	}
 	local visibilityRuleProxy = {}
 
-	local function GetNormalizedVisibilityRules(dbKey)
-		local value = DB[dbKey]
-		local isTable = type(value) == "table"
-		if not isTable then
-			value = addon.DefaultValues and addon.DefaultValues[dbKey]
-		end
-
+	local function NormalizeVisibilityRuleSelection(value, fallbackAlwaysWhenMissing)
 		local out = {}
-		if type(value) == "table" then
+		local hasStoredTable = type(value) == "table"
+		if hasStoredTable then
 			for _, option in ipairs(visibilityRuleOptions) do
 				if value[option.key] == true then
 					out[option.key] = true
 				end
 			end
 		end
-		if not isTable and not next(out) then
+
+		-- "ALWAYS" is exclusive: if any conditional rule is enabled, drop ALWAYS.
+		if out.ALWAYS then
+			for _, option in ipairs(visibilityRuleOptions) do
+				if option.key ~= "ALWAYS" and out[option.key] then
+					out.ALWAYS = nil
+					break
+				end
+			end
+		end
+
+		if fallbackAlwaysWhenMissing and not hasStoredTable and not next(out) then
 			out.ALWAYS = true
 		end
+
 		return out
+	end
+
+	local function GetNormalizedVisibilityRules(dbKey)
+		local value = DB[dbKey]
+		local isTable = type(value) == "table"
+		if not isTable then
+			value = addon.DefaultValues and addon.DefaultValues[dbKey]
+		end
+		return NormalizeVisibilityRuleSelection(value, not isTable)
 	end
 
 	local function GetDefaultVisibilityRules(dbKey)
 		local defaults = addon.DefaultValues and addon.DefaultValues[dbKey]
-		local out = {}
-		if type(defaults) == "table" then
-			for _, option in ipairs(visibilityRuleOptions) do
-				if defaults[option.key] == true then
-					out[option.key] = true
-				end
-			end
-		end
+		local out = NormalizeVisibilityRuleSelection(defaults, false)
 		if not next(out) then
 			out.ALWAYS = true
 		end
@@ -213,6 +222,8 @@ local function BuildSettingsPanel()
 		local groupCategory = title and Settings.RegisterVerticalLayoutSubcategory(parentCategory, title) or parentCategory
 		local controls = {}
 		local settings = {}
+		local settingsByRuleKey = {}
+		local suppressRuleCallbacks = false
 		for _, option in ipairs(visibilityRuleOptions) do
 			local proxyKey = dbKey .. "__" .. option.key
 			local currentRules = GetNormalizedVisibilityRules(dbKey)
@@ -229,6 +240,10 @@ local function BuildSettingsPanel()
 				defaultRules[option.key] == true
 			)
 			setting:SetValueChangedCallback(function(_, value)
+				if suppressRuleCallbacks then
+					return
+				end
+
 				visibilityRuleProxy[proxyKey] = value and true or false
 
 				local nextRules = GetNormalizedVisibilityRules(dbKey)
@@ -237,9 +252,38 @@ local function BuildSettingsPanel()
 				else
 					nextRules[option.key] = nil
 				end
+
+				-- Enforce exclusive "ALWAYS" behavior in the UI and persisted DB.
+				if option.key == "ALWAYS" and value then
+					for _, other in ipairs(visibilityRuleOptions) do
+						if other.key ~= "ALWAYS" then
+							nextRules[other.key] = nil
+						end
+					end
+				elseif option.key ~= "ALWAYS" and value then
+					nextRules.ALWAYS = nil
+				end
+
+				nextRules = NormalizeVisibilityRuleSelection(nextRules, false)
+				for _, syncOption in ipairs(visibilityRuleOptions) do
+					local syncProxyKey = dbKey .. "__" .. syncOption.key
+					local isChecked = nextRules[syncOption.key] == true
+					visibilityRuleProxy[syncProxyKey] = isChecked
+				end
+
+				suppressRuleCallbacks = true
+				for _, syncOption in ipairs(visibilityRuleOptions) do
+					local peerSetting = settingsByRuleKey[syncOption.key]
+					if peerSetting and peerSetting.SetValue then
+						peerSetting:SetValue(visibilityRuleProxy[dbKey .. "__" .. syncOption.key] == true)
+					end
+				end
+				suppressRuleCallbacks = false
+
 				SetDBValue(dbKey, nextRules, true)
 			end)
 			settings[#settings + 1] = setting
+			settingsByRuleKey[option.key] = setting
 			controls[#controls + 1] = Settings.CreateCheckbox(
 				groupCategory,
 				setting,

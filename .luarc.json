@@ -51,6 +51,7 @@
     "StaticPopup_Show",
     "StaticPopupDialogs",
     "UIParent",
+    "UnitAffectingCombat",
     "UnitCastingInfo",
     "UnitChannelInfo",
     "UnitClass",

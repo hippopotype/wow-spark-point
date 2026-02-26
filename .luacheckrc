@@ -32,7 +32,7 @@ globals = {
     "SLASH_SPARKPOINT1", "SLASH_SPARKPOINT2", "SlashCmdList", "SparkPointDB",
     "StaticPopup_Show", "StaticPopupDialogs", "STATICPOPUP_NUMDIALOGS",
     "UIParent",
-    "UnitCastingInfo", "UnitChannelInfo", "UnitClass", "UnitExists",
+    "UnitAffectingCombat", "UnitCastingInfo", "UnitChannelInfo", "UnitClass", "UnitExists",
     "UnitPower", "UnitPowerMax",
     -- WoW locale strings
     "ACCEPT", "CANCEL", "Enum",

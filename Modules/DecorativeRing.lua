@@ -120,13 +120,16 @@ function Ring:UpdateVisibility()
 		return
 	end
 	if not isEnabled then
+		AnchorFrame:Hide("ring")
 		ringFrame:Hide()
 		return
 	end
 
 	if IsVisibilityAllowed() then
+		AnchorFrame:Show("ring")
 		ringFrame:Show()
 	else
+		AnchorFrame:Hide("ring")
 		ringFrame:Hide()
 	end
 end
@@ -209,6 +212,7 @@ local function EnableModule(enabled)
 		Ring:UpdateVisibility()
 	else
 		isEnabled = false
+		AnchorFrame:Hide("ring")
 		if ringFrame then
 			ringFrame:Hide()
 		end
