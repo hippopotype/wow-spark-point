@@ -9,6 +9,7 @@ local AnchorFrame = addon.AnchorFrame
 local Visibility = addon.Visibility
 local GetDBValue = addon.GetDBValue
 local GetDBBool = addon.GetDBBool
+local GetDBColor = addon.GetDBColor
 
 local AssistedHighlight = {}
 addon.Modules.AssistedHighlightObj = AssistedHighlight
@@ -17,11 +18,29 @@ local moduleEnabled = false
 local cvarEnabled = false
 local moduleFrame
 
-local GLOW_TEXTURE = "Interface\\Buttons\\UI-ActionButton-Border"
+local SPELL_ICON_BACKGROUND_PATH = addon.addonFolder .. "\\Textures\\spell_icon_background.png"
+local SPELL_ICON_GLOW_PATH = addon.addonFolder .. "\\Textures\\spell_icon_glow.png"
+local SPELL_ICON_FRAME_PATH = addon.addonFolder .. "\\Textures\\spell_icon_frame.png"
 local ICON_MASK_BASE_EXPAND = 6
 
 local function IsVisibilityAllowed()
 	return (not Visibility) or Visibility:ShouldShow("assistedhighlight")
+end
+
+local function SetTextureSmooth(texture, texturePath)
+	if not texture then
+		return
+	end
+	local ok = pcall(texture.SetTexture, texture, texturePath, nil, nil, "TRILINEAR")
+	if not ok then
+		texture:SetTexture(texturePath)
+	end
+	if texture.SetSnapToPixelGrid then
+		texture:SetSnapToPixelGrid(false)
+	end
+	if texture.SetTexelSnappingBias then
+		texture:SetTexelSnappingBias(0)
+	end
 end
 
 local function IsAssistedCVarEnabled()
@@ -77,17 +96,24 @@ function AssistedHighlight:ApplyOptions()
 
 	moduleFrame.iconFrame.icon:SetSize(size, size)
 	moduleFrame.iconMaskReady = IconMask:ApplyToIconFrame(moduleFrame.iconFrame, ICON_MASK_BASE_EXPAND)
-	if moduleFrame.iconMaskReady and moduleFrame.iconFrame.glow and moduleFrame.iconFrame.iconMask and not moduleFrame.iconFrame.glowMaskAttached then
-		local ok = pcall(moduleFrame.iconFrame.glow.AddMaskTexture, moduleFrame.iconFrame.glow, moduleFrame.iconFrame.iconMask)
-		if ok then
-			moduleFrame.iconFrame.glowMaskAttached = true
-		end
+
+	if moduleFrame.iconFrame.background then
+		IconMask:LayoutToIcon(moduleFrame.iconFrame.background, moduleFrame.iconFrame.icon, ICON_MASK_BASE_EXPAND)
+		SetTextureSmooth(moduleFrame.iconFrame.background, SPELL_ICON_BACKGROUND_PATH)
+		moduleFrame.iconFrame.background:SetVertexColor(1, 1, 1, 1)
 	end
 
 	if moduleFrame.iconFrame.glow then
-		moduleFrame.iconFrame.glow:SetSize(size * 1.8, size * 1.8)
-		moduleFrame.iconFrame.glow:ClearAllPoints()
-		moduleFrame.iconFrame.glow:SetPoint("CENTER", moduleFrame.iconFrame.icon, "CENTER")
+		IconMask:LayoutToIcon(moduleFrame.iconFrame.glow, moduleFrame.iconFrame.icon, ICON_MASK_BASE_EXPAND)
+		SetTextureSmooth(moduleFrame.iconFrame.glow, SPELL_ICON_GLOW_PATH)
+		local gr, gg, gb, ga = GetDBColor("assistedhighlight_glowColor")
+		moduleFrame.iconFrame.glow:SetVertexColor(gr, gg, gb, ga)
+	end
+
+	if moduleFrame.iconFrame.frame then
+		IconMask:LayoutToIcon(moduleFrame.iconFrame.frame, moduleFrame.iconFrame.icon, ICON_MASK_BASE_EXPAND)
+		SetTextureSmooth(moduleFrame.iconFrame.frame, SPELL_ICON_FRAME_PATH)
+		moduleFrame.iconFrame.frame:SetVertexColor(1, 1, 1, 1)
 	end
 end
 
@@ -119,12 +145,6 @@ function AssistedHighlight:UpdateVisibility()
 
 	if not moduleFrame.iconMaskReady then
 		moduleFrame.iconMaskReady = IconMask:ApplyToIconFrame(moduleFrame.iconFrame, ICON_MASK_BASE_EXPAND)
-		if moduleFrame.iconMaskReady and moduleFrame.iconFrame.glow and moduleFrame.iconFrame.iconMask and not moduleFrame.iconFrame.glowMaskAttached then
-			local ok = pcall(moduleFrame.iconFrame.glow.AddMaskTexture, moduleFrame.iconFrame.glow, moduleFrame.iconFrame.iconMask)
-			if ok then
-				moduleFrame.iconFrame.glowMaskAttached = true
-			end
-		end
 	end
 
 	if moduleFrame.iconFrame.glow then
@@ -133,6 +153,12 @@ function AssistedHighlight:UpdateVisibility()
 		else
 			moduleFrame.iconFrame.glow:Hide()
 		end
+	end
+	if moduleFrame.iconFrame.background then
+		moduleFrame.iconFrame.background:Show()
+	end
+	if moduleFrame.iconFrame.frame then
+		moduleFrame.iconFrame.frame:Show()
 	end
 
 	moduleFrame.iconFrame:Show()
@@ -155,16 +181,27 @@ function AssistedHighlight:Initialize()
 	moduleFrame.iconFrame:SetPoint("CENTER", moduleFrame, "CENTER", 0, 0)
 	moduleFrame.iconFrame:Hide()
 
+	moduleFrame.iconFrame.background = moduleFrame.iconFrame:CreateTexture(nil, "BACKGROUND")
+	moduleFrame.iconFrame.background:SetDrawLayer("BACKGROUND", 0)
+	moduleFrame.iconFrame.background:SetPoint("CENTER", moduleFrame.iconFrame, "CENTER")
+	moduleFrame.iconFrame.background:Hide()
+
 	moduleFrame.iconFrame.icon = moduleFrame.iconFrame:CreateTexture(nil, "ARTWORK")
+	moduleFrame.iconFrame.icon:SetDrawLayer("ARTWORK", 0)
 	moduleFrame.iconFrame.icon:SetPoint("CENTER")
 	moduleFrame.iconFrame.icon:SetTexCoord(0, 1, 0, 1)
 
-	moduleFrame.iconFrame.glow = moduleFrame.iconFrame:CreateTexture(nil, "OVERLAY")
-	moduleFrame.iconFrame.glow:SetTexture(GLOW_TEXTURE)
-	moduleFrame.iconFrame.glow:SetBlendMode("ADD")
-	moduleFrame.iconFrame.glow:SetVertexColor(0.35, 0.7, 1, 0.85)
+	moduleFrame.iconFrame.glow = moduleFrame.iconFrame:CreateTexture(nil, "ARTWORK")
+	moduleFrame.iconFrame.glow:SetDrawLayer("ARTWORK", 1)
+	moduleFrame.iconFrame.glow:SetBlendMode("BLEND")
 	moduleFrame.iconFrame.glow:SetPoint("CENTER", moduleFrame.iconFrame.icon, "CENTER")
 	moduleFrame.iconFrame.glow:Hide()
+
+	moduleFrame.iconFrame.frame = moduleFrame.iconFrame:CreateTexture(nil, "OVERLAY")
+	moduleFrame.iconFrame.frame:SetDrawLayer("OVERLAY", 1)
+	moduleFrame.iconFrame.frame:SetBlendMode("BLEND")
+	moduleFrame.iconFrame.frame:SetPoint("CENTER", moduleFrame.iconFrame.icon, "CENTER")
+	moduleFrame.iconFrame.frame:Hide()
 
 	self:RefreshCVarState()
 	self:ApplyOptions()
@@ -233,6 +270,10 @@ CallbackRegistry:RegisterSettingCallback("assistedhighlight_offsetY", function()
 	AssistedHighlight:UpdateVisibility()
 end)
 CallbackRegistry:RegisterSettingCallback("assistedhighlight_glowEnabled", function()
+	AssistedHighlight:UpdateVisibility()
+end)
+CallbackRegistry:RegisterSettingCallback("assistedhighlight_glowColor", function()
+	AssistedHighlight:ApplyOptions()
 	AssistedHighlight:UpdateVisibility()
 end)
 

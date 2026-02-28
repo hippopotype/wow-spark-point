@@ -912,6 +912,12 @@ local function BuildSettingsPanel()
 		L["Assisted Highlight Glow"] or "Assisted Highlight Glow",
 		L["Assisted Highlight Glow Tooltip"] or "Show a blue glow around the suggested spell icon"
 	)
+	AddColor(
+		assistedCategory,
+		"assistedhighlight_glowColor",
+		L["Assisted Highlight Glow Color"] or "Assisted Highlight Glow Color",
+		L["Assisted Highlight Glow Color Tooltip"] or "Color and alpha for the assisted highlight glow layer"
+	)
 
 	------------------------------------------------------------------------
 	-- Register main category
