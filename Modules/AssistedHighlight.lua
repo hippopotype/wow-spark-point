@@ -22,6 +22,12 @@ local SPELL_ICON_BACKGROUND_PATH = addon.addonFolder .. "\\Textures\\spell_icon_
 local SPELL_ICON_GLOW_PATH = addon.addonFolder .. "\\Textures\\spell_icon_glow.png"
 local SPELL_ICON_FRAME_PATH = addon.addonFolder .. "\\Textures\\spell_icon_frame.png"
 local ICON_MASK_BASE_EXPAND = 6
+local GLOW_ANIM_MIN_ALPHA = 0.45
+local GLOW_ANIM_MAX_ALPHA = 1
+local GLOW_CYCLE_DURATION = 2.6
+local GLOW_PEAK_BOOST = 0.18
+local COS = math.cos
+local PI2 = math.pi * 2
 
 local function IsVisibilityAllowed()
 	return (not Visibility) or Visibility:ShouldShow("assistedhighlight")
@@ -73,6 +79,39 @@ local function HideModuleFrame()
 	AnchorFrame:Hide("assistedhighlight")
 end
 
+local function UpdateGlowAlpha(elapsed)
+	if not moduleFrame or not moduleFrame.iconFrame or not moduleFrame.iconFrame.glow then
+		return
+	end
+
+	local iconFrame = moduleFrame.iconFrame
+	if not iconFrame.glowActive then
+		return
+	end
+
+	local duration = GLOW_CYCLE_DURATION
+	if duration <= 0 then
+		duration = 2
+	end
+
+	iconFrame.glowPhase = (iconFrame.glowPhase or 0) + (elapsed / duration)
+	if iconFrame.glowPhase >= 1 then
+		iconFrame.glowPhase = iconFrame.glowPhase - math.floor(iconFrame.glowPhase)
+	end
+
+	-- Continuous breath wave [0..1] without segment boundaries.
+	local wave = 0.5 - 0.5 * COS(iconFrame.glowPhase * PI2)
+	-- Add a soft boost near the peak to mimic "intensify at cycle end".
+	local boosted = wave + GLOW_PEAK_BOOST * (wave * wave * wave)
+	if boosted > 1 then
+		boosted = 1
+	end
+
+	local scaled = GLOW_ANIM_MIN_ALPHA + (GLOW_ANIM_MAX_ALPHA - GLOW_ANIM_MIN_ALPHA) * boosted
+	local colorAlpha = iconFrame.glowColorAlpha or 1
+	iconFrame.glow:SetAlpha(scaled * colorAlpha)
+end
+
 function AssistedHighlight:IsCVarEnabled()
 	return cvarEnabled == true
 end
@@ -107,7 +146,9 @@ function AssistedHighlight:ApplyOptions()
 		IconMask:LayoutToIcon(moduleFrame.iconFrame.glow, moduleFrame.iconFrame.icon, ICON_MASK_BASE_EXPAND)
 		SetTextureSmooth(moduleFrame.iconFrame.glow, SPELL_ICON_GLOW_PATH)
 		local gr, gg, gb, ga = GetDBColor("assistedhighlight_glowColor")
-		moduleFrame.iconFrame.glow:SetVertexColor(gr, gg, gb, ga)
+		moduleFrame.iconFrame.glow:SetVertexColor(gr, gg, gb, 1)
+		moduleFrame.iconFrame.glowColorAlpha = ga or 1
+		moduleFrame.iconFrame.glow:SetAlpha((ga or 1) * GLOW_ANIM_MIN_ALPHA)
 	end
 
 	if moduleFrame.iconFrame.frame then
@@ -150,7 +191,9 @@ function AssistedHighlight:UpdateVisibility()
 	if moduleFrame.iconFrame.glow then
 		if GetDBBool("assistedhighlight_glowEnabled") then
 			moduleFrame.iconFrame.glow:Show()
+			moduleFrame.iconFrame.glowActive = true
 		else
+			moduleFrame.iconFrame.glowActive = false
 			moduleFrame.iconFrame.glow:Hide()
 		end
 	end
@@ -179,6 +222,9 @@ function AssistedHighlight:Initialize()
 	moduleFrame.iconFrame = CreateFrame("Frame", nil, moduleFrame)
 	moduleFrame.iconFrame:SetSize(40, 40)
 	moduleFrame.iconFrame:SetPoint("CENTER", moduleFrame, "CENTER", 0, 0)
+	moduleFrame.iconFrame:SetScript("OnUpdate", function(_, elapsed)
+		UpdateGlowAlpha(elapsed)
+	end)
 	moduleFrame.iconFrame:Hide()
 
 	moduleFrame.iconFrame.background = moduleFrame.iconFrame:CreateTexture(nil, "BACKGROUND")
@@ -196,6 +242,9 @@ function AssistedHighlight:Initialize()
 	moduleFrame.iconFrame.glow:SetBlendMode("BLEND")
 	moduleFrame.iconFrame.glow:SetPoint("CENTER", moduleFrame.iconFrame.icon, "CENTER")
 	moduleFrame.iconFrame.glow:Hide()
+	moduleFrame.iconFrame.glowPhase = 0
+	moduleFrame.iconFrame.glowActive = false
+	moduleFrame.iconFrame.glowColorAlpha = 1
 
 	moduleFrame.iconFrame.frame = moduleFrame.iconFrame:CreateTexture(nil, "OVERLAY")
 	moduleFrame.iconFrame.frame:SetDrawLayer("OVERLAY", 1)
