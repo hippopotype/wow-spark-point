@@ -77,6 +77,12 @@ function AssistedHighlight:ApplyOptions()
 
 	moduleFrame.iconFrame.icon:SetSize(size, size)
 	moduleFrame.iconMaskReady = IconMask:ApplyToIconFrame(moduleFrame.iconFrame, ICON_MASK_BASE_EXPAND)
+	if moduleFrame.iconMaskReady and moduleFrame.iconFrame.glow and moduleFrame.iconFrame.iconMask and not moduleFrame.iconFrame.glowMaskAttached then
+		local ok = pcall(moduleFrame.iconFrame.glow.AddMaskTexture, moduleFrame.iconFrame.glow, moduleFrame.iconFrame.iconMask)
+		if ok then
+			moduleFrame.iconFrame.glowMaskAttached = true
+		end
+	end
 
 	if moduleFrame.iconFrame.glow then
 		moduleFrame.iconFrame.glow:SetSize(size * 1.8, size * 1.8)
@@ -113,6 +119,12 @@ function AssistedHighlight:UpdateVisibility()
 
 	if not moduleFrame.iconMaskReady then
 		moduleFrame.iconMaskReady = IconMask:ApplyToIconFrame(moduleFrame.iconFrame, ICON_MASK_BASE_EXPAND)
+		if moduleFrame.iconMaskReady and moduleFrame.iconFrame.glow and moduleFrame.iconFrame.iconMask and not moduleFrame.iconFrame.glowMaskAttached then
+			local ok = pcall(moduleFrame.iconFrame.glow.AddMaskTexture, moduleFrame.iconFrame.glow, moduleFrame.iconFrame.iconMask)
+			if ok then
+				moduleFrame.iconFrame.glowMaskAttached = true
+			end
+		end
 	end
 
 	if moduleFrame.iconFrame.glow then
