@@ -162,6 +162,7 @@ local function BuildSettingsPanel()
 		{ key = "OUT_OF_COMBAT", label = L["Visibility Out of Combat"] or "Out of Combat" },
 		{ key = "HAS_TARGET", label = L["Visibility Has Target"] or "Has Target" },
 		{ key = "CASTING", label = L["Visibility While Casting"] or "While Casting" },
+		{ key = "AFTER_INSTANT_CAST", label = L["Visibility After Instant Cast"] or "After Instant Cast" },
 		{ key = "IN_PARTY", label = L["Visibility In Party"] or "In Party" },
 		{ key = "IN_RAID", label = L["Visibility In Raid"] or "In Raid" },
 		{ key = "IN_INSTANCE", label = L["Visibility In Instanced Content"] or "In Instanced Content" },
