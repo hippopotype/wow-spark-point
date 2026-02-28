@@ -18,7 +18,6 @@ local cvarEnabled = false
 local moduleFrame
 
 local GLOW_TEXTURE = "Interface\\Buttons\\UI-ActionButton-Border"
-local ICON_MASK_BASE_SIZE = 32
 local ICON_MASK_BASE_EXPAND = 6
 
 local function IsVisibilityAllowed()
@@ -77,7 +76,7 @@ function AssistedHighlight:ApplyOptions()
 	moduleFrame.iconFrame:SetPoint("CENTER", moduleFrame, "CENTER", offsetX, offsetY)
 
 	moduleFrame.iconFrame.icon:SetSize(size, size)
-	moduleFrame.iconMaskReady = IconMask and IconMask:ApplyToIconFrame(moduleFrame.iconFrame, ICON_MASK_BASE_EXPAND, ICON_MASK_BASE_SIZE)
+	moduleFrame.iconMaskReady = IconMask:ApplyToIconFrame(moduleFrame.iconFrame, ICON_MASK_BASE_EXPAND)
 
 	if moduleFrame.iconFrame.glow then
 		moduleFrame.iconFrame.glow:SetSize(size * 1.8, size * 1.8)
@@ -112,8 +111,8 @@ function AssistedHighlight:UpdateVisibility()
 	moduleFrame.iconFrame.icon:SetTexture(texture)
 	moduleFrame.iconFrame.icon:Show()
 
-	if not moduleFrame.iconMaskReady and IconMask then
-		moduleFrame.iconMaskReady = IconMask:ApplyToIconFrame(moduleFrame.iconFrame, ICON_MASK_BASE_EXPAND, ICON_MASK_BASE_SIZE)
+	if not moduleFrame.iconMaskReady then
+		moduleFrame.iconMaskReady = IconMask:ApplyToIconFrame(moduleFrame.iconFrame, ICON_MASK_BASE_EXPAND)
 	end
 
 	if moduleFrame.iconFrame.glow then
@@ -199,7 +198,7 @@ local function EnableModule(enabled)
 		EL:RegisterEvent("PLAYER_TARGET_CHANGED")
 		EL:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
 		EL:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
-		EL:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
+		EL:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
 
 		AssistedHighlight:RefreshCVarState()
 		AssistedHighlight:UpdateVisibility()

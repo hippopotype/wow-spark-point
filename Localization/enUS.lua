@@ -190,6 +190,10 @@ L["Decorative Ring Description"] = "Displays a decorative rotating ring around t
 --------------------------------------------------------------------------------
 L["Spell Icon"] = "Spell Icon"
 L["Spell Icon Description"] = "Displays the icon of the spell being cast near the cursor"
+
+--------------------------------------------------------------------------------
+-- Assisted Highlight
+--------------------------------------------------------------------------------
 L["Assisted Highlight"] = "Assisted Highlight"
 L["Assisted Highlight Description"] = "Shows the next suggested spell from Blizzard Assisted Highlight"
 

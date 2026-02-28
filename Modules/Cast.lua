@@ -147,14 +147,14 @@ function Cast:GetFrame()
 end
 
 local function ApplySpellIconMask()
-	if not IconMask or not castFrame or not castFrame.iconFrame then
+	if not castFrame or not castFrame.iconFrame then
 		return false
 	end
 	return IconMask:ApplyToIconFrame(castFrame.iconFrame, SPELL_ICON_MASK_BASE_EXPAND)
 end
 
 local function LayoutSpellIconErrorOverlay()
-	if not IconMask or not castFrame or not castFrame.iconFrame or not castFrame.iconFrame.icon or not castFrame.iconFrame.errorIcon then
+	if not castFrame or not castFrame.iconFrame or not castFrame.iconFrame.icon or not castFrame.iconFrame.errorIcon then
 		return
 	end
 
@@ -162,7 +162,7 @@ local function LayoutSpellIconErrorOverlay()
 end
 
 local function LayoutSpellIconCooldown()
-	if not IconMask or not castFrame or not castFrame.iconFrame or not castFrame.iconFrame.icon or not castFrame.iconFrame.cooldown then
+	if not castFrame or not castFrame.iconFrame or not castFrame.iconFrame.icon or not castFrame.iconFrame.cooldown then
 		return
 	end
 
