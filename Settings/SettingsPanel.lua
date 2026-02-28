@@ -156,6 +156,25 @@ local function BuildSettingsPanel()
 		return initializer
 	end
 
+	local function AddInfoText(cat, text)
+		local initializer = Settings.CreateElementInitializer("SettingsListSectionHeaderTemplate", { name = text })
+		Settings.RegisterInitializer(cat, initializer)
+		return initializer
+	end
+
+	local function IsAssistedCVarEnabled()
+		if GetCVarBool then
+			return GetCVarBool("assistedCombatHighlight") == true
+		end
+		if C_CVar and C_CVar.GetCVar then
+			return C_CVar.GetCVar("assistedCombatHighlight") == "1"
+		end
+		if GetCVar then
+			return GetCVar("assistedCombatHighlight") == "1"
+		end
+		return false
+	end
+
 	local visibilityRuleOptions = {
 		{ key = "ALWAYS", label = L["Visibility Always"] or "Always" },
 		{ key = "IN_COMBAT", label = L["Visibility In Combat"] or "In Combat" },
@@ -855,6 +874,43 @@ local function BuildSettingsPanel()
 		"spellicon_showInstantCasts",
 		L["Show On Instant Casts"] or "Show On Instant Casts",
 		L["Show On Instant Casts Tooltip"] or "Render the spell icon briefly for instant-cast abilities"
+	)
+
+	------------------------------------------------------------------------
+	-- Assisted Highlight Settings Subcategory
+	------------------------------------------------------------------------
+	local assistedCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Assisted Highlight"] or "Assisted Highlight")
+
+	if not IsAssistedCVarEnabled() then
+		AddInfoText(
+			assistedCategory,
+			L["Assisted Highlight CVar Disabled"] or "Blizzard Assisted Highlight is currently disabled. Enable it in Blizzard settings to show suggestions."
+		)
+	end
+
+	local assistedVisibilityCategory = Settings.RegisterVerticalLayoutSubcategory(assistedCategory, L["Visibility"] or "Visibility")
+	AddDropdown(
+		assistedVisibilityCategory,
+		"assistedhighlight_visibilitySource",
+		L["Visibility Source"] or "Visibility Source",
+		visibilitySourceOptions,
+		L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility"
+	)
+	AddVisibilityRuleGroup(
+		assistedVisibilityCategory,
+		"assistedhighlight_visibility",
+		nil,
+		L["Assisted Highlight Visibility Tooltip"] or "When to show the assisted highlight icon"
+	)
+
+	AddSlider(assistedCategory, "assistedhighlight_size", L["Assisted Highlight Size"] or "Assisted Highlight Size", 16, 64, 1)
+	AddSlider(assistedCategory, "assistedhighlight_offsetX", L["Assisted Highlight Horizontal Offset"] or "Assisted Highlight Horizontal Offset", -100, 100, 1)
+	AddSlider(assistedCategory, "assistedhighlight_offsetY", L["Assisted Highlight Vertical Offset"] or "Assisted Highlight Vertical Offset", -100, 100, 1)
+	AddCheckbox(
+		assistedCategory,
+		"assistedhighlight_glowEnabled",
+		L["Assisted Highlight Glow"] or "Assisted Highlight Glow",
+		L["Assisted Highlight Glow Tooltip"] or "Show a blue glow around the suggested spell icon"
 	)
 
 	------------------------------------------------------------------------

@@ -10,6 +10,7 @@
 # Core (load order matters)
 Core\Initialization.lua
 Core\API.lua
+Core\IconMask.lua
 Core\Defaults.lua
 Core\Database.lua
 Core\Visibility.lua
@@ -30,6 +31,7 @@ Modules\Cast.lua
 Modules\ClassResource.lua
 Modules\DecorativeRing.lua
 Modules\SpellIcon.lua
+Modules\AssistedHighlight.lua
 
 # Settings
 Settings\SettingsTemplates.xml

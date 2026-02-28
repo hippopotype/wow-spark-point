@@ -4,6 +4,7 @@
 local _, addon = ...
 local L = addon.L
 local API = addon.API
+local IconMask = addon.IconMask
 local DonutWidget = addon.DonutWidget
 local CallbackRegistry = addon.CallbackRegistry
 local AnchorFrame = addon.AnchorFrame
@@ -17,10 +18,8 @@ local SlotRingWidget = addon.SlotRingWidget
 local SlotProviders = addon.SlotProviders
 
 local Cast
-local SPELL_ICON_MASK_PATH = addon.addonFolder .. "\\Textures\\spell_icon_mask.png"
 local SPELL_ICON_ERROR_PATH = addon.addonFolder .. "\\Textures\\spell_icon_error.png"
 local CAST_FEEDBACK_PATH = addon.addonFolder .. "\\Textures\\cast_feedback.png"
-local SPELL_ICON_MASK_BASE_SIZE = 32
 local SPELL_ICON_MASK_BASE_EXPAND = 6
 
 --------------------------------------------------------------------------------
@@ -148,97 +147,26 @@ function Cast:GetFrame()
 end
 
 local function ApplySpellIconMask()
-	if not castFrame or not castFrame.iconFrame or not castFrame.iconFrame.icon then
+	if not IconMask or not castFrame or not castFrame.iconFrame then
 		return false
 	end
-	local iconFrame = castFrame.iconFrame
-	local icon = iconFrame.icon
-	if not icon.AddMaskTexture then
-		return false
-	end
-
-	iconFrame.iconMask = iconFrame.iconMask or iconFrame:CreateMaskTexture()
-	local mask = iconFrame.iconMask
-	if not mask then
-		return false
-	end
-
-	local iconSize = icon:GetWidth() or SPELL_ICON_MASK_BASE_SIZE
-	local expand = math.floor((iconSize / SPELL_ICON_MASK_BASE_SIZE) * SPELL_ICON_MASK_BASE_EXPAND + 0.5)
-	if expand < 0 then
-		expand = 0
-	end
-
-	mask:SetTexture(SPELL_ICON_MASK_PATH, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-	mask:ClearAllPoints()
-	mask:SetPoint("TOPLEFT", icon, "TOPLEFT", -expand, expand)
-	mask:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", expand, -expand)
-
-	if not iconFrame.iconMaskAttached then
-		local ok = pcall(icon.AddMaskTexture, icon, mask)
-		if not ok then
-			return false
-		end
-		iconFrame.iconMaskAttached = true
-	end
-
-	-- Cooldown swipe uses its own texture regions; mask them too so the
-	-- progress sweep stays circular inside the spell icon silhouette.
-	if iconFrame.cooldown and not iconFrame.cooldownMaskAttached then
-		local maskedAny = false
-		local regionCount = select("#", iconFrame.cooldown:GetRegions())
-		for i = 1, regionCount do
-			local region = select(i, iconFrame.cooldown:GetRegions())
-			if region and region.GetObjectType and region:GetObjectType() == "Texture" and region.AddMaskTexture then
-				local ok = pcall(region.AddMaskTexture, region, mask)
-				if ok then
-					maskedAny = true
-				end
-			end
-		end
-		-- Cooldown regions can be created lazily; only mark attached if we actually masked one.
-		if maskedAny then
-			iconFrame.cooldownMaskAttached = true
-		end
-	end
-
-	return true
+	return IconMask:ApplyToIconFrame(castFrame.iconFrame, SPELL_ICON_MASK_BASE_EXPAND)
 end
 
 local function LayoutSpellIconErrorOverlay()
-	if not castFrame or not castFrame.iconFrame or not castFrame.iconFrame.icon or not castFrame.iconFrame.errorIcon then
+	if not IconMask or not castFrame or not castFrame.iconFrame or not castFrame.iconFrame.icon or not castFrame.iconFrame.errorIcon then
 		return
 	end
 
-	local icon = castFrame.iconFrame.icon
-	local overlay = castFrame.iconFrame.errorIcon
-	local iconSize = icon:GetWidth() or SPELL_ICON_MASK_BASE_SIZE
-	local expand = math.floor((iconSize / SPELL_ICON_MASK_BASE_SIZE) * SPELL_ICON_MASK_BASE_EXPAND + 0.5)
-	if expand < 0 then
-		expand = 0
-	end
-
-	overlay:ClearAllPoints()
-	overlay:SetPoint("TOPLEFT", icon, "TOPLEFT", -expand, expand)
-	overlay:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", expand, -expand)
+	IconMask:LayoutToIcon(castFrame.iconFrame.errorIcon, castFrame.iconFrame.icon, SPELL_ICON_MASK_BASE_EXPAND)
 end
 
 local function LayoutSpellIconCooldown()
-	if not castFrame or not castFrame.iconFrame or not castFrame.iconFrame.icon or not castFrame.iconFrame.cooldown then
+	if not IconMask or not castFrame or not castFrame.iconFrame or not castFrame.iconFrame.icon or not castFrame.iconFrame.cooldown then
 		return
 	end
 
-	local icon = castFrame.iconFrame.icon
-	local cooldown = castFrame.iconFrame.cooldown
-	local iconSize = icon:GetWidth() or SPELL_ICON_MASK_BASE_SIZE
-	local expand = math.floor((iconSize / SPELL_ICON_MASK_BASE_SIZE) * SPELL_ICON_MASK_BASE_EXPAND + 0.5)
-	if expand < 0 then
-		expand = 0
-	end
-
-	cooldown:ClearAllPoints()
-	cooldown:SetPoint("TOPLEFT", icon, "TOPLEFT", -expand, expand)
-	cooldown:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", expand, -expand)
+	IconMask:LayoutToIcon(castFrame.iconFrame.cooldown, castFrame.iconFrame.icon, SPELL_ICON_MASK_BASE_EXPAND)
 end
 
 function Cast:SetSpellIconEnabled(enabled)
@@ -289,7 +217,7 @@ function Cast:ApplyIconOptions()
 			castFrame.iconFrame.cooldown = CreateFrame("Cooldown", nil, castFrame.iconFrame, "CooldownFrameTemplate")
 			castFrame.iconFrame.cooldown:SetDrawEdge(false)
 			castFrame.iconFrame.cooldown:SetHideCountdownNumbers(true)
-			pcall(castFrame.iconFrame.cooldown.SetSwipeTexture, castFrame.iconFrame.cooldown, SPELL_ICON_MASK_PATH)
+			pcall(castFrame.iconFrame.cooldown.SetSwipeTexture, castFrame.iconFrame.cooldown, IconMask:GetMaskPath())
 		end
 		LayoutSpellIconCooldown()
 		castFrame.iconFrame.cooldown:Show()
@@ -1361,7 +1289,7 @@ function Cast:Initialize()
 		castFrame.iconFrame.cooldown = CreateFrame("Cooldown", nil, castFrame.iconFrame, "CooldownFrameTemplate")
 		castFrame.iconFrame.cooldown:SetDrawEdge(false)
 		castFrame.iconFrame.cooldown:SetHideCountdownNumbers(true)
-		pcall(castFrame.iconFrame.cooldown.SetSwipeTexture, castFrame.iconFrame.cooldown, SPELL_ICON_MASK_PATH)
+		pcall(castFrame.iconFrame.cooldown.SetSwipeTexture, castFrame.iconFrame.cooldown, IconMask:GetMaskPath())
 		LayoutSpellIconCooldown()
 		castFrame.iconFrame.cooldown:Hide()
 	end

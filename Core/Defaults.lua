@@ -33,6 +33,7 @@ addon.DefaultValues = {
 	moduleEnabled_ClassResource = true,
 	moduleEnabled_Ring = true,
 	moduleEnabled_SpellIcon = true,
+	moduleEnabled_AssistedHighlight = true,
 
 	-- Cast module settings
 	cast_radius = 40,
@@ -110,4 +111,12 @@ addon.DefaultValues = {
 	spellicon_offsetY = 0,
 	spellicon_castProgressSwipe = false,
 	spellicon_showInstantCasts = false,
+
+	-- AssistedHighlight module settings
+	assistedhighlight_size = 40,
+	assistedhighlight_offsetX = 28,
+	assistedhighlight_offsetY = 28,
+	assistedhighlight_glowEnabled = true,
+	assistedhighlight_visibilitySource = "INHERIT",
+	assistedhighlight_visibility = { ALWAYS = true },
 }

@@ -10,14 +10,15 @@ ignore = {
 globals = {
     "_G", "bit",
     -- WoW API
-    "C_ClassColor", "C_Spell", "C_Timer", "C_UnitAuras",
+    "C_AssistedCombat", "C_CVar", "C_ClassColor", "C_Spell", "C_Timer", "C_UnitAuras",
+    "CVarCallbackRegistry",
     "CreateColor", "CreateFrame", "CreateFramePool", "CreateFromMixins",
     "CUSTOM_CLASS_COLORS",
     "ColorPickerFrame", "DEFAULT_CHAT_FRAME",
     "EditModeManagerFrame",
     "GameTooltip",
     "EventRegistry",
-    "GetCursorPosition", "GetNetStats", "GetRuneCooldown", "GetSpecialization", "GetTime",
+    "GetCursorPosition", "GetCVar", "GetCVarBool", "GetNetStats", "GetRuneCooldown", "GetSpecialization", "GetTime",
     "GetMinimapShape",
     "GRAY_FONT_COLOR",
     "InCombatLockdown",

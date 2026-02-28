@@ -153,6 +153,14 @@ L["Spell Icon Vertical Offset"] = "Spell Icon Vertical Offset"
 L["Cast Progress Swipe"] = "Cast Progress Swipe"
 L["Show On Instant Casts"] = "Show On Instant Casts"
 L["Show On Instant Casts Tooltip"] = "Render the spell icon briefly for instant-cast abilities"
+L["Assisted Highlight Size"] = "Assisted Highlight Size"
+L["Assisted Highlight Horizontal Offset"] = "Assisted Highlight Horizontal Offset"
+L["Assisted Highlight Vertical Offset"] = "Assisted Highlight Vertical Offset"
+L["Assisted Highlight Glow"] = "Assisted Highlight Glow"
+L["Assisted Highlight Glow Tooltip"] = "Show a blue glow around the suggested spell icon"
+L["Assisted Highlight CVar Disabled"] = "Blizzard Assisted Highlight is currently disabled. Enable it in Blizzard settings to show suggestions."
+L["Assisted Highlight Visibility"] = "Assisted Highlight Visibility"
+L["Assisted Highlight Visibility Tooltip"] = "When to show the assisted highlight icon"
 
 --------------------------------------------------------------------------------
 -- Cast Ring
@@ -182,6 +190,8 @@ L["Decorative Ring Description"] = "Displays a decorative rotating ring around t
 --------------------------------------------------------------------------------
 L["Spell Icon"] = "Spell Icon"
 L["Spell Icon Description"] = "Displays the icon of the spell being cast near the cursor"
+L["Assisted Highlight"] = "Assisted Highlight"
+L["Assisted Highlight Description"] = "Shows the next suggested spell from Blizzard Assisted Highlight"
 
 --------------------------------------------------------------------------------
 -- Colors (for future use)
