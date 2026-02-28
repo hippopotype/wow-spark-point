@@ -61,6 +61,16 @@ A stylized rotating ring rendered around the cursor. Supports multiple texture v
 
 Displays the icon of the spell currently being cast, positioned below the ring. Optionally shows a **cast progress swipe** (cooldown-style overlay).
 
+### Assisted Highlight
+
+Shows Blizzard Assisted Combat's next suggested spell as a separate icon near the ring.
+
+- Independent from Spell Icon (both can be shown together)
+- Uses dedicated background/glow/frame layers around a masked spell icon
+- Optional breathing glow animation
+- Respects module visibility rules
+- Hidden automatically when Blizzard's Assisted Highlight setting is disabled
+
 ### Visibility Control
 
 Each module can independently follow the global rule or use its own:
@@ -70,6 +80,7 @@ Each module can independently follow the global rule or use its own:
 - Out of Combat
 - Has Target
 - While Casting
+- After Instant Cast
 
 ---
 
@@ -109,6 +120,7 @@ Open via `/sp`. All settings are in the standard Blizzard Settings Panel under *
 - **Class Resource** — mode (pips/text), font, offsets, scale, opacity, visibility
 - **Decorative Ring** — texture, color, size, rotation, visibility
 - **Spell Icon** — size, offsets, cast progress swipe
+- **Assisted Highlight** — size, offsets, glow toggle/color, visibility, Blizzard CVar status warning
 
 ---
 
