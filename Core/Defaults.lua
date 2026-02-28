@@ -114,10 +114,10 @@ addon.DefaultValues = {
 
 	-- AssistedHighlight module settings
 	assistedhighlight_size = 40,
-	assistedhighlight_offsetX = 28,
-	assistedhighlight_offsetY = 28,
+	assistedhighlight_offsetX = 42,
+	assistedhighlight_offsetY = 42,
 	assistedhighlight_glowEnabled = true,
-	assistedhighlight_glowColor = { r = 0.50, g = 0.85, b = 1, a = 1 },
+	assistedhighlight_glowColor = { r = 0.44, g = 0.98, b = 1, a = 1 },
 	assistedhighlight_visibilitySource = "INHERIT",
 	assistedhighlight_visibility = { ALWAYS = true },
 }

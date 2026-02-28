@@ -157,7 +157,7 @@ local function BuildSettingsPanel()
 	end
 
 	local function AddInfoText(cat, text)
-		local initializer = Settings.CreateElementInitializer("SettingsListSectionHeaderTemplate", { name = text })
+		local initializer = Settings.CreateElementInitializer("SparkPointSettingsListSectionHintTemplate", { name = text })
 		Settings.RegisterInitializer(cat, initializer)
 		return initializer
 	end
