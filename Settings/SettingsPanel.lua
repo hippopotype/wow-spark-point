@@ -918,6 +918,32 @@ local function BuildSettingsPanel()
 		L["Assisted Highlight Glow Color"] or "Assisted Highlight Glow Color",
 		L["Assisted Highlight Glow Color Tooltip"] or "Color and alpha for the assisted highlight glow layer"
 	)
+	AddCheckbox(
+		assistedCategory,
+		"assistedhighlight_keybindEnabled",
+		L["Assisted Highlight Keybind Text"] or "Assisted Highlight Keybind Text",
+		L["Assisted Highlight Keybind Text Tooltip"] or "Show the keybind for the suggested spell when available"
+	)
+	AddDropdown(assistedCategory, "assistedhighlight_keybindFormat", L["Assisted Highlight Keybind Format"] or "Assisted Highlight Keybind Format", {
+		{ value = "COMPACT", label = L["Assisted Highlight Keybind Compact"] or "Compact" },
+		{ value = "FULL", label = L["Assisted Highlight Keybind Full"] or "Full" },
+	}, L["Assisted Highlight Keybind Format Tooltip"] or "Choose compact or full keybind text style")
+	AddSlider(assistedCategory, "assistedhighlight_keybindFontSize", L["Assisted Highlight Keybind Font Size"] or "Assisted Highlight Keybind Font Size", 8, 48, 1)
+	AddSlider(
+		assistedCategory,
+		"assistedhighlight_keybindOffsetX",
+		L["Assisted Highlight Keybind Horizontal Offset"] or "Assisted Highlight Keybind Horizontal Offset",
+		-150,
+		150,
+		1
+	)
+	AddSlider(assistedCategory, "assistedhighlight_keybindOffsetY", L["Assisted Highlight Keybind Vertical Offset"] or "Assisted Highlight Keybind Vertical Offset", -150, 150, 1)
+	AddColor(
+		assistedCategory,
+		"assistedhighlight_keybindColor",
+		L["Assisted Highlight Keybind Color"] or "Assisted Highlight Keybind Color",
+		L["Assisted Highlight Keybind Color Tooltip"] or "Color and alpha for assisted highlight keybind text"
+	)
 
 	------------------------------------------------------------------------
 	-- Register main category

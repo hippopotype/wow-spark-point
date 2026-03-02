@@ -118,6 +118,12 @@ addon.DefaultValues = {
 	assistedhighlight_offsetY = 42,
 	assistedhighlight_glowEnabled = true,
 	assistedhighlight_glowColor = { r = 0.44, g = 0.98, b = 1, a = 1 },
+	assistedhighlight_keybindEnabled = true,
+	assistedhighlight_keybindFormat = "COMPACT",
+	assistedhighlight_keybindFontSize = 12,
+	assistedhighlight_keybindOffsetX = 40,
+	assistedhighlight_keybindOffsetY = 40,
+	assistedhighlight_keybindColor = { r = 0.44, g = 0.98, b = 1, a = 1 },
 	assistedhighlight_visibilitySource = "INHERIT",
 	assistedhighlight_visibility = { ALWAYS = true },
 }

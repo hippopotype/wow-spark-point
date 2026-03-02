@@ -27,6 +27,7 @@ local GLOW_ANIM_MAX_ALPHA = 1
 local GLOW_CYCLE_DURATION = 2.6
 local GLOW_PEAK_BOOST = 0.18
 local COS = math.cos
+local FLOOR = math.floor
 local PI2 = math.pi * 2
 
 local function IsVisibilityAllowed()
@@ -67,6 +68,94 @@ local function GetSuggestedSpellID()
 		return nil
 	end
 	return tonumber(C_AssistedCombat.GetNextCastSpell())
+end
+
+local function GetFirstActionSlotForSpell(spellID)
+	if not (spellID and C_ActionBar and C_ActionBar.FindSpellActionButtons) then
+		return nil
+	end
+
+	local slots = C_ActionBar.FindSpellActionButtons(spellID)
+	if type(slots) ~= "table" then
+		return nil
+	end
+
+	local firstSlot
+	for _, value in ipairs(slots) do
+		local slot = tonumber(value)
+		if slot and slot > 0 and (not firstSlot or slot < firstSlot) then
+			firstSlot = slot
+		end
+	end
+
+	for key, value in pairs(slots) do
+		local slot
+		if type(value) == "number" then
+			slot = value
+		elseif value == true and type(key) == "number" then
+			slot = key
+		end
+		if slot and slot > 0 and (not firstSlot or slot < firstSlot) then
+			firstSlot = slot
+		end
+	end
+
+	return firstSlot
+end
+
+local function GetBindingCommandForActionSlot(slot)
+	local actionSlot = tonumber(slot)
+	if not actionSlot or actionSlot < 1 then
+		return nil
+	end
+
+	local index = ((actionSlot - 1) % 12) + 1
+	local group = FLOOR((actionSlot - 1) / 12)
+	if group == 0 then
+		return "ACTIONBUTTON" .. index
+	elseif group == 1 then
+		return "MULTIACTIONBAR1BUTTON" .. index
+	elseif group == 2 then
+		return "MULTIACTIONBAR2BUTTON" .. index
+	elseif group == 3 then
+		return "MULTIACTIONBAR3BUTTON" .. index
+	elseif group == 4 then
+		return "MULTIACTIONBAR4BUTTON" .. index
+	end
+
+	return nil
+end
+
+local function GetFirstBindingKeyForSpell(spellID)
+	local slot = GetFirstActionSlotForSpell(spellID)
+	if not slot then
+		return nil
+	end
+
+	local command = GetBindingCommandForActionSlot(slot)
+	if not command then
+		return nil
+	end
+
+	local key1, key2 = GetBindingKey(command)
+	return key1 or key2
+end
+
+local function FormatBindingText(bindingKey)
+	if not bindingKey then
+		return nil
+	end
+
+	local formatMode = tostring(GetDBValue("assistedhighlight_keybindFormat") or "COMPACT")
+	if formatMode == "FULL" then
+		return (GetBindingText and GetBindingText(bindingKey)) or bindingKey
+	end
+
+	local compact = GetBindingText and GetBindingText(bindingKey, 1)
+	if compact and compact ~= "" then
+		return compact
+	end
+	return (GetBindingText and GetBindingText(bindingKey)) or bindingKey
 end
 
 local function HideModuleFrame()
@@ -156,6 +245,17 @@ function AssistedHighlight:ApplyOptions()
 		SetTextureSmooth(moduleFrame.iconFrame.frame, SPELL_ICON_FRAME_PATH)
 		moduleFrame.iconFrame.frame:SetVertexColor(1, 1, 1, 1)
 	end
+
+	if moduleFrame.iconFrame.keybindText then
+		local fontSize = tonumber(GetDBValue("assistedhighlight_keybindFontSize")) or 12
+		local textOffsetX = tonumber(GetDBValue("assistedhighlight_keybindOffsetX")) or 0
+		local textOffsetY = tonumber(GetDBValue("assistedhighlight_keybindOffsetY")) or 0
+		local tr, tg, tb, ta = GetDBColor("assistedhighlight_keybindColor")
+		moduleFrame.iconFrame.keybindText:SetFont("Fonts\\FRIZQT__.TTF", fontSize, "OUTLINE")
+		moduleFrame.iconFrame.keybindText:ClearAllPoints()
+		moduleFrame.iconFrame.keybindText:SetPoint("CENTER", moduleFrame.iconFrame, "CENTER", textOffsetX, textOffsetY)
+		moduleFrame.iconFrame.keybindText:SetTextColor(tr, tg, tb, ta)
+	end
 end
 
 function AssistedHighlight:UpdateVisibility()
@@ -202,6 +302,21 @@ function AssistedHighlight:UpdateVisibility()
 	end
 	if moduleFrame.iconFrame.frame then
 		moduleFrame.iconFrame.frame:Show()
+	end
+
+	if moduleFrame.iconFrame.keybindText then
+		if GetDBBool("assistedhighlight_keybindEnabled") then
+			local key = GetFirstBindingKeyForSpell(spellID)
+			local text = FormatBindingText(key)
+			if text and text ~= "" then
+				moduleFrame.iconFrame.keybindText:SetText(text)
+				moduleFrame.iconFrame.keybindText:Show()
+			else
+				moduleFrame.iconFrame.keybindText:Hide()
+			end
+		else
+			moduleFrame.iconFrame.keybindText:Hide()
+		end
 	end
 
 	moduleFrame.iconFrame:Show()
@@ -252,6 +367,11 @@ function AssistedHighlight:Initialize()
 	moduleFrame.iconFrame.frame:SetPoint("CENTER", moduleFrame.iconFrame.icon, "CENTER")
 	moduleFrame.iconFrame.frame:Hide()
 
+	moduleFrame.iconFrame.keybindText = moduleFrame.iconFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	moduleFrame.iconFrame.keybindText:SetPoint("CENTER", moduleFrame.iconFrame, "CENTER", 0, 0)
+	moduleFrame.iconFrame.keybindText:SetText("")
+	moduleFrame.iconFrame.keybindText:Hide()
+
 	self:RefreshCVarState()
 	self:ApplyOptions()
 	self:UpdateVisibility()
@@ -293,8 +413,11 @@ local function EnableModule(enabled)
 		EL:RegisterEvent("ACTIONBAR_UPDATE_COOLDOWN")
 		EL:RegisterEvent("SPELL_UPDATE_COOLDOWN")
 		EL:RegisterEvent("SPELL_UPDATE_CHARGES")
+		EL:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
+		EL:RegisterEvent("ACTIONBAR_PAGE_CHANGED")
 		EL:RegisterEvent("PLAYER_TARGET_CHANGED")
 		EL:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
+		EL:RegisterEvent("UPDATE_BINDINGS")
 		EL:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
 		EL:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
 
@@ -325,6 +448,19 @@ CallbackRegistry:RegisterSettingCallback("assistedhighlight_glowColor", function
 	AssistedHighlight:ApplyOptions()
 	AssistedHighlight:UpdateVisibility()
 end)
+for _, key in ipairs({
+	"assistedhighlight_keybindEnabled",
+	"assistedhighlight_keybindFormat",
+	"assistedhighlight_keybindFontSize",
+	"assistedhighlight_keybindOffsetX",
+	"assistedhighlight_keybindOffsetY",
+	"assistedhighlight_keybindColor",
+}) do
+	CallbackRegistry:RegisterSettingCallback(key, function()
+		AssistedHighlight:ApplyOptions()
+		AssistedHighlight:UpdateVisibility()
+	end)
+end
 
 for _, key in ipairs({ "visibility_mode", "assistedhighlight_visibilitySource", "assistedhighlight_visibility" }) do
 	CallbackRegistry:RegisterSettingCallback(key, function()
