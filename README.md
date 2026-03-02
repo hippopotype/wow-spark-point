@@ -68,6 +68,7 @@ Shows Blizzard Assisted Combat's next suggested spell as a separate icon near th
 - Independent from Spell Icon (both can be shown together)
 - Uses dedicated background/glow/frame layers around a masked spell icon
 - Optional breathing glow animation
+- Optional keybind text (compact/full) with font, outline, size, color, and offset settings
 - Respects module visibility rules
 - Hidden automatically when Blizzard's Assisted Highlight setting is disabled
 
