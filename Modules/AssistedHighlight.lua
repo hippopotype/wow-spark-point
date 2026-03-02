@@ -390,11 +390,13 @@ function AssistedHighlight:ApplyOptions()
 	end
 
 	if moduleFrame.iconFrame.keybindText then
+		local font = GetDBValue("assistedhighlight_keybindFont") or "Fonts\\FRIZQT__.TTF"
+		local fontOutline = GetDBValue("assistedhighlight_keybindFontOutline") or "OUTLINE"
 		local fontSize = tonumber(GetDBValue("assistedhighlight_keybindFontSize")) or 12
 		local textOffsetX = tonumber(GetDBValue("assistedhighlight_keybindOffsetX")) or 0
 		local textOffsetY = tonumber(GetDBValue("assistedhighlight_keybindOffsetY")) or 0
 		local tr, tg, tb, ta = GetDBColor("assistedhighlight_keybindColor")
-		moduleFrame.iconFrame.keybindText:SetFont("Fonts\\FRIZQT__.TTF", fontSize, "OUTLINE")
+		moduleFrame.iconFrame.keybindText:SetFont(font, fontSize, fontOutline)
 		moduleFrame.iconFrame.keybindText:ClearAllPoints()
 		moduleFrame.iconFrame.keybindText:SetPoint("CENTER", moduleFrame.iconFrame, "CENTER", textOffsetX, textOffsetY)
 		moduleFrame.iconFrame.keybindText:SetTextColor(tr, tg, tb, ta)
@@ -600,6 +602,8 @@ end)
 for _, key in ipairs({
 	"assistedhighlight_keybindEnabled",
 	"assistedhighlight_keybindFormat",
+	"assistedhighlight_keybindFont",
+	"assistedhighlight_keybindFontOutline",
 	"assistedhighlight_keybindFontSize",
 	"assistedhighlight_keybindOffsetX",
 	"assistedhighlight_keybindOffsetY",

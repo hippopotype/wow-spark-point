@@ -928,6 +928,20 @@ local function BuildSettingsPanel()
 		{ value = "COMPACT", label = L["Assisted Highlight Keybind Compact"] or "Compact" },
 		{ value = "FULL", label = L["Assisted Highlight Keybind Full"] or "Full" },
 	}, L["Assisted Highlight Keybind Format Tooltip"] or "Choose compact or full keybind text style")
+	AddDropdown(assistedCategory, "assistedhighlight_keybindFont", L["Assisted Highlight Keybind Font"] or "Assisted Highlight Keybind Font", {
+		{ value = "Fonts\\FRIZQT__.TTF", label = "Friz Quadrata" },
+		{ value = "Fonts\\ARIALN.TTF", label = "Arial Narrow" },
+		{ value = "Fonts\\MORPHEUS.ttf", label = "Morpheus" },
+		{ value = "Fonts\\SKURRI.TTF", label = "Skurri" },
+	})
+	AddDropdown(assistedCategory, "assistedhighlight_keybindFontOutline", L["Assisted Highlight Keybind Font Outline"] or "Assisted Highlight Keybind Font Outline", {
+		{ value = "", label = "None" },
+		{ value = "OUTLINE", label = "Outline" },
+		{ value = "THICKOUTLINE", label = "Thick Outline" },
+		{ value = "MONOCHROME", label = "Monochrome" },
+		{ value = "MONOCHROME,OUTLINE", label = "Mono + Outline" },
+		{ value = "MONOCHROME,THICKOUTLINE", label = "Mono + Thick Outline" },
+	})
 	AddSlider(assistedCategory, "assistedhighlight_keybindFontSize", L["Assisted Highlight Keybind Font Size"] or "Assisted Highlight Keybind Font Size", 8, 48, 1)
 	AddSlider(
 		assistedCategory,
