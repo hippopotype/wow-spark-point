@@ -125,7 +125,6 @@ local function GetFirstActionSlotForSpell(spellID)
 			firstSlot = slot
 		end
 	end
-
 	for key, value in pairs(slots) do
 		local slot
 		if type(value) == "number" then
@@ -220,6 +219,72 @@ local function GetFirstBindingKeyForSpell(spellID)
 	return key1 or key2
 end
 
+local COMPACT_KEY_MAP = {
+	["CTRL"] = "C",
+	["SHIFT"] = "S",
+	["ALT"] = "A",
+	["META"] = "M",
+	["MOUSE1"] = "M1",
+	["MOUSE2"] = "M2",
+	["MOUSE3"] = "M3",
+	["MOUSE4"] = "M4",
+	["MOUSE5"] = "M5",
+	["LEFTBUTTON"] = "M1",
+	["RIGHTBUTTON"] = "M2",
+	["MIDDLEBUTTON"] = "M3",
+	["BUTTON1"] = "M1",
+	["BUTTON2"] = "M2",
+	["BUTTON3"] = "M3",
+	["BUTTON4"] = "M4",
+	["BUTTON5"] = "M5",
+	["MOUSEWHEELUP"] = "MwU",
+	["MOUSEWHEELDOWN"] = "MwD",
+	["NUMPAD0"] = "N0",
+	["NUMPAD1"] = "N1",
+	["NUMPAD2"] = "N2",
+	["NUMPAD3"] = "N3",
+	["NUMPAD4"] = "N4",
+	["NUMPAD5"] = "N5",
+	["NUMPAD6"] = "N6",
+	["NUMPAD7"] = "N7",
+	["NUMPAD8"] = "N8",
+	["NUMPAD9"] = "N9",
+	["NUMPADDECIMAL"] = "N.",
+	["NUMPADPLUS"] = "N+",
+	["NUMPADMINUS"] = "N-",
+	["NUMPADMULTIPLY"] = "N*",
+	["NUMPADDIVIDE"] = "N/",
+	["SPACE"] = "SpB",
+	["BACKSPACE"] = "BS",
+	["DELETE"] = "Del",
+	["INSERT"] = "Ins",
+	["HOME"] = "Hm",
+	["END"] = "End",
+	["PAGEUP"] = "PU",
+	["PAGEDOWN"] = "PD",
+	["ESCAPE"] = "Esc",
+	["CAPSLOCK"] = "Cap",
+	["NUMLOCK"] = "NL",
+	["PRINTSCREEN"] = "PrS",
+	["SCROLLLOCK"] = "SL",
+	["PAUSE"] = "Pau",
+	["TAB"] = "Tab",
+}
+
+local function AbbreviateKey(raw)
+	local parts = {}
+	for token in raw:gmatch("[^%-]+") do
+		local upper = token:upper()
+		local mapped = COMPACT_KEY_MAP[upper]
+		if mapped then
+			parts[#parts + 1] = mapped
+		else
+			parts[#parts + 1] = token
+		end
+	end
+	return table.concat(parts, "-")
+end
+
 local function FormatBindingText(bindingKey)
 	if not bindingKey then
 		return nil
@@ -230,11 +295,7 @@ local function FormatBindingText(bindingKey)
 		return (GetBindingText and GetBindingText(bindingKey)) or bindingKey
 	end
 
-	local compact = GetBindingText and GetBindingText(bindingKey, 1)
-	if compact and compact ~= "" then
-		return compact
-	end
-	return (GetBindingText and GetBindingText(bindingKey)) or bindingKey
+	return AbbreviateKey(bindingKey)
 end
 
 local function HideModuleFrame()
@@ -242,6 +303,9 @@ local function HideModuleFrame()
 		moduleFrame:Hide()
 		if moduleFrame.iconFrame then
 			moduleFrame.iconFrame:Hide()
+			if moduleFrame.iconFrame.keybindText then
+				moduleFrame.iconFrame.keybindText:Hide()
+			end
 		end
 	end
 	AnchorFrame:Hide("assistedhighlight")
@@ -446,8 +510,9 @@ function AssistedHighlight:Initialize()
 	moduleFrame.iconFrame.frame:SetPoint("CENTER", moduleFrame.iconFrame.icon, "CENTER")
 	moduleFrame.iconFrame.frame:Hide()
 
-	moduleFrame.iconFrame.keybindText = moduleFrame.iconFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	moduleFrame.iconFrame.keybindText = moduleFrame.iconFrame:CreateFontString(nil, "OVERLAY")
 	moduleFrame.iconFrame.keybindText:SetPoint("CENTER", moduleFrame.iconFrame, "CENTER", 0, 0)
+	moduleFrame.iconFrame.keybindText:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE")
 	moduleFrame.iconFrame.keybindText:SetText("")
 	moduleFrame.iconFrame.keybindText:Hide()
 
