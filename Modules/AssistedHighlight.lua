@@ -29,6 +29,8 @@ local GLOW_PEAK_BOOST = 0.18
 local COS = math.cos
 local FLOOR = math.floor
 local PI2 = math.pi * 2
+local actionSlotCommandMap
+local assistedActionSlotSet
 
 local function IsVisibilityAllowed()
 	return (not Visibility) or Visibility:ShouldShow("assistedhighlight")
@@ -70,6 +72,41 @@ local function GetSuggestedSpellID()
 	return tonumber(C_AssistedCombat.GetNextCastSpell())
 end
 
+local function BuildAssistedActionSlotSet()
+	if assistedActionSlotSet then
+		return assistedActionSlotSet
+	end
+
+	local set = {}
+	if C_ActionBar and C_ActionBar.HasAssistedCombatActionButtons and C_ActionBar.FindAssistedCombatActionButtons then
+		if C_ActionBar.HasAssistedCombatActionButtons() then
+			local slots = C_ActionBar.FindAssistedCombatActionButtons()
+			if type(slots) == "table" then
+				for _, value in ipairs(slots) do
+					local slot = tonumber(value)
+					if slot and slot > 0 then
+						set[slot] = true
+					end
+				end
+				for key, value in pairs(slots) do
+					local slot
+					if type(value) == "number" then
+						slot = value
+					elseif value == true and type(key) == "number" then
+						slot = key
+					end
+					if slot and slot > 0 then
+						set[slot] = true
+					end
+				end
+			end
+		end
+	end
+
+	assistedActionSlotSet = set
+	return assistedActionSlotSet
+end
+
 local function GetFirstActionSlotForSpell(spellID)
 	if not (spellID and C_ActionBar and C_ActionBar.FindSpellActionButtons) then
 		return nil
@@ -80,10 +117,11 @@ local function GetFirstActionSlotForSpell(spellID)
 		return nil
 	end
 
+	local assistedSlots = BuildAssistedActionSlotSet()
 	local firstSlot
 	for _, value in ipairs(slots) do
 		local slot = tonumber(value)
-		if slot and slot > 0 and (not firstSlot or slot < firstSlot) then
+		if slot and slot > 0 and not assistedSlots[slot] and (not firstSlot or slot < firstSlot) then
 			firstSlot = slot
 		end
 	end
@@ -95,7 +133,7 @@ local function GetFirstActionSlotForSpell(spellID)
 		elseif value == true and type(key) == "number" then
 			slot = key
 		end
-		if slot and slot > 0 and (not firstSlot or slot < firstSlot) then
+		if slot and slot > 0 and not assistedSlots[slot] and (not firstSlot or slot < firstSlot) then
 			firstSlot = slot
 		end
 	end
@@ -109,6 +147,47 @@ local function GetBindingCommandForActionSlot(slot)
 		return nil
 	end
 
+	if actionSlotCommandMap and actionSlotCommandMap[actionSlot] then
+		return actionSlotCommandMap[actionSlot]
+	end
+
+	local map = {}
+	local actionButtonUtil = _G.ActionButtonUtil
+	local buttonNames = (actionButtonUtil and actionButtonUtil.ActionBarButtonNames) or _G.DEFAULT_ACTION_BUTTON_NAMES
+	local buttonCount = tonumber(_G.NUM_ACTIONBAR_BUTTONS) or 12
+
+	if type(buttonNames) == "table" then
+		for _, prefix in ipairs(buttonNames) do
+			for index = 1, buttonCount do
+				local button = _G[prefix .. index]
+				if button then
+					local slotID = tonumber(button.action)
+					if not slotID and button.GetAttribute then
+						slotID = tonumber(button:GetAttribute("action"))
+					end
+					if slotID and slotID > 0 and not map[slotID] then
+						local command = button.commandName or button.keyBoundTarget
+						if not command and button.GetName then
+							local name = button:GetName()
+							if name and name ~= "" then
+								command = "CLICK " .. name .. ":LeftButton"
+							end
+						end
+						if command and command ~= "" then
+							map[slotID] = command
+						end
+					end
+				end
+			end
+		end
+	end
+
+	actionSlotCommandMap = map
+	if actionSlotCommandMap[actionSlot] then
+		return actionSlotCommandMap[actionSlot]
+	end
+
+	-- Fallback for cases where button scan doesn't produce a mapping.
 	local index = ((actionSlot - 1) % 12) + 1
 	local group = FLOOR((actionSlot - 1) / 12)
 	if group == 0 then
@@ -378,6 +457,11 @@ function AssistedHighlight:Initialize()
 end
 
 function AssistedHighlight:OnEvent(event, ...)
+	if event == "ACTIONBAR_SLOT_CHANGED" or event == "ACTIONBAR_PAGE_CHANGED" or event == "UPDATE_BINDINGS" then
+		actionSlotCommandMap = nil
+		assistedActionSlotSet = nil
+	end
+
 	if event == "UNIT_SPELLCAST_SUCCEEDED" then
 		local unit = ...
 		if unit ~= "player" then
