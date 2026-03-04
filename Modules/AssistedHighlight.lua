@@ -360,18 +360,24 @@ function AssistedHighlight:ApplyOptions()
 	local size = tonumber(GetDBValue("assistedhighlight_size")) or 40
 	local offsetX = tonumber(GetDBValue("assistedhighlight_offsetX")) or 0
 	local offsetY = tonumber(GetDBValue("assistedhighlight_offsetY")) or 0
+	local iconOpacity = tonumber(GetDBValue("assistedhighlight_iconOpacity")) or 1
+	local keybindOpacity = tonumber(GetDBValue("assistedhighlight_keybindOpacity")) or 1
+	iconOpacity = math.max(0, math.min(1, iconOpacity))
+	keybindOpacity = math.max(0, math.min(1, keybindOpacity))
 
 	moduleFrame.iconFrame:SetSize(size, size)
 	moduleFrame.iconFrame:ClearAllPoints()
 	moduleFrame.iconFrame:SetPoint("CENTER", moduleFrame, "CENTER", offsetX, offsetY)
 
 	moduleFrame.iconFrame.icon:SetSize(size, size)
+	moduleFrame.iconFrame.icon:SetAlpha(iconOpacity)
 	moduleFrame.iconMaskReady = IconMask:ApplyToIconFrame(moduleFrame.iconFrame, ICON_MASK_BASE_EXPAND)
 
 	if moduleFrame.iconFrame.background then
 		IconMask:LayoutToIcon(moduleFrame.iconFrame.background, moduleFrame.iconFrame.icon, ICON_MASK_BASE_EXPAND)
 		SetTextureSmooth(moduleFrame.iconFrame.background, SPELL_ICON_BACKGROUND_PATH)
 		moduleFrame.iconFrame.background:SetVertexColor(1, 1, 1, 1)
+		moduleFrame.iconFrame.background:SetAlpha(iconOpacity)
 	end
 
 	if moduleFrame.iconFrame.glow then
@@ -379,14 +385,15 @@ function AssistedHighlight:ApplyOptions()
 		SetTextureSmooth(moduleFrame.iconFrame.glow, SPELL_ICON_GLOW_PATH)
 		local gr, gg, gb, ga = GetDBColor("assistedhighlight_glowColor")
 		moduleFrame.iconFrame.glow:SetVertexColor(gr, gg, gb, 1)
-		moduleFrame.iconFrame.glowColorAlpha = ga or 1
-		moduleFrame.iconFrame.glow:SetAlpha((ga or 1) * GLOW_ANIM_MIN_ALPHA)
+		moduleFrame.iconFrame.glowColorAlpha = (ga or 1) * iconOpacity
+		moduleFrame.iconFrame.glow:SetAlpha(((ga or 1) * iconOpacity) * GLOW_ANIM_MIN_ALPHA)
 	end
 
 	if moduleFrame.iconFrame.frame then
 		IconMask:LayoutToIcon(moduleFrame.iconFrame.frame, moduleFrame.iconFrame.icon, ICON_MASK_BASE_EXPAND)
 		SetTextureSmooth(moduleFrame.iconFrame.frame, SPELL_ICON_FRAME_PATH)
 		moduleFrame.iconFrame.frame:SetVertexColor(1, 1, 1, 1)
+		moduleFrame.iconFrame.frame:SetAlpha(iconOpacity)
 	end
 
 	if moduleFrame.iconFrame.keybindText then
@@ -399,7 +406,7 @@ function AssistedHighlight:ApplyOptions()
 		moduleFrame.iconFrame.keybindText:SetFont(font, fontSize, fontOutline)
 		moduleFrame.iconFrame.keybindText:ClearAllPoints()
 		moduleFrame.iconFrame.keybindText:SetPoint("CENTER", moduleFrame.iconFrame, "CENTER", textOffsetX, textOffsetY)
-		moduleFrame.iconFrame.keybindText:SetTextColor(tr, tg, tb, ta)
+		moduleFrame.iconFrame.keybindText:SetTextColor(tr, tg, tb, (ta or 1) * keybindOpacity)
 	end
 end
 
@@ -600,11 +607,13 @@ CallbackRegistry:RegisterSettingCallback("assistedhighlight_glowColor", function
 	AssistedHighlight:UpdateVisibility()
 end)
 for _, key in ipairs({
+	"assistedhighlight_iconOpacity",
 	"assistedhighlight_keybindEnabled",
 	"assistedhighlight_keybindFormat",
 	"assistedhighlight_keybindFont",
 	"assistedhighlight_keybindFontOutline",
 	"assistedhighlight_keybindFontSize",
+	"assistedhighlight_keybindOpacity",
 	"assistedhighlight_keybindOffsetX",
 	"assistedhighlight_keybindOffsetY",
 	"assistedhighlight_keybindColor",

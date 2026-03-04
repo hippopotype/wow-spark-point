@@ -700,7 +700,7 @@ local function BuildSettingsPanel()
 		{ value = "MONOCHROME,THICKOUTLINE", label = "Mono + Thick Outline" },
 	})
 
-	AddSlider(castCategory, "cast_spellTextOffsetX", L["Cast Spell Text Offset X"] or "Cast Spell Text Offset X", -60, 60, 1)
+	AddSlider(castCategory, "cast_spellTextOffsetX", L["Cast Spell Text Offset X"] or "Cast Spell Text Offset X", -240, 240, 1)
 	AddSlider(castCategory, "cast_spellTextOffsetY", L["Cast Spell Text Offset Y"] or "Cast Spell Text Offset Y", -240, 240, 1)
 
 	------------------------------------------------------------------------
@@ -906,6 +906,15 @@ local function BuildSettingsPanel()
 	AddSlider(assistedCategory, "assistedhighlight_size", L["Assisted Highlight Size"] or "Assisted Highlight Size", 16, 64, 1)
 	AddSlider(assistedCategory, "assistedhighlight_offsetX", L["Assisted Highlight Horizontal Offset"] or "Assisted Highlight Horizontal Offset", -100, 100, 1)
 	AddSlider(assistedCategory, "assistedhighlight_offsetY", L["Assisted Highlight Vertical Offset"] or "Assisted Highlight Vertical Offset", -100, 100, 1)
+	AddSlider(
+		assistedCategory,
+		"assistedhighlight_iconOpacity",
+		L["Assisted Highlight Icon Opacity"] or "Assisted Highlight Icon Opacity",
+		0,
+		1,
+		0.05,
+		L["Assisted Highlight Icon Opacity Tooltip"] or "Opacity of the assisted highlight spell icon"
+	)
 	AddCheckbox(
 		assistedCategory,
 		"assistedhighlight_glowEnabled",
@@ -943,6 +952,15 @@ local function BuildSettingsPanel()
 		{ value = "MONOCHROME,THICKOUTLINE", label = "Mono + Thick Outline" },
 	})
 	AddSlider(assistedCategory, "assistedhighlight_keybindFontSize", L["Assisted Highlight Keybind Font Size"] or "Assisted Highlight Keybind Font Size", 8, 48, 1)
+	AddSlider(
+		assistedCategory,
+		"assistedhighlight_keybindOpacity",
+		L["Assisted Highlight Keybind Opacity"] or "Assisted Highlight Keybind Opacity",
+		0,
+		1,
+		0.05,
+		L["Assisted Highlight Keybind Opacity Tooltip"] or "Opacity multiplier for assisted highlight keybind text"
+	)
 	AddSlider(
 		assistedCategory,
 		"assistedhighlight_keybindOffsetX",
