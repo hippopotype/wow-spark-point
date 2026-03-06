@@ -30,6 +30,8 @@
     "GetBindingText",
     "GetCVar",
     "GetCVarBool",
+    "GetMouseFoci",
+    "GetMouseFocus",
     "GetMinimapShape",
     "GetNetStats",
     "GetRuneCooldown",
@@ -66,7 +68,8 @@
     "UnitClass",
     "UnitExists",
     "UnitPower",
-    "UnitPowerMax"
+    "UnitPowerMax",
+    "WorldFrame"
   ],
   "Lua.workspace.ignoreDir": [".clones", ".git"]
 }

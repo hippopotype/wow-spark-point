@@ -26,6 +26,7 @@ addon.DefaultValues = {
 	fadeMinimapButtonWhenNotHovered = false,
 	minimapButtonFadeOpacity = 0,
 	minimapButtonAngle = 225,
+	visibility_hideOnUIHover = false,
 	visibility_mode = { ALWAYS = true },
 
 	-- Module enable flags
@@ -56,6 +57,7 @@ addon.DefaultValues = {
 	cast_useClassColor = true,
 	cast_visibilitySource = "INHERIT",
 	cast_visibility = { ALWAYS = true },
+	cast_hideOnUIHover = false,
 	cast_spellTextEnabled = false,
 	cast_spellTextFont = "Fonts\\FRIZQT__.TTF",
 	cast_spellTextSize = 12,
@@ -82,6 +84,7 @@ addon.DefaultValues = {
 	classresource_mode = "PIPS",
 	classresource_visibilitySource = "INHERIT",
 	classresource_visibility = { ALWAYS = true },
+	classresource_hideOnUIHover = false,
 	classresource_font = "Fonts\\FRIZQT__.TTF",
 	classresource_fontSize = 16,
 	classresource_fontOutline = "",
@@ -104,6 +107,7 @@ addon.DefaultValues = {
 	ring_classColorAlpha = 0.6,
 	ring_visibilitySource = "INHERIT",
 	ring_visibility = { ALWAYS = true },
+	ring_hideOnUIHover = false,
 
 	-- SpellIcon module settings
 	spellicon_size = 40,
@@ -130,4 +134,5 @@ addon.DefaultValues = {
 	assistedhighlight_keybindColor = { r = 0.44, g = 0.98, b = 1, a = 1 },
 	assistedhighlight_visibilitySource = "INHERIT",
 	assistedhighlight_visibility = { ALWAYS = true },
+	assistedhighlight_hideOnUIHover = false,
 }

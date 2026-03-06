@@ -531,6 +531,12 @@ local function BuildSettingsPanel()
 
 	local visibilityCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Visibility"] or "Visibility")
 	AddVisibilityRuleGroup(visibilityCategory, "visibility_mode", nil, L["Addon Visibility Tooltip"] or "Default visibility rule used by modules set to inherit")
+	AddCheckbox(
+		visibilityCategory,
+		"visibility_hideOnUIHover",
+		L["Hide While Hovering UI"] or "Hide While Hovering UI",
+		L["Hide While Hovering UI Tooltip"] or "Hide Spark Point while cursor is over clickable UI frames. Keeps Spark Point visible primarily for world targeting."
+	)
 
 	------------------------------------------------------------------------
 	-- Module Toggles
@@ -612,6 +618,12 @@ local function BuildSettingsPanel()
 		L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility"
 	)
 	AddVisibilityRuleGroup(castVisibilityCategory, "cast_visibility", nil, L["Cast Ring Visibility Tooltip"] or "When to show the cast ring shell")
+	AddCheckbox(
+		castVisibilityCategory,
+		"cast_hideOnUIHover",
+		L["Hide While Hovering UI"] or "Hide While Hovering UI",
+		L["Hide While Hovering UI Tooltip"] or "Hide Spark Point while cursor is over clickable UI frames. Keeps Spark Point visible primarily for world targeting."
+	)
 
 	AddColor(castCategory, "cast_barColor", L["Cast Bar Color"] or "Cast Bar Color")
 	AddCheckbox(
@@ -756,6 +768,12 @@ local function BuildSettingsPanel()
 		L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility"
 	)
 	AddVisibilityRuleGroup(classResourceVisibilityCategory, "classresource_visibility", nil, L["Class Resource Visibility Tooltip"] or "When to show class resource")
+	AddCheckbox(
+		classResourceVisibilityCategory,
+		"classresource_hideOnUIHover",
+		L["Hide While Hovering UI"] or "Hide While Hovering UI",
+		L["Hide While Hovering UI Tooltip"] or "Hide Spark Point while cursor is over clickable UI frames. Keeps Spark Point visible primarily for world targeting."
+	)
 
 	local cpTextCategory = Settings.RegisterVerticalLayoutSubcategory(cpCategory, L["Class Resource Text Mode"] or "Text Mode")
 	AddSlider(cpTextCategory, "classresource_fontSize", L["Class Resource Font Size"] or "Class Resource Font Size", 8, 48, 1)
@@ -839,6 +857,12 @@ local function BuildSettingsPanel()
 		L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility"
 	)
 	AddVisibilityRuleGroup(ringVisibilityCategory, "ring_visibility", nil, L["Decorative Ring Visibility Tooltip"] or "When to show the decorative ring")
+	AddCheckbox(
+		ringVisibilityCategory,
+		"ring_hideOnUIHover",
+		L["Hide While Hovering UI"] or "Hide While Hovering UI",
+		L["Hide While Hovering UI Tooltip"] or "Hide Spark Point while cursor is over clickable UI frames. Keeps Spark Point visible primarily for world targeting."
+	)
 	AddDropdown(ringCategory, "ring_texture", L["Decorative Ring Texture"] or "Decorative Ring Texture", ringTextureOptions)
 	AddColor(ringCategory, "ring_color", L["Decorative Ring Color"] or "Decorative Ring Color")
 	AddCheckbox(
@@ -901,6 +925,12 @@ local function BuildSettingsPanel()
 		"assistedhighlight_visibility",
 		nil,
 		L["Assisted Highlight Visibility Tooltip"] or "When to show the assisted highlight icon"
+	)
+	AddCheckbox(
+		assistedVisibilityCategory,
+		"assistedhighlight_hideOnUIHover",
+		L["Hide While Hovering UI"] or "Hide While Hovering UI",
+		L["Hide While Hovering UI Tooltip"] or "Hide Spark Point while cursor is over clickable UI frames. Keeps Spark Point visible primarily for world targeting."
 	)
 
 	AddSlider(assistedCategory, "assistedhighlight_size", L["Assisted Highlight Size"] or "Assisted Highlight Size", 16, 64, 1)

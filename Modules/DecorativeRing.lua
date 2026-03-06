@@ -237,7 +237,14 @@ for _, key in ipairs(settingKeys) do
 	end)
 end
 
-for _, key in ipairs({ "visibility_mode", "ring_visibilitySource", "ring_visibility" }) do
+for _, key in ipairs({
+	"visibility_mode",
+	"ring_visibilitySource",
+	"ring_visibility",
+	"visibility_hideOnUIHover",
+	"ring_hideOnUIHover",
+	"attachToMouse",
+}) do
 	CallbackRegistry:RegisterSettingCallback(key, function()
 		Ring:UpdateVisibility()
 	end)

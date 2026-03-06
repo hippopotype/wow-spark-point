@@ -624,7 +624,14 @@ for _, key in ipairs({
 	end)
 end
 
-for _, key in ipairs({ "visibility_mode", "assistedhighlight_visibilitySource", "assistedhighlight_visibility" }) do
+for _, key in ipairs({
+	"visibility_mode",
+	"assistedhighlight_visibilitySource",
+	"assistedhighlight_visibility",
+	"visibility_hideOnUIHover",
+	"assistedhighlight_hideOnUIHover",
+	"attachToMouse",
+}) do
 	CallbackRegistry:RegisterSettingCallback(key, function()
 		AssistedHighlight:UpdateVisibility()
 	end)

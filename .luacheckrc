@@ -18,7 +18,7 @@ globals = {
     "EditModeManagerFrame",
     "GameTooltip",
     "EventRegistry",
-    "GetBindingKey", "GetBindingText", "GetCursorPosition", "GetCVar", "GetCVarBool", "GetNetStats", "GetRuneCooldown", "GetSpecialization", "GetTime",
+    "GetBindingKey", "GetBindingText", "GetCursorPosition", "GetCVar", "GetCVarBool", "GetMouseFoci", "GetMouseFocus", "GetNetStats", "GetRuneCooldown", "GetSpecialization", "GetTime",
     "GetMinimapShape",
     "GRAY_FONT_COLOR",
     "InCombatLockdown",
@@ -36,6 +36,7 @@ globals = {
     "UIParent",
     "UnitAffectingCombat", "UnitCastingInfo", "UnitChannelInfo", "UnitClass", "UnitExists",
     "UnitPower", "UnitPowerMax",
+    "WorldFrame",
     -- WoW locale strings
     "ACCEPT", "CANCEL", "Enum",
     -- WoW font objects

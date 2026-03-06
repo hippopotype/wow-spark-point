@@ -1411,7 +1411,14 @@ for _, key in ipairs(settingKeys) do
 	end)
 end
 
-for _, key in ipairs({ "visibility_mode", "cast_visibilitySource", "cast_visibility" }) do
+for _, key in ipairs({
+	"visibility_mode",
+	"cast_visibilitySource",
+	"cast_visibility",
+	"visibility_hideOnUIHover",
+	"cast_hideOnUIHover",
+	"attachToMouse",
+}) do
 	CallbackRegistry:RegisterSettingCallback(key, function()
 		Cast:UpdateShellVisibility()
 	end)

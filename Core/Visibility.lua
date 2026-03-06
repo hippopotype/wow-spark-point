@@ -5,6 +5,7 @@ local _, addon = ...
 
 local API = addon.API
 local CallbackRegistry = addon.CallbackRegistry
+local GetDBBool = addon.GetDBBool
 
 local Visibility = {}
 addon.Visibility = Visibility
@@ -43,6 +44,14 @@ local MAX_GCD_WINDOW = 2
 local afterInstantCastActive = false
 local afterInstantCastExpiry = 0
 local afterInstantCastTimerToken = 0
+local hoverWatcher
+local lastHoveringInteractiveUI = false
+local UI_HOVER_PREFIXES = { "cast", "classresource", "ring", "assistedhighlight" }
+
+local GetMouseFoci = GetMouseFoci
+local GetMouseFocus = GetMouseFocus
+local UIParent = UIParent
+local WorldFrame = WorldFrame
 
 local function IsValidGCDCooldown(startTime, duration)
 	return type(startTime) == "number" and type(duration) == "number" and startTime > 0 and duration > 0 and duration <= MAX_GCD_WINDOW
@@ -172,6 +181,86 @@ local function NormalizeSource(source)
 	return Visibility.SOURCES.INHERIT
 end
 
+local function GetTopMouseFocus()
+	if GetMouseFoci then
+		local frames = GetMouseFoci()
+		if frames and frames[1] then
+			return frames[1]
+		end
+	end
+	if GetMouseFocus then
+		return GetMouseFocus()
+	end
+	return nil
+end
+
+local function IsFrameMouseInteractive(frame)
+	if not frame then
+		return false
+	end
+	if frame.IsMouseEnabled then
+		local ok, enabled = pcall(frame.IsMouseEnabled, frame)
+		if ok and enabled then
+			return true
+		end
+	end
+	if frame.IsMouseClickEnabled then
+		local ok, enabled = pcall(frame.IsMouseClickEnabled, frame)
+		if ok and enabled then
+			return true
+		end
+	end
+	return false
+end
+
+function Visibility:IsHoveringInteractiveUI()
+	local focus = GetTopMouseFocus()
+	if not focus then
+		return false
+	end
+	if focus == UIParent or focus == WorldFrame then
+		return false
+	end
+	return IsFrameMouseInteractive(focus)
+end
+
+function Visibility:ShouldHideOnUIHover()
+	if not (GetDBBool and GetDBBool("attachToMouse")) then
+		return false
+	end
+	return self:IsHoveringInteractiveUI()
+end
+
+function Visibility:GetGlobalHideOnUIHover()
+	return GetDBBool and GetDBBool("visibility_hideOnUIHover") or false
+end
+
+function Visibility:GetModuleHideOnUIHover(prefix)
+	if not prefix then
+		return self:GetGlobalHideOnUIHover()
+	end
+	if self:GetModuleSource(prefix) == Visibility.SOURCES.INHERIT then
+		return self:GetGlobalHideOnUIHover()
+	end
+	local GetDBBoolLocal = addon.GetDBBool
+	return GetDBBoolLocal and GetDBBoolLocal(prefix .. "_hideOnUIHover") or false
+end
+
+function Visibility:IsAnyHoverHideEnabled()
+	if not (GetDBBool and GetDBBool("attachToMouse")) then
+		return false
+	end
+	if self:GetGlobalHideOnUIHover() then
+		return true
+	end
+	for _, prefix in ipairs(UI_HOVER_PREFIXES) do
+		if self:GetModuleSource(prefix) == Visibility.SOURCES.CUSTOM and self:GetModuleHideOnUIHover(prefix) then
+			return true
+		end
+	end
+	return false
+end
+
 function Visibility:GetGlobalRules()
 	local GetDBValue = addon.GetDBValue
 	local rules = GetDBValue and GetDBValue("visibility_mode")
@@ -255,7 +344,41 @@ function Visibility:EvaluateRules(rules)
 end
 
 function Visibility:ShouldShow(prefix)
+	if self:ShouldHideOnUIHover() and self:GetModuleHideOnUIHover(prefix) then
+		return false
+	end
 	return self:EvaluateRules(self:GetModuleRules(prefix))
+end
+
+local function EnsureHoverWatcher()
+	if hoverWatcher then
+		return
+	end
+
+	hoverWatcher = CreateFrame("Frame")
+	hoverWatcher.elapsed = 0
+	hoverWatcher:SetScript("OnUpdate", function(self, elapsed)
+		self.elapsed = self.elapsed + (elapsed or 0)
+		if self.elapsed < 0.05 then
+			return
+		end
+		self.elapsed = 0
+
+		local enabled = Visibility:IsAnyHoverHideEnabled()
+		if not enabled then
+			if lastHoveringInteractiveUI then
+				lastHoveringInteractiveUI = false
+				CallbackRegistry:Trigger("VisibilityContextChanged", "UI_HOVER_CHANGED")
+			end
+			return
+		end
+
+		local hoveringInteractiveUI = Visibility:IsHoveringInteractiveUI()
+		if hoveringInteractiveUI ~= lastHoveringInteractiveUI then
+			lastHoveringInteractiveUI = hoveringInteractiveUI
+			CallbackRegistry:Trigger("VisibilityContextChanged", "UI_HOVER_CHANGED")
+		end
+	end)
 end
 
 local EL = CreateFrame("Frame")
@@ -293,4 +416,27 @@ EL:SetScript("OnEvent", function(_, event, ...)
 		return
 	end
 	CallbackRegistry:Trigger("VisibilityContextChanged", event, ...)
+end)
+
+EnsureHoverWatcher()
+
+CallbackRegistry:RegisterSettingCallback("visibility_hideOnUIHover", function()
+	lastHoveringInteractiveUI = Visibility:IsHoveringInteractiveUI()
+	CallbackRegistry:Trigger("VisibilityContextChanged", "visibility_hideOnUIHover")
+end)
+
+for _, prefix in ipairs(UI_HOVER_PREFIXES) do
+	CallbackRegistry:RegisterSettingCallback(prefix .. "_hideOnUIHover", function()
+		CallbackRegistry:Trigger("VisibilityContextChanged", prefix .. "_hideOnUIHover")
+	end)
+	CallbackRegistry:RegisterSettingCallback(prefix .. "_visibilitySource", function()
+		CallbackRegistry:Trigger("VisibilityContextChanged", prefix .. "_visibilitySource")
+	end)
+end
+
+CallbackRegistry:RegisterSettingCallback("attachToMouse", function()
+	if not (GetDBBool and GetDBBool("attachToMouse")) then
+		lastHoveringInteractiveUI = false
+	end
+	CallbackRegistry:Trigger("VisibilityContextChanged", "attachToMouse")
 end)
