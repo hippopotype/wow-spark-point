@@ -840,6 +840,13 @@ local function BuildSettingsPanel()
 		L["Class Resource Fill Color"] or "Class Resource Fill Color",
 		L["Class Resource Fill Color Tooltip"] or "Color for active class resource pips"
 	)
+	AddColor(
+		cpPipsCategory,
+		"classresource_backgroundColor",
+		L["Background Color"] or "Background Color",
+		L["Class Resource Background Color Tooltip"] or "Tint multiplier for the class resource pip background texture.",
+		false
+	)
 	AddCheckbox(
 		cpPipsCategory,
 		"classresource_fillUseClassColor",

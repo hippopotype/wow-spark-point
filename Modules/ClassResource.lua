@@ -446,8 +446,26 @@ local function ConfigurePipTextures(p, cfg)
 
 	local fr, fg, fb, fa = GetPipFillColor()
 	local ec = cfg.emptyColor
+	local br, bg, bb, ba = GetDBColor("classresource_backgroundColor")
+	if br == nil then
+		br = 1
+	end
+	if bg == nil then
+		bg = 1
+	end
+	if bb == nil then
+		bb = 1
+	end
+	if ba == nil then
+		ba = 1
+	end
+	local usingDefaultBackgroundTint = br == 1 and bg == 1 and bb == 1 and ba == 1
 	p.frame:SetVertexColor(1, 1, 1, 0.95)
-	p.bg:SetVertexColor(ec.r, ec.g, ec.b, ec.a)
+	if usingDefaultBackgroundTint then
+		p.bg:SetVertexColor(ec.r, ec.g, ec.b, ec.a)
+	else
+		p.bg:SetVertexColor(br, bg, bb, ec.a * ba)
+	end
 	p.fill:SetVertexColor(fr, fg, fb, fa)
 
 	p.styleReady = true
@@ -870,7 +888,7 @@ CallbackRegistry:RegisterSettingCallback("attachToMouse", function()
 	ClassResource:UpdateVisibility()
 end)
 
-for _, key in ipairs({ "classresource_fillColor", "classresource_fillUseClassColor" }) do
+for _, key in ipairs({ "classresource_fillColor", "classresource_fillUseClassColor", "classresource_backgroundColor" }) do
 	CallbackRegistry:RegisterSettingCallback(key, function()
 		ClassResource:ApplyPipVisualOptions()
 		if GetCurrentMode() == MODE_PIPS then

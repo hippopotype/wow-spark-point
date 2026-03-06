@@ -99,6 +99,7 @@ addon.DefaultValues = {
 	classresource_scale = 1,
 	classresource_opacity = 1,
 	classresource_fillUseClassColor = true,
+	classresource_backgroundColor = { r = 1, g = 1, b = 1, a = 1 },
 	classresource_offsetX = 0,
 	classresource_offsetY = -50,
 
