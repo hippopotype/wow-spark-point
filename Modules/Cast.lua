@@ -1062,9 +1062,15 @@ function Cast:ApplySlotOptions()
 			if backgroundOpacity == nil then
 				backgroundOpacity = 0.8
 			end
+			local backgroundColor = GetDBColorTable("slot" .. i .. "_backgroundColor") or { r = 1, g = 1, b = 1, a = 1 }
 			slot.widget:SetRadius(radius * SLOT_ROOT_SCALE[i])
 			slot.widget:SetBarColor(GetSlotBarColor(i))
-			slot.widget:SetBackgroundColor({ r = 1, g = 1, b = 1, a = backgroundOpacity })
+			slot.widget:SetBackgroundColor({
+				r = backgroundColor.r or 1,
+				g = backgroundColor.g or 1,
+				b = backgroundColor.b or 1,
+				a = backgroundOpacity,
+			})
 			slot.widget:SetFrameLevel(NUM_SLOTS - i + 1)
 		end
 	end
@@ -1098,7 +1104,13 @@ function Cast:ApplyOptions()
 	if useClassColor then
 		cr, cg, cb, ca = API.GetPlayerClassColor()
 	end
-	local backgroundColor = { r = 1, g = 1, b = 1, a = backgroundOpacity }
+	local backgroundColorSetting = GetDBColorTable("cast_backgroundColor") or { r = 1, g = 1, b = 1, a = 1 }
+	local backgroundColor = {
+		r = backgroundColorSetting.r or 1,
+		g = backgroundColorSetting.g or 1,
+		b = backgroundColorSetting.b or 1,
+		a = backgroundOpacity,
+	}
 	local frameColor = { r = 1, g = 1, b = 1, a = frameOpacity }
 	local glowColor = { r = 1, g = 1, b = 1, a = glowOpacity }
 
@@ -1299,6 +1311,7 @@ function Cast:Initialize()
 	-- Create inner ring slot widgets
 	local radius = GetDBValue("cast_radius")
 	for i = 1, NUM_SLOTS do
+		local slotBackgroundColor = GetDBColorTable("slot" .. i .. "_backgroundColor") or { r = 1, g = 1, b = 1, a = 1 }
 		local widget = SlotRingWidget:Create({
 			radius = radius * SLOT_ROOT_SCALE[i],
 			fillBase = "slot" .. i .. "_fill",
@@ -1306,7 +1319,12 @@ function Cast:Initialize()
 			backgroundBase = "slot" .. i .. "_background",
 			sparkRadiusRatio = SLOT_SPARK_RADIUS_RATIOS[i],
 			barColor = GetDBColorTable("slot" .. i .. "_barColor"),
-			backgroundColor = { r = 1, g = 1, b = 1, a = GetDBValue("slot" .. i .. "_backgroundOpacity") or 0.8 },
+			backgroundColor = {
+				r = slotBackgroundColor.r or 1,
+				g = slotBackgroundColor.g or 1,
+				b = slotBackgroundColor.b or 1,
+				a = GetDBValue("slot" .. i .. "_backgroundOpacity") or 0.8,
+			},
 		})
 		widget:AttachTo(castFrame)
 		widget:Hide()
@@ -1379,6 +1397,7 @@ end)
 local settingKeys = {
 	"cast_radius",
 	"cast_barColor",
+	"cast_backgroundColor",
 	"cast_backgroundOpacity",
 	"cast_frameOpacity",
 	"cast_glowOpacity",
@@ -1437,7 +1456,7 @@ end
 
 -- Slot color callbacks
 for i = 1, NUM_SLOTS do
-	for _, suffix in ipairs({ "_barColor", "_backgroundOpacity", "_useClassColor" }) do
+	for _, suffix in ipairs({ "_barColor", "_backgroundColor", "_backgroundOpacity", "_useClassColor" }) do
 		CallbackRegistry:RegisterSettingCallback("slot" .. i .. suffix, function()
 			Cast:ApplySlotOptions()
 		end)

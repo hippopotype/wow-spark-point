@@ -40,6 +40,7 @@ addon.DefaultValues = {
 	cast_radius = 40,
 	cast_thickness = 20,
 	cast_barColor = { r = 1, g = 1, b = 1, a = 0.8 },
+	cast_backgroundColor = { r = 1, g = 1, b = 1, a = 1 },
 	cast_backgroundOpacity = 0.8,
 	cast_frameOpacity = 0.8,
 	cast_glowOpacity = 0.8,
@@ -72,12 +73,15 @@ addon.DefaultValues = {
 	slot3_provider = "NONE",
 	slot1_barColor = { r = 1, g = 1, b = 1, a = 0.18 },
 	slot1_useClassColor = false,
+	slot1_backgroundColor = { r = 1, g = 1, b = 1, a = 1 },
 	slot1_backgroundOpacity = 0.5,
 	slot2_barColor = { r = 1, g = 1, b = 1, a = 0.18 },
 	slot2_useClassColor = false,
+	slot2_backgroundColor = { r = 1, g = 1, b = 1, a = 1 },
 	slot2_backgroundOpacity = 0.5,
 	slot3_barColor = { r = 1, g = 1, b = 1, a = 0.18 },
 	slot3_useClassColor = false,
+	slot3_backgroundColor = { r = 1, g = 1, b = 1, a = 1 },
 	slot3_backgroundOpacity = 0.5,
 
 	-- ClassResource module settings

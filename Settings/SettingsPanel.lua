@@ -626,6 +626,13 @@ local function BuildSettingsPanel()
 	)
 
 	AddColor(castCategory, "cast_barColor", L["Cast Bar Color"] or "Cast Bar Color")
+	AddColor(
+		castCategory,
+		"cast_backgroundColor",
+		L["Background Color"] or "Background Color",
+		L["Cast Background Color Tooltip"] or "Tint color for the cast ring background texture.",
+		false
+	)
 	AddCheckbox(
 		castCategory,
 		"cast_useClassColor",
@@ -746,6 +753,13 @@ local function BuildSettingsPanel()
 			1,
 			0.05,
 			(L["Slot Background Opacity Tooltip"] or "Opacity of the slot background ring")
+		)
+		AddColor(
+			slotsCategory,
+			prefix .. "_backgroundColor",
+			(L["Slot"] or "Slot") .. " " .. i .. " " .. (L["Background Color"] or "Background Color"),
+			(L["Slot Background Color Tooltip"] or "Tint color for the slot background ring texture."),
+			false
 		)
 	end
 
