@@ -7,6 +7,7 @@ local IconMask = addon.IconMask
 local CallbackRegistry = addon.CallbackRegistry
 local AnchorFrame = addon.AnchorFrame
 local Visibility = addon.Visibility
+local Transition = addon.Transition
 local GetDBValue = addon.GetDBValue
 local GetDBBool = addon.GetDBBool
 local GetDBColor = addon.GetDBColor
@@ -24,8 +25,8 @@ local SPELL_ICON_FRAME_PATH = addon.addonFolder .. "\\Textures\\spell_icon_frame
 local ICON_MASK_BASE_EXPAND = 6
 local GLOW_ANIM_MIN_ALPHA = 0.45
 local GLOW_ANIM_MAX_ALPHA = 1
-local GLOW_CYCLE_DURATION = 2.6
-local GLOW_PEAK_BOOST = 0.18
+local GLOW_DEFAULT_CYCLE_DURATION = 2.6
+local GLOW_DEFAULT_STRENGTH = 0.35
 local COS = math.cos
 local FLOOR = math.floor
 local PI2 = math.pi * 2
@@ -299,16 +300,59 @@ local function FormatBindingText(bindingKey)
 end
 
 local function HideModuleFrame()
-	if moduleFrame then
-		moduleFrame:Hide()
+	if not moduleFrame then
+		AnchorFrame:Hide("assistedhighlight")
+		return
+	end
+
+	local function FinishHide()
 		if moduleFrame.iconFrame then
 			moduleFrame.iconFrame:Hide()
 			if moduleFrame.iconFrame.keybindText then
 				moduleFrame.iconFrame.keybindText:Hide()
 			end
 		end
+		AnchorFrame:Hide("assistedhighlight")
 	end
-	AnchorFrame:Hide("assistedhighlight")
+
+	if Transition and Transition.HideFrame then
+		Transition:HideFrame(moduleFrame, { onComplete = FinishHide })
+	else
+		moduleFrame:Hide()
+		FinishHide()
+	end
+end
+
+local function IsGlowTransitionEnabled()
+	local enabled = GetDBValue("assistedhighlight_glowTransitionEnabled")
+	if enabled == nil then
+		return true
+	end
+	return enabled == true
+end
+
+local function GetGlowTransitionSpeed()
+	local speed = tonumber(GetDBValue("assistedhighlight_glowTransitionSpeed"))
+	if speed == nil then
+		speed = 1
+	end
+	if speed < 0.05 then
+		speed = 0.05
+	end
+	return speed
+end
+
+local function GetGlowTransitionStrength()
+	local strength = tonumber(GetDBValue("assistedhighlight_glowTransitionStrength"))
+	if strength == nil then
+		strength = GLOW_DEFAULT_STRENGTH
+	end
+	if strength < 0 then
+		strength = 0
+	elseif strength > 1 then
+		strength = 1
+	end
+	return strength
 end
 
 local function UpdateGlowAlpha(elapsed)
@@ -321,7 +365,14 @@ local function UpdateGlowAlpha(elapsed)
 		return
 	end
 
-	local duration = GLOW_CYCLE_DURATION
+	if not IsGlowTransitionEnabled() then
+		local staticAlpha = (iconFrame.glowColorAlpha or 1) * GLOW_ANIM_MIN_ALPHA
+		iconFrame.glow:SetAlpha(staticAlpha)
+		return
+	end
+
+	local glowSpeed = GetGlowTransitionSpeed()
+	local duration = GLOW_DEFAULT_CYCLE_DURATION / glowSpeed
 	if duration <= 0 then
 		duration = 2
 	end
@@ -333,13 +384,12 @@ local function UpdateGlowAlpha(elapsed)
 
 	-- Continuous breath wave [0..1] without segment boundaries.
 	local wave = 0.5 - 0.5 * COS(iconFrame.glowPhase * PI2)
-	-- Add a soft boost near the peak to mimic "intensify at cycle end".
-	local boosted = wave + GLOW_PEAK_BOOST * (wave * wave * wave)
-	if boosted > 1 then
-		boosted = 1
-	end
 
-	local scaled = GLOW_ANIM_MIN_ALPHA + (GLOW_ANIM_MAX_ALPHA - GLOW_ANIM_MIN_ALPHA) * boosted
+	-- Strength controls pulse amplitude (0 = static midpoint, 1 = full min/max sweep).
+	local strength = GetGlowTransitionStrength()
+	local range = GLOW_ANIM_MAX_ALPHA - GLOW_ANIM_MIN_ALPHA
+	local waveWithStrength = ((1 - strength) * 0.5) + (strength * wave)
+	local scaled = GLOW_ANIM_MIN_ALPHA + (range * waveWithStrength)
 	local colorAlpha = iconFrame.glowColorAlpha or 1
 	iconFrame.glow:SetAlpha(scaled * colorAlpha)
 end
@@ -472,8 +522,12 @@ function AssistedHighlight:UpdateVisibility()
 	end
 
 	moduleFrame.iconFrame:Show()
-	moduleFrame:Show()
 	AnchorFrame:Show("assistedhighlight")
+	if Transition and Transition.ShowFrame then
+		Transition:ShowFrame(moduleFrame)
+	else
+		moduleFrame:Show()
+	end
 end
 
 function AssistedHighlight:Initialize()
@@ -606,6 +660,16 @@ CallbackRegistry:RegisterSettingCallback("assistedhighlight_glowColor", function
 	AssistedHighlight:ApplyOptions()
 	AssistedHighlight:UpdateVisibility()
 end)
+for _, key in ipairs({
+	"assistedhighlight_glowTransitionEnabled",
+	"assistedhighlight_glowTransitionSpeed",
+	"assistedhighlight_glowTransitionStrength",
+}) do
+	CallbackRegistry:RegisterSettingCallback(key, function()
+		AssistedHighlight:ApplyOptions()
+		AssistedHighlight:UpdateVisibility()
+	end)
+end
 for _, key in ipairs({
 	"assistedhighlight_iconOpacity",
 	"assistedhighlight_keybindEnabled",

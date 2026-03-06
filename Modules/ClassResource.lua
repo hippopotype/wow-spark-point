@@ -7,6 +7,7 @@ local API = addon.API
 local CallbackRegistry = addon.CallbackRegistry
 local AnchorFrame = addon.AnchorFrame
 local Visibility = addon.Visibility
+local Transition = addon.Transition
 local GetDBValue = addon.GetDBValue
 local GetDBBool = addon.GetDBBool
 local GetDBColor = addon.GetDBColor
@@ -154,6 +155,55 @@ local currentTextSource = nil
 local currentTextPowerType = nil
 local lastTextValue = nil
 
+local function ReleaseAnchorIfUnused()
+	local containerShown = container and container:IsShown()
+	local textShown = textFrame and textFrame:IsShown()
+	if not containerShown and not textShown then
+		AnchorFrame:Hide("classresource")
+	end
+end
+
+local function ShowResourceFrame(frame)
+	if not frame then
+		return
+	end
+	AnchorFrame:Show("classresource")
+	local targetAlpha = 1
+	if frame == container then
+		local opacity = GetDBValue("classresource_opacity")
+		if type(opacity) == "number" then
+			targetAlpha = math.max(0, math.min(1, opacity))
+		end
+	end
+	if Transition and Transition.ShowFrame then
+		Transition:ShowFrame(frame, { toAlpha = targetAlpha })
+	else
+		frame:SetAlpha(targetAlpha)
+		frame:Show()
+	end
+end
+
+local function HideResourceFrame(frame)
+	if not frame then
+		ReleaseAnchorIfUnused()
+		return
+	end
+	local restoreAlpha = 1
+	if frame == container then
+		local opacity = GetDBValue("classresource_opacity")
+		if type(opacity) == "number" then
+			restoreAlpha = math.max(0, math.min(1, opacity))
+		end
+	end
+	if Transition and Transition.HideFrame then
+		Transition:HideFrame(frame, { restoreAlpha = restoreAlpha, onComplete = ReleaseAnchorIfUnused })
+	else
+		frame:SetAlpha(restoreAlpha)
+		frame:Hide()
+		ReleaseAnchorIfUnused()
+	end
+end
+
 --------------------------------------------------------------------------------
 -- Visibility
 --------------------------------------------------------------------------------
@@ -275,8 +325,7 @@ function ClassResource:UpdateTextMode()
 	end
 
 	if not Visibility:ShouldShow("classresource") then
-		textFrame:Hide()
-		AnchorFrame:Hide("classresource")
+		HideResourceFrame(textFrame)
 		return
 	end
 
@@ -285,8 +334,7 @@ function ClassResource:UpdateTextMode()
 	end
 
 	if not currentTextSource then
-		textFrame:Hide()
-		AnchorFrame:Hide("classresource")
+		HideResourceFrame(textFrame)
 		return
 	end
 
@@ -304,10 +352,7 @@ function ClassResource:UpdateTextMode()
 		textFrame.powerText:SetText(powerString)
 	end
 
-	if not textFrame:IsShown() then
-		textFrame:Show()
-	end
-	AnchorFrame:Show("classresource")
+	ShowResourceFrame(textFrame)
 end
 
 --------------------------------------------------------------------------------
@@ -623,49 +668,35 @@ end
 
 function ClassResource:UpdateVisibility()
 	if not isEnabled then
-		if container then
-			container:Hide()
-		end
-		if textFrame then
-			textFrame:Hide()
-		end
-		AnchorFrame:Hide("classresource")
+		HideResourceFrame(container)
+		HideResourceFrame(textFrame)
 		return
 	end
 
 	if GetCurrentMode() == MODE_TEXT then
-		if container then
-			container:Hide()
-		end
+		HideResourceFrame(container)
 		HidePips()
 		self:UpdateTextMode()
 		return
 	end
 
 	if textFrame then
-		textFrame:Hide()
+		HideResourceFrame(textFrame)
 	end
 
 	if not activeCfg then
-		if container then
-			container:Hide()
-		end
-		AnchorFrame:Hide("classresource")
+		HideResourceFrame(container)
 		return
 	end
 
 	if not Visibility:ShouldShow("classresource") then
-		if container then
-			container:Hide()
-		end
-		AnchorFrame:Hide("classresource")
+		HideResourceFrame(container)
 		return
 	end
 
 	if container then
-		container:Show()
+		ShowResourceFrame(container)
 	end
-	AnchorFrame:Show("classresource")
 end
 
 function ClassResource:SyncPower()
@@ -810,13 +841,8 @@ local function EnableModule(enabled)
 		ClassResource:Refresh()
 	else
 		EL:UnregisterAllEvents()
-		if container then
-			container:Hide()
-		end
-		if textFrame then
-			textFrame:Hide()
-		end
-		AnchorFrame:Hide("classresource")
+		HideResourceFrame(container)
+		HideResourceFrame(textFrame)
 		activeCfg = nil
 		currentTextSource = nil
 		currentTextPowerType = nil

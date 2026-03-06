@@ -6,6 +6,7 @@ local _, addon = ...
 local API = addon.API
 local CallbackRegistry = addon.CallbackRegistry
 local GetDBBool = addon.GetDBBool
+local Transition = addon.Transition
 
 local Visibility = {}
 addon.Visibility = Visibility
@@ -47,11 +48,42 @@ local afterInstantCastTimerToken = 0
 local hoverWatcher
 local lastHoveringInteractiveUI = false
 local UI_HOVER_PREFIXES = { "cast", "classresource", "ring", "assistedhighlight" }
+local hysteresisTokenByPrefix = {}
+local stableVisibilityByPrefix = {}
+local pendingVisibilityByPrefix = {}
 
 local GetMouseFoci = GetMouseFoci
 local GetMouseFocus = GetMouseFocus
 local UIParent = UIParent
 local WorldFrame = WorldFrame
+local STABLE_PREFIX_GLOBAL = "__global__"
+local MOTION_SETTING_KEYS = {
+	"transition_enabled",
+	"transition_hysteresisShowMs",
+	"transition_hysteresisHideMs",
+}
+
+local function NormalizePrefix(prefix)
+	return prefix or STABLE_PREFIX_GLOBAL
+end
+
+local function GetHysteresisDurations()
+	if not Transition or not Transition.GetConfig then
+		return 0, 0
+	end
+	local cfg = Transition:GetConfig()
+	if not cfg or not cfg.enabled then
+		return 0, 0
+	end
+	return cfg.hysteresisShow or 0, cfg.hysteresisHide or 0
+end
+
+local function ResetStableVisibilityState(prefix)
+	local key = NormalizePrefix(prefix)
+	hysteresisTokenByPrefix[key] = (hysteresisTokenByPrefix[key] or 0) + 1
+	pendingVisibilityByPrefix[key] = nil
+	stableVisibilityByPrefix[key] = nil
+end
 
 local function IsValidGCDCooldown(startTime, duration)
 	return type(startTime) == "number" and type(duration) == "number" and startTime > 0 and duration > 0 and duration <= MAX_GCD_WINDOW
@@ -343,11 +375,61 @@ function Visibility:EvaluateRules(rules)
 	return false
 end
 
-function Visibility:ShouldShow(prefix)
+function Visibility:EvaluateRaw(prefix)
 	if self:ShouldHideOnUIHover() and self:GetModuleHideOnUIHover(prefix) then
 		return false
 	end
 	return self:EvaluateRules(self:GetModuleRules(prefix))
+end
+
+function Visibility:ShouldShow(prefix)
+	local key = NormalizePrefix(prefix)
+	local raw = self:EvaluateRaw(prefix)
+	local stable = stableVisibilityByPrefix[key]
+	if stable == nil then
+		stableVisibilityByPrefix[key] = raw
+		return raw
+	end
+
+	if raw == stable then
+		pendingVisibilityByPrefix[key] = nil
+		return stable
+	end
+
+	local showDelay, hideDelay = GetHysteresisDurations()
+	local delay = raw and showDelay or hideDelay
+	if delay <= 0 then
+		stableVisibilityByPrefix[key] = raw
+		pendingVisibilityByPrefix[key] = nil
+		return raw
+	end
+
+	local pending = pendingVisibilityByPrefix[key]
+	if pending and pending.target == raw then
+		return stable
+	end
+
+	hysteresisTokenByPrefix[key] = (hysteresisTokenByPrefix[key] or 0) + 1
+	local token = hysteresisTokenByPrefix[key]
+	pendingVisibilityByPrefix[key] = { target = raw, token = token }
+
+	C_Timer.After(delay, function()
+		if token ~= hysteresisTokenByPrefix[key] then
+			return
+		end
+		local currentRaw = Visibility:EvaluateRaw(prefix)
+		if currentRaw ~= raw then
+			pendingVisibilityByPrefix[key] = nil
+			return
+		end
+		pendingVisibilityByPrefix[key] = nil
+		if stableVisibilityByPrefix[key] ~= raw then
+			stableVisibilityByPrefix[key] = raw
+			CallbackRegistry:Trigger("VisibilityContextChanged", "VISIBILITY_STABILIZED", prefix, raw)
+		end
+	end)
+
+	return stable
 end
 
 local function EnsureHoverWatcher()
@@ -422,15 +504,25 @@ EnsureHoverWatcher()
 
 CallbackRegistry:RegisterSettingCallback("visibility_hideOnUIHover", function()
 	lastHoveringInteractiveUI = Visibility:IsHoveringInteractiveUI()
+	ResetStableVisibilityState(nil)
+	for _, prefix in ipairs(UI_HOVER_PREFIXES) do
+		ResetStableVisibilityState(prefix)
+	end
 	CallbackRegistry:Trigger("VisibilityContextChanged", "visibility_hideOnUIHover")
 end)
 
 for _, prefix in ipairs(UI_HOVER_PREFIXES) do
 	CallbackRegistry:RegisterSettingCallback(prefix .. "_hideOnUIHover", function()
+		ResetStableVisibilityState(prefix)
 		CallbackRegistry:Trigger("VisibilityContextChanged", prefix .. "_hideOnUIHover")
 	end)
 	CallbackRegistry:RegisterSettingCallback(prefix .. "_visibilitySource", function()
+		ResetStableVisibilityState(prefix)
 		CallbackRegistry:Trigger("VisibilityContextChanged", prefix .. "_visibilitySource")
+	end)
+	CallbackRegistry:RegisterSettingCallback(prefix .. "_visibility", function()
+		ResetStableVisibilityState(prefix)
+		CallbackRegistry:Trigger("VisibilityContextChanged", prefix .. "_visibility")
 	end)
 end
 
@@ -438,5 +530,27 @@ CallbackRegistry:RegisterSettingCallback("attachToMouse", function()
 	if not (GetDBBool and GetDBBool("attachToMouse")) then
 		lastHoveringInteractiveUI = false
 	end
+	ResetStableVisibilityState(nil)
+	for _, prefix in ipairs(UI_HOVER_PREFIXES) do
+		ResetStableVisibilityState(prefix)
+	end
 	CallbackRegistry:Trigger("VisibilityContextChanged", "attachToMouse")
 end)
+
+CallbackRegistry:RegisterSettingCallback("visibility_mode", function()
+	ResetStableVisibilityState(nil)
+	for _, prefix in ipairs(UI_HOVER_PREFIXES) do
+		ResetStableVisibilityState(prefix)
+	end
+	CallbackRegistry:Trigger("VisibilityContextChanged", "visibility_mode")
+end)
+
+for _, key in ipairs(MOTION_SETTING_KEYS) do
+	CallbackRegistry:RegisterSettingCallback(key, function()
+		ResetStableVisibilityState(nil)
+		for _, prefix in ipairs(UI_HOVER_PREFIXES) do
+			ResetStableVisibilityState(prefix)
+		end
+		CallbackRegistry:Trigger("VisibilityContextChanged", key)
+	end)
+end

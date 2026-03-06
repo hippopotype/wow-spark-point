@@ -20,6 +20,7 @@ local unlockEditModeActive = false
 local editModeHooked = false
 local editModeEventCallbacksHooked = false
 local editModeWatcher
+local anchorVisible = false
 
 local GetCursorPosition = GetCursorPosition
 local UIParent = UIParent
@@ -74,33 +75,45 @@ local function IsBlizzardEditModeActive()
 	return EditModeManagerFrame:IsShown() and true or false
 end
 
+local function HasAnyShowRequests()
+	for _ in pairs(showRequests) do
+		return true
+	end
+	return false
+end
+
+local function UpdateAnchorVisibilityGate(visible)
+	if not anchor then
+		return
+	end
+	anchorVisible = visible == true
+	if anchorVisible then
+		anchor:SetAlpha(1)
+		anchor:Show()
+	else
+		anchor:Hide()
+		anchor:SetAlpha(1)
+	end
+end
+
 --------------------------------------------------------------------------------
 -- Show/Hide Request System
 -- Multiple modules can request visibility; anchor hides only when all release
 --------------------------------------------------------------------------------
 function AnchorFrame:Show(requester)
 	showRequests[requester or "default"] = true
-	if anchor then
-		anchor:Show()
-	end
+	UpdateAnchorVisibilityGate(true)
 end
 
 function AnchorFrame:Hide(requester)
 	showRequests[requester or "default"] = nil
-
-	local anyVisible = false
-	for _ in pairs(showRequests) do
-		anyVisible = true
-		break
-	end
-
-	if not anyVisible and anchor then
-		anchor:Hide()
+	if not HasAnyShowRequests() then
+		UpdateAnchorVisibilityGate(false)
 	end
 end
 
 function AnchorFrame:IsShown()
-	return anchor and anchor:IsShown()
+	return anchorVisible == true
 end
 
 function AnchorFrame:GetFrame()
@@ -136,6 +149,8 @@ local function Initialize()
 	anchor:SetFrameStrata("HIGH")
 	anchor:SetScript("OnUpdate", OnUpdate)
 	anchor:Hide()
+	anchor:SetAlpha(1)
+	anchorVisible = false
 
 	AnchorFrame.frame = anchor
 end

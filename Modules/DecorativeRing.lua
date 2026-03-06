@@ -7,6 +7,7 @@ local API = addon.API
 local CallbackRegistry = addon.CallbackRegistry
 local AnchorFrame = addon.AnchorFrame
 local Visibility = addon.Visibility
+local Transition = addon.Transition
 local GetDBValue = addon.GetDBValue
 local GetDBBool = addon.GetDBBool
 local GetDBColor = addon.GetDBColor
@@ -74,6 +75,36 @@ local function IsVisibilityAllowed()
 	return (not Visibility) or Visibility:ShouldShow("ring")
 end
 
+local function ShowRingFrame()
+	if not ringFrame then
+		return
+	end
+	AnchorFrame:Show("ring")
+	if Transition and Transition.ShowFrame then
+		Transition:ShowFrame(ringFrame)
+	else
+		ringFrame:Show()
+	end
+end
+
+local function HideRingFrame()
+	if not ringFrame then
+		AnchorFrame:Hide("ring")
+		return
+	end
+	local function ReleaseAnchor()
+		if not ringFrame:IsShown() then
+			AnchorFrame:Hide("ring")
+		end
+	end
+	if Transition and Transition.HideFrame then
+		Transition:HideFrame(ringFrame, { onComplete = ReleaseAnchor })
+	else
+		ringFrame:Hide()
+		ReleaseAnchor()
+	end
+end
+
 --------------------------------------------------------------------------------
 -- OnUpdate Handler (rotation animation)
 --------------------------------------------------------------------------------
@@ -120,17 +151,14 @@ function Ring:UpdateVisibility()
 		return
 	end
 	if not isEnabled then
-		AnchorFrame:Hide("ring")
-		ringFrame:Hide()
+		HideRingFrame()
 		return
 	end
 
 	if IsVisibilityAllowed() then
-		AnchorFrame:Show("ring")
-		ringFrame:Show()
+		ShowRingFrame()
 	else
-		AnchorFrame:Hide("ring")
-		ringFrame:Hide()
+		HideRingFrame()
 	end
 end
 
@@ -212,10 +240,7 @@ local function EnableModule(enabled)
 		Ring:UpdateVisibility()
 	else
 		isEnabled = false
-		AnchorFrame:Hide("ring")
-		if ringFrame then
-			ringFrame:Hide()
-		end
+		HideRingFrame()
 	end
 end
 

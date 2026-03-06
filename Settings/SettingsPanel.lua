@@ -538,6 +538,66 @@ local function BuildSettingsPanel()
 		L["Hide While Hovering UI Tooltip"] or "Hide SparkPoint while cursor is over clickable UI frames. Keeps SparkPoint visible primarily for world targeting."
 	)
 
+	local transitionCategory = Settings.RegisterVerticalLayoutSubcategory(visibilityCategory, L["Transition"] or "Transition")
+	AddCheckbox(
+		transitionCategory,
+		"transition_enabled",
+		L["Transition Enabled"] or "Enable Transition",
+		L["Transition Enabled Tooltip"] or "Enable subtle HUD fade and micro-interaction transitions."
+	)
+	AddSlider(
+		transitionCategory,
+		"transition_inDurationMs",
+		L["Transition In Duration"] or "Fade In Duration",
+		0,
+		500,
+		10,
+		L["Transition In Duration Tooltip"] or "Duration for HUD fade in.",
+		function(value)
+			return string.format("%d ms", math.floor((value or 0) + 0.5))
+		end
+	)
+	AddSlider(
+		transitionCategory,
+		"transition_outDurationMs",
+		L["Transition Out Duration"] or "Fade Out Duration",
+		0,
+		500,
+		10,
+		L["Transition Out Duration Tooltip"] or "Duration for HUD fade out.",
+		function(value)
+			return string.format("%d ms", math.floor((value or 0) + 0.5))
+		end
+	)
+	AddDropdown(transitionCategory, "transition_easing", L["Transition Easing"] or "Easing", {
+		{ value = "outSine", label = L["Transition Easing OutSine"] or "Out Sine (Smooth)" },
+		{ value = "outQuad", label = L["Transition Easing OutQuad"] or "Out Quad" },
+		{ value = "linear", label = L["Transition Easing Linear"] or "Linear" },
+	}, L["Transition Easing Tooltip"] or "Easing curve used by HUD transitions.")
+	AddSlider(
+		transitionCategory,
+		"transition_hysteresisShowMs",
+		L["Transition Show Hysteresis"] or "Show Hysteresis",
+		0,
+		400,
+		10,
+		L["Transition Show Hysteresis Tooltip"] or "Delay before showing after a visibility condition becomes true.",
+		function(value)
+			return string.format("%d ms", math.floor((value or 0) + 0.5))
+		end
+	)
+	AddSlider(
+		transitionCategory,
+		"transition_hysteresisHideMs",
+		L["Transition Hide Hysteresis"] or "Hide Hysteresis",
+		0,
+		400,
+		10,
+		L["Transition Hide Hysteresis Tooltip"] or "Delay before hiding after a visibility condition becomes false.",
+		function(value)
+			return string.format("%d ms", math.floor((value or 0) + 0.5))
+		end
+	)
 	------------------------------------------------------------------------
 	-- Module Toggles
 	------------------------------------------------------------------------
@@ -983,6 +1043,30 @@ local function BuildSettingsPanel()
 		"assistedhighlight_glowColor",
 		L["Assisted Highlight Glow Color"] or "Assisted Highlight Glow Color",
 		L["Assisted Highlight Glow Color Tooltip"] or "Color and alpha for the assisted highlight glow layer"
+	)
+	AddCheckbox(
+		assistedCategory,
+		"assistedhighlight_glowTransitionEnabled",
+		L["Assisted Highlight Glow Transition Enabled"] or "Enable Glow Transition",
+		L["Assisted Highlight Glow Transition Enabled Tooltip"] or "Enable glow breathing micro-interaction on assisted highlight."
+	)
+	AddSlider(
+		assistedCategory,
+		"assistedhighlight_glowTransitionSpeed",
+		L["Assisted Highlight Glow Transition Speed"] or "Glow Transition Speed",
+		0.2,
+		2.5,
+		0.05,
+		L["Assisted Highlight Glow Transition Speed Tooltip"] or "Speed multiplier for glow animation cycles."
+	)
+	AddSlider(
+		assistedCategory,
+		"assistedhighlight_glowTransitionStrength",
+		L["Assisted Highlight Glow Transition Strength"] or "Glow Transition Strength",
+		0,
+		1.0,
+		0.01,
+		L["Assisted Highlight Glow Transition Strength Tooltip"] or "Additional intensity boost near glow peak."
 	)
 	AddCheckbox(
 		assistedCategory,

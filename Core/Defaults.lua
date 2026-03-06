@@ -28,6 +28,12 @@ addon.DefaultValues = {
 	minimapButtonAngle = 225,
 	visibility_hideOnUIHover = false,
 	visibility_mode = { ALWAYS = true },
+	transition_enabled = false,
+	transition_inDurationMs = 220,
+	transition_outDurationMs = 360,
+	transition_easing = "outSine",
+	transition_hysteresisShowMs = 40,
+	transition_hysteresisHideMs = 180,
 
 	-- Module enable flags
 	moduleEnabled_Cast = true,
@@ -128,6 +134,9 @@ addon.DefaultValues = {
 	assistedhighlight_offsetY = 42,
 	assistedhighlight_iconOpacity = 1,
 	assistedhighlight_glowEnabled = true,
+	assistedhighlight_glowTransitionEnabled = true,
+	assistedhighlight_glowTransitionSpeed = 1.0,
+	assistedhighlight_glowTransitionStrength = 0.85,
 	assistedhighlight_glowColor = { r = 0.44, g = 0.98, b = 1, a = 1 },
 	assistedhighlight_keybindEnabled = true,
 	assistedhighlight_keybindFormat = "COMPACT",

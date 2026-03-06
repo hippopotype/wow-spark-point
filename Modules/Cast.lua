@@ -9,6 +9,7 @@ local DonutWidget = addon.DonutWidget
 local CallbackRegistry = addon.CallbackRegistry
 local AnchorFrame = addon.AnchorFrame
 local Visibility = addon.Visibility
+local Transition = addon.Transition
 local GetDBValue = addon.GetDBValue
 local GetDBBool = addon.GetDBBool
 local GetDBColor = addon.GetDBColor
@@ -120,6 +121,77 @@ end
 
 local function IsCastVisibilityAllowed()
 	return (not Visibility) or Visibility:ShouldShow("cast")
+end
+
+local function ShowCastFrame(opts)
+	if not castFrame then
+		return
+	end
+	AnchorFrame:Show("cast")
+	if Transition and Transition.ShowFrame then
+		Transition:ShowFrame(castFrame, opts)
+	else
+		castFrame:Show()
+	end
+end
+
+local function HideCastFrame(onComplete)
+	if not castFrame then
+		AnchorFrame:Hide("cast")
+		if onComplete then
+			onComplete()
+		end
+		return
+	end
+
+	local function Finish()
+		AnchorFrame:Hide("cast")
+		if onComplete then
+			onComplete()
+		end
+	end
+
+	if Transition and Transition.HideFrame then
+		Transition:HideFrame(castFrame, { onComplete = Finish })
+	else
+		castFrame:Hide()
+		Finish()
+	end
+end
+
+local function ClearCastShellVisuals()
+	if castDonut then
+		castDonut:Hide()
+		castDonut:SetOverlayShown(false)
+		castDonut:SetOverlayAlpha(0)
+		castDonut:SetAngle(0)
+	end
+	if latencyDonut then
+		latencyDonut:Hide()
+	end
+	if castFrame and castFrame.frameTexture then
+		castFrame.frameTexture:Hide()
+	end
+	if castFrame and castFrame.sparkTexture then
+		castFrame.sparkTexture:Hide()
+	end
+	if castFrame and castFrame.spellText then
+		castFrame.spellText:Hide()
+	end
+	if castFrame and castFrame.iconFrame then
+		if castFrame.iconFrame.errorIcon then
+			castFrame.iconFrame.errorIcon:Hide()
+		end
+		castFrame.iconFrame:Hide()
+		if castFrame.iconFrame.cooldown then
+			castFrame.iconFrame.cooldown:Hide()
+		end
+	end
+	for i = 1, NUM_SLOTS do
+		if slots[i] then
+			slots[i].widget:Hide()
+		end
+	end
 end
 
 local function IsAnyClickFeedbackActive()
@@ -344,8 +416,7 @@ local function ShowInstantSpellIcon(spellID, fromSucceeded)
 	-- Temporarily show it so the child icon frame can render, then restore via UpdateShellVisibility().
 	if castFrame and (not castFrame:IsShown()) and IsCastVisibilityAllowed() then
 		instantIconForcedShell = true
-		AnchorFrame:Show("cast")
-		castFrame:Show()
+		ShowCastFrame()
 	end
 
 	Cast:UpdateSpellIcon()
@@ -533,12 +604,11 @@ function Cast:Show()
 	isCasting = true
 	if not IsCastVisibilityAllowed() then
 		if castFrame then
-			castFrame:Hide()
+			HideCastFrame(ClearCastShellVisuals)
 		end
-		AnchorFrame:Hide("cast")
 		return
 	end
-	AnchorFrame:Show("cast")
+	ShowCastFrame()
 
 	-- Show latency indicator
 	if latencyDonut then
@@ -574,7 +644,7 @@ function Cast:Show()
 		end
 	end
 
-	castFrame:Show()
+	ShowCastFrame()
 end
 
 function Cast:UpdateShellVisibility()
@@ -584,45 +654,11 @@ function Cast:UpdateShellVisibility()
 
 	local allowed = moduleEnabled and IsCastVisibilityAllowed()
 	if not allowed then
-		if castDonut then
-			castDonut:Hide()
-			castDonut:SetOverlayShown(false)
-			castDonut:SetOverlayAlpha(0)
-			castDonut:SetAngle(0)
-		end
-		if latencyDonut then
-			latencyDonut:Hide()
-		end
-		if castFrame.frameTexture then
-			castFrame.frameTexture:Hide()
-		end
-		if castFrame.sparkTexture then
-			castFrame.sparkTexture:Hide()
-		end
-		if castFrame.spellText then
-			castFrame.spellText:Hide()
-		end
-		if castFrame.iconFrame then
-			if castFrame.iconFrame.errorIcon then
-				castFrame.iconFrame.errorIcon:Hide()
-			end
-			castFrame.iconFrame:Hide()
-			if castFrame.iconFrame.cooldown then
-				castFrame.iconFrame.cooldown:Hide()
-			end
-		end
-		for i = 1, NUM_SLOTS do
-			if slots[i] then
-				slots[i].widget:Hide()
-			end
-		end
-		castFrame:Hide()
-		AnchorFrame:Hide("cast")
+		HideCastFrame(ClearCastShellVisuals)
 		return
 	end
 
-	AnchorFrame:Show("cast")
-	castFrame:Show()
+	ShowCastFrame()
 
 	if isCasting and not interruptFlashActive then
 		self:Show()
@@ -774,8 +810,7 @@ function Cast:ShowInterruptFlash(castGUID)
 		end
 	end
 	castDonut:Show()
-	castFrame:Show()
-	AnchorFrame:Show("cast")
+	ShowCastFrame({ duration = 0 })
 
 	C_Timer.After(INTERRUPT_FLASH_DURATION, function()
 		if flashToken ~= interruptFlashToken then

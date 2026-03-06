@@ -13,6 +13,7 @@ Core\API.lua
 Core\IconMask.lua
 Core\Defaults.lua
 Core\Database.lua
+Core\Transition.lua
 Core\Visibility.lua
 Core\ModuleRegistry.lua
 Core\SlotProviders.lua
