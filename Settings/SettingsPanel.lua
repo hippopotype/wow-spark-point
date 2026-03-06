@@ -14,7 +14,7 @@ local GetActiveProfileMode = addon.GetActiveProfileMode
 --------------------------------------------------------------------------------
 -- Settings Panel Setup
 --------------------------------------------------------------------------------
-local ADDON_TITLE = "Spark Point"
+local ADDON_TITLE = "SparkPoint"
 local PROFILE_MODE_CONFIRM_POPUP = "SPARKPOINT_CONFIRM_PROFILE_MODE_CHANGE"
 local PROFILE_COPY_CONFIRM_POPUP = "SPARKPOINT_CONFIRM_PROFILE_COPY"
 
@@ -325,13 +325,13 @@ local function BuildSettingsPanel()
 		category,
 		"showMinimapButton",
 		L["Show Minimap Button"] or "Show Minimap Button",
-		L["Show Minimap Button Tooltip"] or "Show a Spark Point minimap button that opens settings."
+		L["Show Minimap Button Tooltip"] or "Show a SparkPoint minimap button that opens settings."
 	)
 	AddCheckbox(
 		category,
 		"fadeMinimapButtonWhenNotHovered",
 		L["Fade Minimap Button"] or "Fade Minimap Button",
-		L["Fade Minimap Button Tooltip"] or "Fade the Spark Point minimap button when your cursor is not over the minimap."
+		L["Fade Minimap Button Tooltip"] or "Fade the SparkPoint minimap button when your cursor is not over the minimap."
 	)
 	AddSlider(
 		category,
@@ -535,7 +535,7 @@ local function BuildSettingsPanel()
 		visibilityCategory,
 		"visibility_hideOnUIHover",
 		L["Hide While Hovering UI"] or "Hide While Hovering UI",
-		L["Hide While Hovering UI Tooltip"] or "Hide Spark Point while cursor is over clickable UI frames. Keeps Spark Point visible primarily for world targeting."
+		L["Hide While Hovering UI Tooltip"] or "Hide SparkPoint while cursor is over clickable UI frames. Keeps SparkPoint visible primarily for world targeting."
 	)
 
 	------------------------------------------------------------------------
@@ -622,7 +622,7 @@ local function BuildSettingsPanel()
 		castVisibilityCategory,
 		"cast_hideOnUIHover",
 		L["Hide While Hovering UI"] or "Hide While Hovering UI",
-		L["Hide While Hovering UI Tooltip"] or "Hide Spark Point while cursor is over clickable UI frames. Keeps Spark Point visible primarily for world targeting."
+		L["Hide While Hovering UI Tooltip"] or "Hide SparkPoint while cursor is over clickable UI frames. Keeps SparkPoint visible primarily for world targeting."
 	)
 
 	AddColor(castCategory, "cast_barColor", L["Cast Bar Color"] or "Cast Bar Color")
@@ -772,7 +772,7 @@ local function BuildSettingsPanel()
 		classResourceVisibilityCategory,
 		"classresource_hideOnUIHover",
 		L["Hide While Hovering UI"] or "Hide While Hovering UI",
-		L["Hide While Hovering UI Tooltip"] or "Hide Spark Point while cursor is over clickable UI frames. Keeps Spark Point visible primarily for world targeting."
+		L["Hide While Hovering UI Tooltip"] or "Hide SparkPoint while cursor is over clickable UI frames. Keeps SparkPoint visible primarily for world targeting."
 	)
 
 	local cpTextCategory = Settings.RegisterVerticalLayoutSubcategory(cpCategory, L["Class Resource Text Mode"] or "Text Mode")
@@ -861,7 +861,7 @@ local function BuildSettingsPanel()
 		ringVisibilityCategory,
 		"ring_hideOnUIHover",
 		L["Hide While Hovering UI"] or "Hide While Hovering UI",
-		L["Hide While Hovering UI Tooltip"] or "Hide Spark Point while cursor is over clickable UI frames. Keeps Spark Point visible primarily for world targeting."
+		L["Hide While Hovering UI Tooltip"] or "Hide SparkPoint while cursor is over clickable UI frames. Keeps SparkPoint visible primarily for world targeting."
 	)
 	AddDropdown(ringCategory, "ring_texture", L["Decorative Ring Texture"] or "Decorative Ring Texture", ringTextureOptions)
 	AddColor(ringCategory, "ring_color", L["Decorative Ring Color"] or "Decorative Ring Color")
@@ -930,7 +930,7 @@ local function BuildSettingsPanel()
 		assistedVisibilityCategory,
 		"assistedhighlight_hideOnUIHover",
 		L["Hide While Hovering UI"] or "Hide While Hovering UI",
-		L["Hide While Hovering UI Tooltip"] or "Hide Spark Point while cursor is over clickable UI frames. Keeps Spark Point visible primarily for world targeting."
+		L["Hide While Hovering UI Tooltip"] or "Hide SparkPoint while cursor is over clickable UI frames. Keeps SparkPoint visible primarily for world targeting."
 	)
 
 	AddSlider(assistedCategory, "assistedhighlight_size", L["Assisted Highlight Size"] or "Assisted Highlight Size", 16, 64, 1)

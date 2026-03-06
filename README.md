@@ -113,7 +113,7 @@ SparkPoint will be available on CurseForge and Wago.io. Install via CurseForge A
 
 ### Settings Panel
 
-Open via `/sp`. All settings are in the standard Blizzard Settings Panel under **Spark Point**:
+Open via `/sp`. All settings are in the standard Blizzard Settings Panel under **SparkPoint**:
 
 - **General** — cursor attachment, anchor offsets, global visibility mode
 - **Cast Ring** — radius, colors, opacity, spark, latency, spell text

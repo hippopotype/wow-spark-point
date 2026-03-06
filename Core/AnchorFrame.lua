@@ -217,7 +217,7 @@ local function EnsureUnlockFrame()
 
 		local label = unlockFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 		label:SetPoint("TOP", unlockFrame, "BOTTOM", 0, -4)
-		label:SetText("Spark Point")
+		label:SetText("SparkPoint")
 		label:SetTextColor(0.70, 0.85, 1.00)
 		unlockFrame.label = label
 	end

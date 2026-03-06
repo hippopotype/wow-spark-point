@@ -284,7 +284,7 @@ local function EnsureButton()
 			return
 		end
 		GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-		GameTooltip:AddLine(L["Spark Point"] or "Spark Point")
+		GameTooltip:AddLine(L["SparkPoint"] or "SparkPoint")
 		GameTooltip:AddLine(L["Minimap Button Click Tooltip"] or "Click to open settings", 0.8, 0.8, 0.8)
 		GameTooltip:Show()
 	end)
