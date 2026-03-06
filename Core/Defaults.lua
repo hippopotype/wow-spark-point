@@ -119,6 +119,7 @@ addon.DefaultValues = {
 	spellicon_offsetX = 0,
 	spellicon_offsetY = 0,
 	spellicon_castProgressSwipe = false,
+	spellicon_castProgressSwipeColor = { r = 0, g = 0, b = 0, a = 0.5 },
 	spellicon_showInstantCasts = false,
 
 	-- AssistedHighlight module settings

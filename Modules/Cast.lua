@@ -205,6 +205,21 @@ function Cast:ApplyIconOptions()
 	local offsetX = GetDBValue("spellicon_offsetX")
 	local offsetY = GetDBValue("spellicon_offsetY")
 	local showCooldown = GetDBBool("spellicon_castProgressSwipe")
+	local swipeColor = GetDBValue("spellicon_castProgressSwipeColor")
+	local swipeR, swipeG, swipeB, swipeA
+	if type(swipeColor) == "table" then
+		swipeR = swipeColor.r or 1
+		swipeG = swipeColor.g or 1
+		swipeB = swipeColor.b or 1
+		swipeA = swipeColor.a or 1
+	else
+		-- Legacy fallback: preserve previous opacity-only behavior for old profiles.
+		local legacyOpacity = GetDBValue("spellicon_castProgressSwipeOpacity")
+		if legacyOpacity == nil then
+			legacyOpacity = 1
+		end
+		swipeR, swipeG, swipeB, swipeA = 1, 1, 1, legacyOpacity
+	end
 
 	castFrame.iconFrame:SetSize(size, size)
 	castFrame.iconFrame:ClearAllPoints()
@@ -220,6 +235,9 @@ function Cast:ApplyIconOptions()
 			pcall(castFrame.iconFrame.cooldown.SetSwipeTexture, castFrame.iconFrame.cooldown, IconMask:GetMaskPath())
 		end
 		LayoutSpellIconCooldown()
+		if castFrame.iconFrame.cooldown.SetSwipeColor then
+			castFrame.iconFrame.cooldown:SetSwipeColor(swipeR, swipeG, swipeB, swipeA)
+		end
 		castFrame.iconFrame.cooldown:Show()
 	elseif castFrame.iconFrame.cooldown then
 		castFrame.iconFrame.cooldown:Hide()
@@ -1422,6 +1440,7 @@ local settingKeys = {
 	"spellicon_offsetX",
 	"spellicon_offsetY",
 	"spellicon_castProgressSwipe",
+	"spellicon_castProgressSwipeColor",
 }
 
 for _, key in ipairs(settingKeys) do

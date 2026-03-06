@@ -914,6 +914,12 @@ local function BuildSettingsPanel()
 	AddSlider(iconCategory, "spellicon_offsetX", L["Spell Icon Horizontal Offset"] or "Spell Icon Horizontal Offset", -100, 100, 1)
 	AddSlider(iconCategory, "spellicon_offsetY", L["Spell Icon Vertical Offset"] or "Spell Icon Vertical Offset", -100, 100, 1)
 	AddCheckbox(iconCategory, "spellicon_castProgressSwipe", L["Cast Progress Swipe"] or "Cast Progress Swipe")
+	AddColor(
+		iconCategory,
+		"spellicon_castProgressSwipeColor",
+		L["Cast Progress Swipe Color"] or "Cast Progress Swipe Color",
+		L["Cast Progress Swipe Color Tooltip"] or "Tint color and opacity of the spell icon cast progress swipe"
+	)
 	AddCheckbox(
 		iconCategory,
 		"spellicon_showInstantCasts",

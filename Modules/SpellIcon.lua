@@ -46,6 +46,7 @@ local settingKeys = {
 	"spellicon_offsetX",
 	"spellicon_offsetY",
 	"spellicon_castProgressSwipe",
+	"spellicon_castProgressSwipeColor",
 	"spellicon_showInstantCasts",
 }
 
