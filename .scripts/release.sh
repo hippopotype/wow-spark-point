@@ -62,6 +62,8 @@ rsync -r \
     --exclude='*.bak' \
     --exclude='*.tmp' \
     --exclude='*.log' \
+    --exclude='CHANGELOG.html' \
+    --exclude='CURSEFORGE.html' \
     "$ADDON_DIR/" "$DEST/"
 
 # ── Zip ───────────────────────────────────────────────────────────────────────

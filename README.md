@@ -1,80 +1,124 @@
 <p align="center">
-  <img src="Textures/icon_framed.png" alt="SparkPoint" width="188 " height="188" />
+  <img src="Textures/icon_framed.png" alt="SparkPoint" width="188" height="188" />
 </p>
 
 <h1 align="center">SparkPoint</h1>
 
 <p align="center">
-  Cast rings, cooldown arcs, and class resources — all around your cursor.
+  Cast rings, cooldown arcs, class resources, and assisted-combat cues around your cursor.
 </p>
 
 <p align="center">
-  <!-- Replace with real badges after CurseForge/Wago projects are created -->
-  <img alt="WoW Version" src="https://img.shields.io/badge/WoW-12.x%20Midnight-blue" />
+  <img alt="WoW Version" src="https://img.shields.io/badge/WoW-12.0%2F12.0.1-blue" />
+  <img alt="Version" src="https://img.shields.io/badge/version-1.3.0-green" />
   <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0-blue" />
+  <a href="https://www.curseforge.com/wow/addons/sparkpoint">
+    <img alt="CurseForge" src="https://img.shields.io/badge/CurseForge-SparkPoint-orange" />
+  </a>
 </p>
 
-<!-- TODO: replace with a real GIF or screenshot banner once recorded -->
-
 ---
+
+## Overview
+
+SparkPoint is a lightweight, event-driven WoW addon that keeps important combat feedback near your cursor instead of pushing your eyes back to unit frames or action bars.
+
+It currently includes:
+
+- Cast ring with latency overlay, interrupt feedback, spell text, and click-feedback ring
+- Up to 3 assignable inner ring slots
+- Class resource display in pip or text mode
+- Decorative rotating ring
+- Spell icon with optional cast progress swipe and instant-cast support
+- Assisted Highlight support for Blizzard's suggested-spell system
+- Shared visibility rules, per-module overrides, and optional HUD transitions
+- Cursor-attached mode, fixed anchor mode, minimap button, and profile support
+
+## New In v1.3.0
+
+- Added HUD transition effects with configurable fade timing, easing, and show/hide hysteresis
+- Added visibility control to hide SparkPoint while hovering clickable UI for cleaner world targeting
+- Added customizable background tint colors for the cast ring and inner slot rings
+- Added configurable class resource pip background color
+- Added RGBA color control for the spell icon cast progress swipe
+- Reorganized settings labels for clarity
 
 ## Features
 
 ### Cast Ring
 
-A progress ring that fills around your cursor as you cast. Shows:
+The main cast ring renders around your cursor and supports:
 
-- Cast progress with a moving spark
-- **Latency arc** — a red indicator showing your network lag baked into the cast bar
-- **Interrupt flash** — brief error overlay when a cast is interrupted or fails
-- Optional **spell name text** above the ring (font, size, color, offsets all configurable)
-- Configurable fill color, background opacity, glow, spark color, and frame overlay opacity
-- Reverse fill direction for channeled spells
+- Cast progress with spark
+- Reverse fill for channeled spells
+- Latency arc
+- Interrupt/failure flash
+- Optional spell name text with configurable font, size, outline, color, and offsets
+- Configurable bar, spark, glow, frame, and background tint/opacity
+- Optional class-color override
+- Click-feedback ring for left and right mouse buttons
 
 ### Inner Ring Slots
 
-Up to **3 concentric inner rings** inside the cast ring, each assignable to a data provider:
+SparkPoint supports up to **3 concentric inner slots** inside the cast ring.
 
-- **GCD** — tracks the global cooldown after instant casts
-- More providers planned
+- Each slot can be assigned independently
+- Current provider: **GCD**
+- Each slot has configurable bar color, background tint, opacity, and optional class-color override
 
 ### Class Resource
 
-Displays your class-specific resource directly on your cursor in two modes:
+Displays class-specific resources near your cursor in either **Pips** or **Text** mode.
 
-| Mode     | Description                             |
-| -------- | --------------------------------------- |
-| **Pips** | Visual pip icons for each resource unit |
-| **Text** | Numeric value                           |
+**Pip mode supports:**
+Paladin, Death Knight, Rogue, Druid, Arcane Mage, Windwalker Monk, Warlock, Evoker, and Enhancement Shaman
 
-**Pip mode — supported classes:**
-Paladin · Death Knight · Rogue · Druid · Arcane Mage · Windwalker Monk · Warlock · Evoker · Enhancement Shaman
+**Text mode additionally supports:**
+Demon Hunter, Shadow Priest, Balance Druid, and Elemental Shaman
 
-**Text mode — additionally:**
-Demon Hunter · Shadow Priest · Balance Druid · Elemental Shaman
+Configurable options include:
+
+- Scale and opacity
+- Separate offsets for the resource display
+- Font, size, outline, and color for text mode
+- Fill color, background tint, and class-color override for pip mode
+- Per-module visibility override
 
 ### Decorative Ring
 
-A stylized rotating ring rendered around the cursor. Supports multiple texture variants, optional class-color tinting, and rotation speed control.
+A stylized ring rendered around the cursor with:
+
+- Multiple texture variants
+- Optional rotation
+- Configurable size and color
+- Optional class-color tint with opacity control
+- Per-module visibility override
 
 ### Spell Icon
 
-Displays the icon of the spell currently being cast, positioned below the ring. Optionally shows a **cast progress swipe** (cooldown-style overlay).
+Displays the icon of the currently cast spell below the ring.
+
+- Optional cast-progress swipe
+- Configurable swipe RGBA color
+- Optional instant-cast icon display
+- Configurable size and offsets
 
 ### Assisted Highlight
 
-Shows Blizzard Assisted Combat's next suggested spell as a separate icon near the ring.
+Displays Blizzard Assisted Highlight's suggested spell near the SparkPoint HUD.
 
-- Independent from Spell Icon (both can be shown together)
-- Uses dedicated background/glow/frame layers around a masked spell icon
-- Optional breathing glow animation
-- Optional keybind text (compact/full) with font, outline, size, color, and offset settings
-- Respects module visibility rules
-- Hidden automatically when Blizzard's Assisted Highlight setting is disabled
+- Independent from the spell icon
+- Icon opacity, glow, glow color, and positioning controls
+- Optional breathing glow transition with speed and strength controls
+- Optional keybind text with compact/full format, font, outline, size, opacity, color, and offsets
+- Hidden automatically if Blizzard Assisted Highlight is disabled
+- Per-module visibility override
 
-### Visibility Control
+### Visibility And Transitions
 
-Each module can independently follow the global rule or use its own:
+SparkPoint supports both addon-wide visibility rules and per-module overrides.
+
+Available rules include:
 
 - Always
 - In Combat
@@ -82,56 +126,70 @@ Each module can independently follow the global rule or use its own:
 - Has Target
 - While Casting
 - After Instant Cast
+- In Party
+- In Raid
+- In Instanced Content
 
----
+Additional behavior:
+
+- Optional hide while hovering clickable UI
+- Optional transition system with fade in/out durations, easing, and hysteresis
+
+### Quality Of Life
+
+- Attach to cursor or use a fixed anchor
+- Minimap button with optional fade behavior
+- Global or class-specific profiles
+- Slash commands for settings and anchor control
 
 ## Installation
 
-### Via Addon Manager
+### Addon Manager
 
-SparkPoint will be available on CurseForge and Wago.io. Install via CurseForge App, Wago App, or any compatible addon manager.
+Install from CurseForge:
+
+https://www.curseforge.com/wow/addons/sparkpoint
 
 ### Manual
 
-1. Download the latest `.zip` from the [GitHub Releases](../../releases) page.
-2. Extract to `World of Warcraft/_retail_/Interface/AddOns/`.
-3. The result should be `Interface/AddOns/SparkPoint/SparkPoint.toc`.
-4. Launch WoW and enable the addon in the character select screen.
-
----
+1. Download the latest `.zip` from [GitHub Releases](../../releases).
+2. Extract it to `World of Warcraft/_retail_/Interface/AddOns/`.
+3. Confirm the final path is `Interface/AddOns/SparkPoint/SparkPoint.toc`.
+4. Launch WoW and enable `SparkPoint` at character select.
 
 ## Configuration
 
 ### Slash Commands
 
-| Command                | Action                                      |
-| ---------------------- | ------------------------------------------- |
-| `/sp` or `/sparkpoint` | Open the Settings Panel                     |
-| `/sp unlock`           | Unlock position for manual drag placement   |
-| `/sp lock`             | Lock position (or right-click the anchor)   |
-| `/sp reset`            | Reset position to default (cursor-attached) |
+| Command | Action |
+| ------- | ------ |
+| `/sp` or `/sparkpoint` | Open settings |
+| `/sp unlock` | Unlock the anchor for manual drag placement |
+| `/sp lock` | Lock the anchor |
+| `/sp reset` | Reset to default cursor-attached positioning |
 
-### Settings Panel
+You can also open settings from the minimap button.
 
-Open via `/sp`. All settings are in the standard Blizzard Settings Panel under **SparkPoint**:
+### Settings Layout
 
-- **General** — cursor attachment, anchor offsets, global visibility mode
-- **Cast Ring** — radius, colors, opacity, spark, latency, spell text
-- **Inner Ring Slots** — assign providers and colors to each of the 3 inner slots
-- **Class Resource** — mode (pips/text), font, offsets, scale, opacity, visibility
-- **Decorative Ring** — texture, color, size, rotation, visibility
-- **Spell Icon** — size, offsets, cast progress swipe
-- **Assisted Highlight** — size, offsets, glow toggle/color, visibility, Blizzard CVar status warning
+Open the Blizzard Settings panel via `/sp`. SparkPoint provides sections for:
 
----
+- General
+- Visibility
+- Transition
+- Modules
+- Cast Ring
+- Inner Ring Slots
+- Class Resource
+- Decorative Ring
+- Spell Icon
+- Assisted Highlight
+- Profiles
 
 ## Compatibility
 
-- **WoW version:** 12.x (Midnight)
-- **No external libraries** required (no Ace3, no LibStub)
-- Lightweight — event-driven, no persistent OnUpdate loops
-
----
+- Supported interface versions: `12.0.0` and `12.0.1`
+- No external libraries required
 
 ## License
 

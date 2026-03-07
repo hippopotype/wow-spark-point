@@ -1,0 +1,252 @@
+<p style="text-align: center">
+  <img
+    src="https://raw.githubusercontent.com/hippopotype/wow-spark-point/refs/heads/main/Textures/icon_framed.png"
+    alt="SparkPoint"
+    width="304"
+    height="304"
+  />
+</p>
+
+<h1 style="text-align: center">SparkPoint</h1>
+
+<p style="text-align: center">
+  Cast rings, cooldown arcs, class resources, and assisted-combat cues around
+  your cursor.
+</p>
+
+<hr />
+
+<h2><strong>Overview</strong></h2>
+<p>
+  SparkPoint is a lightweight, event-driven WoW addon that keeps important
+  combat feedback near your cursor instead of pushing your eyes back to unit
+  frames or action bars.
+</p>
+<p>It currently includes:</p>
+<ul>
+  <li>
+    Cast ring with latency overlay, interrupt feedback, spell text, and
+    click-feedback ring
+  </li>
+  <li>Up to 3 assignable inner ring slots</li>
+  <li>Class resource display in pip or text mode</li>
+  <li>Decorative rotating ring</li>
+  <li>Spell icon with optional cast progress swipe and instant-cast support</li>
+  <li>Assisted Highlight support for Blizzard's suggested-spell system</li>
+  <li>Shared visibility rules, per-module overrides, and optional HUD transitions</li>
+  <li>Cursor-attached mode, fixed anchor mode, minimap button, and profile support</li>
+</ul>
+
+<h2><strong>New In v1.3.0</strong></h2>
+<ul>
+  <li>
+    Added HUD transition effects with configurable fade timing, easing, and
+    show/hide hysteresis
+  </li>
+  <li>
+    Added visibility control to hide SparkPoint while hovering clickable UI for
+    cleaner world targeting
+  </li>
+  <li>
+    Added customizable background tint colors for the cast ring and inner slot
+    rings
+  </li>
+  <li>Added configurable class resource pip background color</li>
+  <li>Added RGBA color control for the spell icon cast progress swipe</li>
+  <li>Reorganized settings labels for clarity</li>
+</ul>
+
+<h2><strong>Features</strong></h2>
+
+<h3>Cast Ring</h3>
+<p>The main cast ring renders around your cursor and supports:</p>
+<ul>
+  <li>Cast progress with spark</li>
+  <li>Reverse fill for channeled spells</li>
+  <li>Latency arc</li>
+  <li>Interrupt/failure flash</li>
+  <li>
+    Optional spell name text with configurable font, size, outline, color, and
+    offsets
+  </li>
+  <li>
+    Configurable bar, spark, glow, frame, and background tint/opacity
+  </li>
+  <li>Optional class-color override</li>
+  <li>Click-feedback ring for left and right mouse buttons</li>
+</ul>
+
+<h3>Inner Ring Slots</h3>
+<p>
+  SparkPoint supports up to <strong>3 concentric inner slots</strong> inside
+  the cast ring.
+</p>
+<ul>
+  <li>Each slot can be assigned independently</li>
+  <li>Current provider: <strong>GCD</strong></li>
+  <li>
+    Each slot has configurable bar color, background tint, opacity, and
+    optional class-color override
+  </li>
+</ul>
+
+<h3>Class Resource</h3>
+<p>
+  Displays class-specific resources near your cursor in either
+  <strong>Pips</strong> or <strong>Text</strong> mode.
+</p>
+<p>
+  <strong>Pip mode supports:</strong> Paladin, Death Knight, Rogue, Druid,
+  Arcane Mage, Windwalker Monk, Warlock, Evoker, and Enhancement Shaman
+</p>
+<p>
+  <strong>Text mode additionally supports:</strong> Demon Hunter, Shadow
+  Priest, Balance Druid, and Elemental Shaman
+</p>
+<p>Configurable options include:</p>
+<ul>
+  <li>Scale and opacity</li>
+  <li>Separate offsets for the resource display</li>
+  <li>Font, size, outline, and color for text mode</li>
+  <li>Fill color, background tint, and class-color override for pip mode</li>
+  <li>Per-module visibility override</li>
+</ul>
+
+<h3>Decorative Ring</h3>
+<p>A stylized ring rendered around the cursor with:</p>
+<ul>
+  <li>Multiple texture variants</li>
+  <li>Optional rotation</li>
+  <li>Configurable size and color</li>
+  <li>Optional class-color tint with opacity control</li>
+  <li>Per-module visibility override</li>
+</ul>
+
+<h3>Spell Icon</h3>
+<p>Displays the icon of the currently cast spell below the ring.</p>
+<ul>
+  <li>Optional cast-progress swipe</li>
+  <li>Configurable swipe RGBA color</li>
+  <li>Optional instant-cast icon display</li>
+  <li>Configurable size and offsets</li>
+</ul>
+
+<h3>Assisted Highlight</h3>
+<p>
+  Displays Blizzard Assisted Highlight's suggested spell near the SparkPoint
+  HUD.
+</p>
+<ul>
+  <li>Independent from the spell icon</li>
+  <li>Icon opacity, glow, glow color, and positioning controls</li>
+  <li>
+    Optional breathing glow transition with speed and strength controls
+  </li>
+  <li>
+    Optional keybind text with compact/full format, font, outline, size,
+    opacity, color, and offsets
+  </li>
+  <li>Hidden automatically if Blizzard Assisted Highlight is disabled</li>
+  <li>Per-module visibility override</li>
+</ul>
+
+<h3>Visibility And Transitions</h3>
+<p>
+  SparkPoint supports both addon-wide visibility rules and per-module
+  overrides.
+</p>
+<p>Available rules include:</p>
+<ul>
+  <li>Always</li>
+  <li>In Combat</li>
+  <li>Out of Combat</li>
+  <li>Has Target</li>
+  <li>While Casting</li>
+  <li>After Instant Cast</li>
+  <li>In Party</li>
+  <li>In Raid</li>
+  <li>In Instanced Content</li>
+</ul>
+<p>Additional behavior:</p>
+<ul>
+  <li>Optional hide while hovering clickable UI</li>
+  <li>
+    Optional transition system with fade in/out durations, easing, and
+    hysteresis
+  </li>
+</ul>
+
+<h3>Quality Of Life</h3>
+<ul>
+  <li>Attach to cursor or use a fixed anchor</li>
+  <li>Minimap button with optional fade behavior</li>
+  <li>Global or class-specific profiles</li>
+  <li>Slash commands for settings and anchor control</li>
+</ul>
+
+<hr />
+
+<h2><strong>Configuration</strong></h2>
+
+<h3>Slash Commands</h3>
+<table style="width: 100%">
+  <thead>
+    <tr>
+      <th style="text-align: left">Command</th>
+      <th style="text-align: left">Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>/sp</code> or <code>/sparkpoint</code></td>
+      <td>Open settings</td>
+    </tr>
+    <tr>
+      <td><code>/sp unlock</code></td>
+      <td>Unlock the anchor for manual drag placement</td>
+    </tr>
+    <tr>
+      <td><code>/sp lock</code></td>
+      <td>Lock the anchor</td>
+    </tr>
+    <tr>
+      <td><code>/sp reset</code></td>
+      <td>Reset to default cursor-attached positioning</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>You can also open settings from the minimap button.</p>
+
+<h3>Settings Layout</h3>
+<p>
+  Open the Blizzard Settings panel via <code>/sp</code>. SparkPoint provides
+  sections for:
+</p>
+<ul>
+  <li>General</li>
+  <li>Visibility</li>
+  <li>Transition</li>
+  <li>Modules</li>
+  <li>Cast Ring</li>
+  <li>Inner Ring Slots</li>
+  <li>Class Resource</li>
+  <li>Decorative Ring</li>
+  <li>Spell Icon</li>
+  <li>Assisted Highlight</li>
+  <li>Profiles</li>
+</ul>
+
+<hr />
+
+<h2><strong>Compatibility</strong></h2>
+<ul>
+  <li>Supported interface versions: <code>12.0.0</code> and <code>12.0.1</code></li>
+  <li>No external libraries required</li>
+  <li>Event-driven design with no heavy persistent update loops</li>
+</ul>
+
+<hr />
+
+<h2><strong>License</strong></h2>
+<p><a href="https://github.com/hippopotype/wow-spark-point/blob/main/LICENSE">GPL-3.0</a></p>
