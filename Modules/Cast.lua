@@ -657,6 +657,16 @@ local function GetSpellIconSwipeColor(mode)
 	return color.r or 1, color.g or 1, color.b or 1, color.a or 1
 end
 
+local function ActivateAfterInstantCastVisibility(duration)
+	if not Visibility or not Visibility.ActivateAfterInstantCastWindow then
+		return
+	end
+
+	if Visibility:ActivateAfterInstantCastWindow(duration) then
+		CallbackRegistry:Trigger("VisibilityContextChanged", "SPELL_ICON_FEEDBACK_AFTER_INSTANT_CAST")
+	end
+end
+
 function Cast:SetSpellIconEnabled(enabled)
 	spellIconEnabled = enabled == true
 	if castFrame and castFrame.iconFrame then
@@ -862,6 +872,7 @@ local function ShowFailedAttemptIcon(spellID)
 	if GetFailedAttemptFeedbackStyle() ~= "ERROR_ICON" then
 		return
 	end
+	ActivateAfterInstantCastVisibility(FAILED_ATTEMPT_FEEDBACK_DURATION)
 	ShowSpellIconFeedback(spellID, {
 		requireInstant = false,
 		isConfirmed = false,
@@ -880,6 +891,7 @@ ShowCooldownBlockedIcon = function(spellID, cooldownStart, cooldownDuration)
 		return
 	end
 
+	ActivateAfterInstantCastVisibility(remaining)
 	ShowSpellIconFeedback(spellID, {
 		requireInstant = false,
 		isConfirmed = false,

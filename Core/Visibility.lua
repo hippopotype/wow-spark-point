@@ -43,6 +43,7 @@ local VisibilityRuleOrder = {
 local GCD_SPELL_ID = 61304
 local MAX_GCD_WINDOW = 2
 local FALLBACK_AFTER_INSTANT_CAST_DURATION = 1.0
+local MAX_SYNTHETIC_AFTER_INSTANT_CAST_DURATION = 2.0
 local afterInstantCastActive = false
 local afterInstantCastExpiry = 0
 local afterInstantCastTimerToken = 0
@@ -169,6 +170,23 @@ end
 
 function Visibility:GetInstantCastFallbackDuration()
 	return FALLBACK_AFTER_INSTANT_CAST_DURATION
+end
+
+function Visibility:ActivateAfterInstantCastWindow(duration)
+	duration = tonumber(duration) or 0
+	if duration <= 0 then
+		duration = FALLBACK_AFTER_INSTANT_CAST_DURATION
+	end
+	if duration > MAX_SYNTHETIC_AFTER_INSTANT_CAST_DURATION then
+		duration = MAX_SYNTHETIC_AFTER_INSTANT_CAST_DURATION
+	end
+
+	local nextExpiry = GetTime() + duration
+	if self:IsAfterInstantCastActive() and type(afterInstantCastExpiry) == "number" and afterInstantCastExpiry > nextExpiry then
+		nextExpiry = afterInstantCastExpiry
+	end
+
+	return SetAfterInstantCastState(true, nextExpiry)
 end
 
 function Visibility:HandleUnitSpellcastSucceeded(unit, castGUID, spellID)
