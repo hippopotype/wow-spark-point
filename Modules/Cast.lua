@@ -19,6 +19,7 @@ local SlotRingWidget = addon.SlotRingWidget
 local SlotProviders = addon.SlotProviders
 
 local Cast
+local SPELL_ICON_COOLDOWN_SWIPE_PATH = addon.addonFolder .. "\\Textures\\spell_icon_cooldown_swipe.png"
 local SPELL_ICON_ERROR_PATH = addon.addonFolder .. "\\Textures\\spell_icon_error.png"
 local CAST_FEEDBACK_PATH = addon.addonFolder .. "\\Textures\\cast_feedback.png"
 local SPELL_ICON_MASK_BASE_EXPAND = 6
@@ -704,7 +705,7 @@ function Cast:ApplyIconOptions()
 			castFrame.iconFrame.cooldown = CreateFrame("Cooldown", nil, castFrame.iconFrame, "CooldownFrameTemplate")
 			castFrame.iconFrame.cooldown:SetDrawEdge(false)
 			castFrame.iconFrame.cooldown:SetHideCountdownNumbers(true)
-			pcall(castFrame.iconFrame.cooldown.SetSwipeTexture, castFrame.iconFrame.cooldown, IconMask:GetMaskPath())
+			pcall(castFrame.iconFrame.cooldown.SetSwipeTexture, castFrame.iconFrame.cooldown, SPELL_ICON_COOLDOWN_SWIPE_PATH)
 		end
 		LayoutSpellIconCooldown()
 		if castFrame.iconFrame.cooldown.SetSwipeColor then
@@ -2076,7 +2077,7 @@ function Cast:Initialize()
 		castFrame.iconFrame.cooldown = CreateFrame("Cooldown", nil, castFrame.iconFrame, "CooldownFrameTemplate")
 		castFrame.iconFrame.cooldown:SetDrawEdge(false)
 		castFrame.iconFrame.cooldown:SetHideCountdownNumbers(true)
-		pcall(castFrame.iconFrame.cooldown.SetSwipeTexture, castFrame.iconFrame.cooldown, IconMask:GetMaskPath())
+		pcall(castFrame.iconFrame.cooldown.SetSwipeTexture, castFrame.iconFrame.cooldown, SPELL_ICON_COOLDOWN_SWIPE_PATH)
 		LayoutSpellIconCooldown()
 		castFrame.iconFrame.cooldown:Hide()
 	end
