@@ -28,11 +28,10 @@ SparkPoint is a World of Warcraft addon that displays cast rings and class power
 /console scriptErrors 1
 
 # Access addon configuration:
-/sp           # Opens Blizzard Settings Panel
-/sparkpoint   # Same as /sp
-/sp unlock    # Unlock position for manual placement
-/sp lock      # Lock position
-/sp reset     # Reset position to defaults
+/sparkpoint           # Opens Blizzard Settings Panel
+/sparkpoint unlock    # Unlock position for manual placement
+/sparkpoint lock      # Lock position
+/sparkpoint reset     # Reset position to defaults
 ```
 
 ## Dev Tooling

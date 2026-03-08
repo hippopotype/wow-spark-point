@@ -45,8 +45,8 @@ SparkPoint/
 - Reload in-game after edits: `/reload` (or `/reloadui`).
 - For `.toc` changes, exit and relaunch WoW to ensure load order updates apply.
 - Enable Lua error reporting: `/console scriptErrors 1`
-- Access settings: `/sp` or `/sparkpoint`
-- Unlock position: `/sp unlock` (right-click to lock)
+- Access settings: `/sparkpoint`
+- Unlock position: `/sparkpoint unlock` (right-click to lock)
 
 ## Dev Tooling (CLI)
 

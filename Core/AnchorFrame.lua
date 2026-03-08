@@ -357,8 +357,7 @@ end
 --------------------------------------------------------------------------------
 -- Slash Commands
 --------------------------------------------------------------------------------
-SLASH_SPARKPOINT1 = "/sp"
-SLASH_SPARKPOINT2 = "/sparkpoint"
+SLASH_SPARKPOINT1 = "/sparkpoint"
 
 SlashCmdList["SPARKPOINT"] = function(msg)
 	msg = msg:lower():trim()

@@ -163,16 +163,16 @@ https://www.curseforge.com/wow/addons/sparkpoint
 
 | Command | Action |
 | ------- | ------ |
-| `/sp` or `/sparkpoint` | Open settings |
-| `/sp unlock` | Unlock the anchor for manual drag placement |
-| `/sp lock` | Lock the anchor |
-| `/sp reset` | Reset to default cursor-attached positioning |
+| `/sparkpoint` | Open settings |
+| `/sparkpoint unlock` | Unlock the anchor for manual drag placement |
+| `/sparkpoint lock` | Lock the anchor |
+| `/sparkpoint reset` | Reset to default cursor-attached positioning |
 
 You can also open settings from the minimap button.
 
 ### Settings Layout
 
-Open the Blizzard Settings panel via `/sp`. SparkPoint provides sections for:
+Open the Blizzard Settings panel via `/sparkpoint`. SparkPoint provides sections for:
 
 - General
 - Visibility
