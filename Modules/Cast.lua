@@ -654,6 +654,11 @@ local function GetSpellIconSwipeColor(mode)
 		return 1, 1, 1, 1
 	end
 
+	if mode == "cooldownBlocked" and GetDBBool("spellicon_cooldownBlockedUseClassColor") then
+		local r, g, b = API.GetPlayerClassColor()
+		return r or 1, g or 1, b or 1, color.a or 1
+	end
+
 	return color.r or 1, color.g or 1, color.b or 1, color.a or 1
 end
 
@@ -2214,6 +2219,7 @@ local settingKeys = {
 	"spellicon_offsetY",
 	"spellicon_castProgressSwipe",
 	"spellicon_castProgressSwipeColor",
+	"spellicon_cooldownBlockedUseClassColor",
 	"spellicon_cooldownBlockedSwipeColor",
 }
 
