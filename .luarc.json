@@ -25,6 +25,9 @@
     "GameTooltip",
     "Enum",
     "EventRegistry",
+    "FindBaseSpellByID",
+    "FindSpellOverrideByID",
+    "GetActionInfo",
     "GetCursorPosition",
     "GetBindingKey",
     "GetBindingText",
@@ -67,6 +70,8 @@
     "UnitChannelInfo",
     "UnitClass",
     "UnitExists",
+    "UseAction",
+    "hooksecurefunc",
     "UnitPower",
     "UnitPowerMax",
     "WorldFrame"

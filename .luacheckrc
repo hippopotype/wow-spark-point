@@ -18,7 +18,9 @@ globals = {
     "EditModeManagerFrame",
     "GameTooltip",
     "EventRegistry",
+    "FindBaseSpellByID", "FindSpellOverrideByID",
     "GetBindingKey", "GetBindingText", "GetCursorPosition", "GetCVar", "GetCVarBool", "GetMouseFoci", "GetMouseFocus", "GetNetStats", "GetRuneCooldown", "GetSpecialization", "GetTime",
+    "GetActionInfo",
     "GetMinimapShape",
     "GRAY_FONT_COLOR",
     "InCombatLockdown",
@@ -35,6 +37,7 @@ globals = {
     "StaticPopup_Show", "StaticPopupDialogs", "STATICPOPUP_NUMDIALOGS",
     "UIParent",
     "UnitAffectingCombat", "UnitCastingInfo", "UnitChannelInfo", "UnitClass", "UnitExists",
+    "UseAction", "hooksecurefunc",
     "UnitPower", "UnitPowerMax",
     "WorldFrame",
     -- WoW locale strings

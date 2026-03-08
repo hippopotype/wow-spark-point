@@ -53,9 +53,14 @@ local instantIconActive = false
 local instantIconExpiry = 0
 local instantIconForcedShell = false
 local instantIconConfirmed = false
+local pendingInstantResolvedSpellID
+local pendingInstantAt = 0
+local pendingInstantToken = 0
 local interruptFlashToken = 0
 local interruptFlashActive = false
 local INTERRUPT_FLASH_DURATION = 0.2
+local INSTANT_SENT_FALLBACK_DELAY = 0.12
+local INSTANT_PENDING_WINDOW = 0.75
 local CAST_OVERLAY_DEFAULT = "cast_glow"
 local CAST_OVERLAY_INTERRUPT = "cast_error"
 
@@ -121,6 +126,173 @@ end
 
 local function IsCastVisibilityAllowed()
 	return (not Visibility) or Visibility:ShouldShow("cast")
+end
+
+local function ShouldBypassHoverHideForInstantIcon()
+	if not Visibility then
+		return false
+	end
+	if not instantIconActive or isCasting or interruptFlashActive then
+		return false
+	end
+	if not GetDBBool("spellicon_showInstantCasts") or not spellIconEnabled then
+		return false
+	end
+	if not Visibility:ShouldHideOnUIHover() then
+		return false
+	end
+	if not Visibility:GetModuleHideOnUIHover("cast") then
+		return false
+	end
+	return Visibility:EvaluateRules(Visibility:GetModuleRules("cast"))
+end
+
+local function IsInstantIconVisibilityAllowed()
+	if IsCastVisibilityAllowed() then
+		return true
+	end
+	return ShouldBypassHoverHideForInstantIcon()
+end
+
+local function NormalizeSpellID(spellID)
+	local numeric = tonumber(spellID)
+	if numeric and numeric > 0 then
+		return numeric
+	end
+	return nil
+end
+
+local function GetBaseSpellID(spellID)
+	local normalized = NormalizeSpellID(spellID)
+	if not normalized or not FindBaseSpellByID then
+		return normalized
+	end
+
+	local _, baseSpellID = pcall(FindBaseSpellByID, normalized)
+	baseSpellID = NormalizeSpellID(baseSpellID)
+	return baseSpellID or normalized
+end
+
+local function GetOverrideSpellID(spellID)
+	local normalized = NormalizeSpellID(spellID)
+	if not normalized or not FindSpellOverrideByID then
+		return normalized
+	end
+
+	local ok, overrideSpellID = pcall(FindSpellOverrideByID, normalized)
+	if not ok then
+		return normalized
+	end
+	overrideSpellID = NormalizeSpellID(overrideSpellID)
+	return overrideSpellID or normalized
+end
+
+local function BuildSpellCandidateList(spellID)
+	local normalized = NormalizeSpellID(spellID)
+	local candidates = {}
+	local seen = {}
+
+	local function AddCandidate(candidate)
+		candidate = NormalizeSpellID(candidate)
+		if not candidate or seen[candidate] then
+			return
+		end
+		seen[candidate] = true
+		candidates[#candidates + 1] = candidate
+	end
+
+	if normalized then
+		local baseSpellID = GetBaseSpellID(normalized)
+		local overrideSpellID = GetOverrideSpellID(normalized)
+		AddCandidate(overrideSpellID)
+		AddCandidate(normalized)
+		AddCandidate(baseSpellID)
+		AddCandidate(GetOverrideSpellID(baseSpellID))
+		AddCandidate(GetBaseSpellID(overrideSpellID))
+	end
+
+	return candidates
+end
+
+local function GetFirstActionSlotForSpell(spellID)
+	if not (spellID and C_ActionBar and C_ActionBar.FindSpellActionButtons) then
+		return nil
+	end
+
+	local slots = C_ActionBar.FindSpellActionButtons(spellID)
+	if type(slots) ~= "table" then
+		return nil
+	end
+
+	local firstSlot
+	for _, value in ipairs(slots) do
+		local slot = tonumber(value)
+		if slot and slot > 0 and (not firstSlot or slot < firstSlot) then
+			firstSlot = slot
+		end
+	end
+	for key, value in pairs(slots) do
+		local slot
+		if type(value) == "number" then
+			slot = value
+		elseif value == true and type(key) == "number" then
+			slot = key
+		end
+		if slot and slot > 0 and (not firstSlot or slot < firstSlot) then
+			firstSlot = slot
+		end
+	end
+
+	return firstSlot
+end
+
+local function GetActionSpellID(slot)
+	local actionSlot = tonumber(slot)
+	if not actionSlot or actionSlot <= 0 or not GetActionInfo then
+		return nil
+	end
+
+	local actionType, id, subType = GetActionInfo(actionSlot)
+	if actionType == "spell" then
+		return NormalizeSpellID(id)
+	end
+	if actionType == "macro" and subType == "spell" then
+		return NormalizeSpellID(id)
+	end
+	return nil
+end
+
+local function ResolvePlayerFacingSpellID(spellID)
+	local candidates = BuildSpellCandidateList(spellID)
+	for _, candidate in ipairs(candidates) do
+		local slot = GetFirstActionSlotForSpell(candidate)
+		if slot then
+			local actionSpellID = GetActionSpellID(slot)
+			if actionSpellID then
+				return GetOverrideSpellID(actionSpellID)
+			end
+			return candidate
+		end
+	end
+
+	for _, candidate in ipairs(candidates) do
+		local info = C_Spell.GetSpellInfo(candidate)
+		if info then
+			return candidate
+		end
+	end
+
+	return NormalizeSpellID(spellID)
+end
+
+local function ClearPendingInstantIntent()
+	pendingInstantResolvedSpellID = nil
+	pendingInstantAt = 0
+	pendingInstantToken = pendingInstantToken + 1
+end
+
+local function HasFreshPendingInstantIntent()
+	return pendingInstantResolvedSpellID and pendingInstantAt > 0 and (GetTime() - pendingInstantAt) <= INSTANT_PENDING_WINDOW
 end
 
 local function ShowCastFrame(opts)
@@ -207,6 +379,7 @@ end
 -- Event Frame
 --------------------------------------------------------------------------------
 local EL = CreateFrame("Frame")
+local actionIntentHookInstalled = false
 
 --------------------------------------------------------------------------------
 -- Cast Module Object
@@ -335,7 +508,7 @@ function Cast:UpdateSpellIcon()
 		castFrame.iconFrame:Hide()
 		return
 	end
-	if not IsCastVisibilityAllowed() or not castFrame:IsShown() then
+	if not IsInstantIconVisibilityAllowed() or not castFrame:IsShown() then
 		castFrame.iconFrame:Hide()
 		return
 	end
@@ -380,18 +553,13 @@ local function ClearInstantIcon(reason)
 	end
 end
 
-local function ShowInstantSpellIcon(spellID, fromSucceeded)
-	if not GetDBBool("spellicon_showInstantCasts") then
-		return
-	end
-	if not spellIconEnabled then
-		return
-	end
-	if not spellID then
+local function ShowInstantSpellIcon(spellID, isConfirmed)
+	local resolvedSpellID = ResolvePlayerFacingSpellID(spellID)
+	if not resolvedSpellID then
 		return
 	end
 
-	local info = C_Spell.GetSpellInfo(spellID)
+	local info = C_Spell.GetSpellInfo(resolvedSpellID)
 	if not info then
 		return
 	end
@@ -399,22 +567,22 @@ local function ShowInstantSpellIcon(spellID, fromSucceeded)
 		return
 	end
 
-	-- SENT-based previews must not override a confirmed (SUCCEEDED) icon.
-	if instantIconConfirmed and not fromSucceeded then
+	-- A low-confidence preview must not override a confirmed icon.
+	if instantIconConfirmed and not isConfirmed then
 		return
 	end
 
-	currentSpellID = spellID
+	currentSpellID = resolvedSpellID
 	currentSpellName = info.name or currentSpellName
 	currentSpellTexture = info.iconID or currentSpellTexture
 	instantIconActive = true
-	if fromSucceeded then
+	if isConfirmed then
 		instantIconConfirmed = true
 	end
 
 	-- Instant casts have no cast bar start event, so the cast shell parent may still be hidden.
 	-- Temporarily show it so the child icon frame can render, then restore via UpdateShellVisibility().
-	if castFrame and (not castFrame:IsShown()) and IsCastVisibilityAllowed() then
+	if castFrame and (not castFrame:IsShown()) and IsInstantIconVisibilityAllowed() then
 		instantIconForcedShell = true
 		ShowCastFrame()
 	end
@@ -424,10 +592,95 @@ local function ShowInstantSpellIcon(spellID, fromSucceeded)
 	local _, gcdDuration = API.GetSpellCooldown(61304)
 	local duration = tonumber(gcdDuration) or 0
 	if duration <= 0 or duration > 2 then
-		duration = 0.35
+		if Visibility and Visibility.GetAfterInstantCastRemaining then
+			duration = Visibility:GetAfterInstantCastRemaining()
+		end
+	end
+	if duration <= 0 and Visibility and Visibility.GetInstantCastFallbackDuration then
+		duration = Visibility:GetInstantCastFallbackDuration()
+	end
+	if duration <= 0 then
+		duration = 1.0
 	end
 	-- Expiry is checked each frame in OnUpdate; no timer closure needed.
 	instantIconExpiry = GetTime() + duration
+end
+
+local function TryShowPendingInstantSpell(token)
+	if token ~= pendingInstantToken then
+		return
+	end
+	if not GetDBBool("spellicon_showInstantCasts") then
+		return
+	end
+	if not spellIconEnabled then
+		return
+	end
+	if isCasting or interruptFlashActive then
+		return
+	end
+	if UnitCastingInfo("player") or UnitChannelInfo("player") then
+		return
+	end
+	if not HasFreshPendingInstantIntent() then
+		return
+	end
+
+	ShowInstantSpellIcon(pendingInstantResolvedSpellID, false)
+end
+
+local function RecordPendingInstantIntent(spellID)
+	ClearPendingInstantIntent()
+
+	if not GetDBBool("spellicon_showInstantCasts") then
+		return
+	end
+	if not spellIconEnabled then
+		return
+	end
+
+	local resolvedSpellID = ResolvePlayerFacingSpellID(spellID)
+	if not resolvedSpellID then
+		return
+	end
+
+	local info = C_Spell.GetSpellInfo(resolvedSpellID)
+	if not info or (info.castTime or 0) > 0 then
+		return
+	end
+
+	pendingInstantResolvedSpellID = resolvedSpellID
+	pendingInstantAt = GetTime()
+
+	local token = pendingInstantToken
+	C_Timer.After(INSTANT_SENT_FALLBACK_DELAY, function()
+		TryShowPendingInstantSpell(token)
+	end)
+end
+
+local function InstallActionIntentHook()
+	if actionIntentHookInstalled or not hooksecurefunc or not UseAction then
+		return
+	end
+
+	hooksecurefunc("UseAction", function(slot, checkCursor, onSelf)
+		if not moduleEnabled then
+			return
+		end
+		if isCasting or interruptFlashActive then
+			return
+		end
+		if UnitCastingInfo("player") or UnitChannelInfo("player") then
+			return
+		end
+
+		local actionSpellID = GetActionSpellID(slot)
+		if actionSpellID then
+			RecordPendingInstantIntent(actionSpellID)
+		end
+	end)
+
+	actionIntentHookInstalled = true
 end
 
 function Cast:UpdateIconCooldown()
@@ -652,7 +905,7 @@ function Cast:UpdateShellVisibility()
 		return
 	end
 
-	local allowed = moduleEnabled and IsCastVisibilityAllowed()
+	local allowed = moduleEnabled and (IsCastVisibilityAllowed() or ShouldBypassHoverHideForInstantIcon())
 	if not allowed then
 		HideCastFrame(ClearCastShellVisuals)
 		return
@@ -719,6 +972,7 @@ function Cast:Hide()
 		return
 	end
 
+	ClearPendingInstantIntent()
 	interruptFlashToken = interruptFlashToken + 1
 	interruptFlashActive = false
 	isCasting = false
@@ -832,9 +1086,8 @@ function Cast:UNIT_SPELLCAST_SENT(event, unit, target, castGUID, spellID)
 	end
 	castSent = GetTime() * 1000
 
-	-- SENT fires earlier than SUCCEEDED for instant abilities; pre-show to avoid visible lag.
 	if not isCasting and not interruptFlashActive and not UnitCastingInfo("player") and not UnitChannelInfo("player") then
-		ShowInstantSpellIcon(spellID, false)
+		RecordPendingInstantIntent(spellID)
 	end
 end
 
@@ -846,6 +1099,7 @@ function Cast:UNIT_SPELLCAST_START(event, unit, castGUID, spellID)
 	instantIconExpiry = 0
 	instantIconForcedShell = false
 	instantIconConfirmed = false
+	ClearPendingInstantIntent()
 	interruptFlashToken = interruptFlashToken + 1
 	interruptFlashActive = false
 
@@ -884,6 +1138,7 @@ function Cast:UNIT_SPELLCAST_STOP(event, unit, castGUID, spellID)
 	if unit ~= "player" then
 		return
 	end
+	ClearPendingInstantIntent()
 	if not isCasting then
 		return
 	end
@@ -899,6 +1154,7 @@ function Cast:UNIT_SPELLCAST_INTERRUPTED(event, unit, castGUID, spellID)
 	if unit ~= "player" then
 		return
 	end
+	ClearPendingInstantIntent()
 	if not isCasting then
 		return
 	end
@@ -911,6 +1167,7 @@ function Cast:UNIT_SPELLCAST_FAILED(event, unit, castGUID, spellID)
 	if unit ~= "player" then
 		return
 	end
+	ClearPendingInstantIntent()
 	if not isCasting then
 		return
 	end
@@ -923,6 +1180,7 @@ function Cast:UNIT_SPELLCAST_FAILED_QUIET(event, unit, castGUID, spellID)
 	if unit ~= "player" then
 		return
 	end
+	ClearPendingInstantIntent()
 	if not isCasting then
 		return
 	end
@@ -953,6 +1211,7 @@ function Cast:UNIT_SPELLCAST_CHANNEL_START(event, unit, castGUID, spellID)
 	instantIconExpiry = 0
 	instantIconForcedShell = false
 	instantIconConfirmed = false
+	ClearPendingInstantIntent()
 	interruptFlashToken = interruptFlashToken + 1
 	interruptFlashActive = false
 
@@ -1027,8 +1286,13 @@ function Cast:UNIT_SPELLCAST_SUCCEEDED(event, unit, castGUID, spellID)
 		return
 	end
 
-	-- Refresh/confirm the instant icon window after cooldown data settles.
-	ShowInstantSpellIcon(spellID, true)
+	local displaySpellID = ResolvePlayerFacingSpellID(spellID)
+	if HasFreshPendingInstantIntent() then
+		displaySpellID = pendingInstantResolvedSpellID or displaySpellID
+	end
+
+	ClearPendingInstantIntent()
+	ShowInstantSpellIcon(displaySpellID, true)
 end
 
 -- Evoker Empower support
@@ -1391,6 +1655,7 @@ function Cast:Initialize()
 	end)
 
 	spellIconEnabled = addon.GetDBBool("moduleEnabled_SpellIcon")
+	InstallActionIntentHook()
 	self:ApplyOptions()
 	self:ApplyIconOptions()
 	self:ApplySlotAssignments()

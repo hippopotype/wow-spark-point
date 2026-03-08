@@ -3,6 +3,7 @@
 
 local _, addon = ...
 local API = addon.API
+local Visibility = addon.Visibility
 
 --------------------------------------------------------------------------------
 -- Provider State
@@ -139,7 +140,43 @@ local function ResolveGCDSpellID(spellID)
 	return spellID
 end
 
-local function UpdateTrackingFromSpellCooldown(spellID)
+local function HasActiveTrackingWindow()
+	return isTracking and gcdStartTime and gcdDuration and gcdDuration > 0 and (GetTime() - gcdStartTime) < gcdDuration
+end
+
+local function StartTrackingWindow(startTime, duration)
+	gcdStartTime = startTime
+	gcdDuration = duration
+	isTracking = true
+end
+
+local function StartFallbackTracking(spellID)
+	if not spellID then
+		return false
+	end
+
+	local info = C_Spell.GetSpellInfo(spellID)
+	if not info or (info.castTime or 0) > 0 then
+		return false
+	end
+
+	local duration = 0
+	if Visibility and Visibility.GetAfterInstantCastRemaining then
+		duration = Visibility:GetAfterInstantCastRemaining()
+	end
+	if (not duration or duration <= 0) and Visibility and Visibility.GetInstantCastFallbackDuration then
+		duration = Visibility:GetInstantCastFallbackDuration()
+	end
+	duration = tonumber(duration) or 0
+	if duration <= 0 then
+		return false
+	end
+
+	StartTrackingWindow(GetTime(), duration)
+	return true
+end
+
+local function UpdateTrackingFromSpellCooldown(spellID, allowFallback)
 	local id = ResolveGCDSpellID(spellID)
 	if not id then
 		return
@@ -147,9 +184,11 @@ local function UpdateTrackingFromSpellCooldown(spellID)
 
 	local start, duration = API.GetSpellCooldown(id)
 	if CooldownActive(start, duration) and duration <= 1.5 then
-		gcdStartTime = start
-		gcdDuration = duration
-		isTracking = true
+		StartTrackingWindow(start, duration)
+	elseif allowFallback and StartFallbackTracking(spellID) then
+		return
+	elseif HasActiveTrackingWindow() then
+		return
 	else
 		isTracking = false
 	end
@@ -166,7 +205,7 @@ function GCDProvider:UNIT_SPELLCAST_START(event, unit, castGUID, spellID)
 	if unit ~= "player" then
 		return
 	end
-	UpdateTrackingFromSpellCooldown(spellID)
+	UpdateTrackingFromSpellCooldown(spellID, false)
 end
 
 function GCDProvider:UNIT_SPELLCAST_SUCCEEDED(event, unit, castGUID, spellID)
@@ -174,7 +213,7 @@ function GCDProvider:UNIT_SPELLCAST_SUCCEEDED(event, unit, castGUID, spellID)
 		return
 	end
 
-	UpdateTrackingFromSpellCooldown(spellID)
+	UpdateTrackingFromSpellCooldown(spellID, true)
 
 	-- Instant casts often populate the GCD cooldown on the next update tick.
 	C_Timer.After(0, function()

@@ -42,9 +42,11 @@ local VisibilityRuleOrder = {
 
 local GCD_SPELL_ID = 61304
 local MAX_GCD_WINDOW = 2
+local FALLBACK_AFTER_INSTANT_CAST_DURATION = 1.0
 local afterInstantCastActive = false
 local afterInstantCastExpiry = 0
 local afterInstantCastTimerToken = 0
+local ScheduleAfterInstantCastExpiryCheck
 local hoverWatcher
 local lastHoveringInteractiveUI = false
 local UI_HOVER_PREFIXES = { "cast", "classresource", "ring", "assistedhighlight" }
@@ -89,7 +91,21 @@ local function IsValidGCDCooldown(startTime, duration)
 	return type(startTime) == "number" and type(duration) == "number" and startTime > 0 and duration > 0 and duration <= MAX_GCD_WINDOW
 end
 
-local function ScheduleAfterInstantCastExpiryCheck()
+local function SetAfterInstantCastState(shouldBeActive, nextExpiry)
+	local changed = (afterInstantCastActive ~= shouldBeActive) or (shouldBeActive and math.abs((afterInstantCastExpiry or 0) - (nextExpiry or 0)) > 0.001)
+	afterInstantCastActive = shouldBeActive
+	afterInstantCastExpiry = shouldBeActive and nextExpiry or 0
+
+	if changed and afterInstantCastActive then
+		ScheduleAfterInstantCastExpiryCheck()
+	elseif changed and not afterInstantCastActive then
+		afterInstantCastTimerToken = afterInstantCastTimerToken + 1
+	end
+
+	return changed
+end
+
+ScheduleAfterInstantCastExpiryCheck = function()
 	if not afterInstantCastActive then
 		return
 	end
@@ -131,17 +147,7 @@ function Visibility:RefreshAfterInstantCastTracking(event)
 		nextExpiry = 0
 	end
 
-	local changed = (afterInstantCastActive ~= shouldBeActive) or (shouldBeActive and math.abs((afterInstantCastExpiry or 0) - nextExpiry) > 0.001)
-	afterInstantCastActive = shouldBeActive
-	afterInstantCastExpiry = nextExpiry
-
-	if changed and afterInstantCastActive then
-		ScheduleAfterInstantCastExpiryCheck()
-	elseif changed and not afterInstantCastActive then
-		afterInstantCastTimerToken = afterInstantCastTimerToken + 1
-	end
-
-	return changed
+	return SetAfterInstantCastState(shouldBeActive, nextExpiry)
 end
 
 function Visibility:IsAfterInstantCastActive()
@@ -152,6 +158,17 @@ function Visibility:IsAfterInstantCastActive()
 		return false
 	end
 	return GetTime() < afterInstantCastExpiry
+end
+
+function Visibility:GetAfterInstantCastRemaining()
+	if not self:IsAfterInstantCastActive() then
+		return 0
+	end
+	return math.max(0, (afterInstantCastExpiry or 0) - GetTime())
+end
+
+function Visibility:GetInstantCastFallbackDuration()
+	return FALLBACK_AFTER_INSTANT_CAST_DURATION
 end
 
 function Visibility:HandleUnitSpellcastSucceeded(unit, castGUID, spellID)
@@ -171,6 +188,9 @@ function Visibility:HandleUnitSpellcastSucceeded(unit, castGUID, spellID)
 	end
 
 	local changed = self:RefreshAfterInstantCastTracking("UNIT_SPELLCAST_SUCCEEDED")
+	if not self:IsAfterInstantCastActive() then
+		changed = SetAfterInstantCastState(true, GetTime() + FALLBACK_AFTER_INSTANT_CAST_DURATION) or changed
+	end
 
 	-- Instant casts can update shared cooldown data one frame later.
 	C_Timer.After(0, function()
