@@ -42,6 +42,24 @@ if powerString ~= lastPowerString then
 end
 ```
 
+### Secret Value Ruleset (Required)
+- Treat secret/protected API data as a hard boundary.
+- If a feature depends on a secret value that cannot be safely consumed, stop and escalate immediately.
+- Do not ship workaround-heavy behavior when blocked by secret values.
+
+Allowed:
+- Convert readable secret numeric-like values with `tostring(value)` then `tonumber(...)`.
+- Use non-secret fields/events to drive behavior when available.
+
+Forbidden:
+- Direct boolean tests on potentially secret boolean fields (example: `if info.isEnabled then ... end`).
+- Deep fallback chains that guess state when core API fields are unavailable/secret.
+
+Escalation protocol:
+1. Log/report the exact API, field, and failing callsite.
+2. Propose supported alternatives (different event/API or narrower UX).
+3. If no stable API path exists, disable/drop that feature.
+
 ## Event Registration
 
 ### Unit Events (use RegisterUnitEvent)

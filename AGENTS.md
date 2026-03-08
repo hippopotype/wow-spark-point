@@ -96,3 +96,14 @@ stylua .          # Apply formatting
 - **Database Access**: Functional getters/setters that trigger setting change callbacks
 - **DonutWidget**: Encapsulated ring rendering with clean API
 - **AnchorFrame**: Shared cursor-following frame that all modules parent to
+
+## Secret Value Handling Policy (Non-Negotiable)
+- If an API value is secret/protected and cannot be safely read/compared, stop implementation and report it immediately.
+- Do not ship workaround-heavy logic for secret values (no speculative polling trees, no fragile inference chains).
+- Allowed handling:
+  - Convert readable secret numeric values via `tostring` -> `tonumber` when Blizzard allows it.
+  - Avoid direct boolean tests on secret booleans (example: `if info.isEnabled then ... end` is forbidden when tainted).
+- Required process when blocked by secret values:
+  1. Notify maintainer which API field is secret and where it failed.
+  2. Propose supported alternatives (different event, different API, or reduced scope).
+  3. If no stable path exists, disable/drop the feature rather than shipping unstable behavior.

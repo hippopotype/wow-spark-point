@@ -246,8 +246,8 @@ L["Failed Cast Style"] = "Failed Cast Style"
 L["Failed Cast Style Tooltip"] = "Choose how Spell Icon reacts when a cast attempt fails for a reason other than cooldown"
 L["Failed Cast Style Hide"] = "Hide"
 L["Failed Cast Style Error Icon"] = "Error Icon"
-L["Show Cooldown Blocked Presses"] = "Show Cooldown Blocked Presses"
-L["Show Cooldown Blocked Presses Tooltip"] = "Show the spell icon with remaining cooldown when you press an ability that is still on cooldown"
+L["Show Cooldown Blocked Presses"] = "Show Readable Cooldown"
+L["Show Cooldown Blocked Presses Tooltip"] = "Show the spell icon with remaining cooldown only when Blizzard exposes readable cooldown data for the pressed ability"
 
 --------------------------------------------------------------------------------
 -- Assisted Highlight

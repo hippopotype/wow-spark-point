@@ -66,19 +66,14 @@ local pendingInstantResolvedSpellID
 local pendingInstantAt = 0
 local pendingInstantCastGUID
 local pendingInstantSource
-local pendingInstantToken = 0
-local actionCooldownProbeToken = 0
 local interruptFlashToken = 0
 local interruptFlashActive = false
 local INTERRUPT_FLASH_DURATION = 0.2
-local INSTANT_SENT_FALLBACK_DELAY = 0.12
 local INSTANT_PENDING_WINDOW = 0.75
 local FAILED_ATTEMPT_FEEDBACK_DURATION = 0.45
 local LAST_ATTEMPT_WINDOW = 0.35
 local LAST_SENT_WINDOW = 0.35
 local ACTION_COOLDOWN_FEEDBACK_WINDOW = 0.6
-local ACTION_COOLDOWN_PROBE_DELAY = 0.03
-local ACTION_COOLDOWN_PROBE_ATTEMPTS = 6
 local PENDING_SOURCE_SENT = "sent"
 local PENDING_SOURCE_ACTION = "action"
 local CAST_OVERLAY_DEFAULT = "cast_glow"
@@ -90,7 +85,6 @@ local activeProviders = {}
 local moduleEnabled = false
 local clickFeedbackLeftDown = false
 local clickFeedbackRightDown = false
-local rejectedDebugEnabled = false
 
 local GetTime = GetTime
 local UnitCastingInfo = UnitCastingInfo
@@ -118,13 +112,6 @@ local function NormalizeProviderID(providerID)
 		return "NONE"
 	end
 	return normalized
-end
-
-local function TraceRejectedDebug(message)
-	if not rejectedDebugEnabled then
-		return
-	end
-	print("SparkPoint [RejectDebug] " .. tostring(message))
 end
 
 local function DisableSlotProviders()
@@ -219,12 +206,6 @@ end
 
 ShouldShowAnySpellIconFeedback = function()
 	return ShouldShowAnyInstantCasts() or ShouldShowFailedAttempts() or ShouldShowCooldownBlockedFeedback()
-end
-
-local function ShouldUsePendingInstantPreview()
-	-- Keep player intent tracking, but avoid optimistic pre-show so failed presses
-	-- do not briefly look like successful casts before the result is known.
-	return false
 end
 
 local function NormalizeSpellID(spellID)
@@ -434,20 +415,6 @@ local function GetBlockedCooldownInfo(spellID, actionSlot)
 		maxCharges = ToSafeNumber(maxCharges)
 		cooldownStart = ToSafeNumber(cooldownStart)
 		cooldownDuration = ToSafeNumber(cooldownDuration)
-		TraceRejectedDebug(
-			"ActionCharges slot="
-				.. tostring(recentActionSlot)
-				.. " spell="
-				.. tostring(normalized)
-				.. " current="
-				.. tostring(currentCharges)
-				.. " max="
-				.. tostring(maxCharges)
-				.. " start="
-				.. tostring(cooldownStart)
-				.. " duration="
-				.. tostring(cooldownDuration)
-		)
 		if maxCharges and maxCharges > 0 and currentCharges and currentCharges <= 0 and IsCooldownActive(cooldownStart, cooldownDuration) then
 			return cooldownStart, cooldownDuration
 		end
@@ -458,18 +425,6 @@ local function GetBlockedCooldownInfo(spellID, actionSlot)
 		startTime = ToSafeNumber(startTime)
 		duration = ToSafeNumber(duration)
 		enabled = ToSafeNumber(enabled)
-		TraceRejectedDebug(
-			"ActionCooldown slot="
-				.. tostring(recentActionSlot)
-				.. " spell="
-				.. tostring(normalized)
-				.. " start="
-				.. tostring(startTime)
-				.. " duration="
-				.. tostring(duration)
-				.. " enabled="
-				.. tostring(enabled)
-		)
 		if enabled ~= 0 and IsCooldownActive(startTime, duration) then
 			local gcdStart, gcdDuration = API.GetSpellCooldown(61304)
 			if not IsSameCooldownWindow(startTime, duration, gcdStart, gcdDuration) then
@@ -491,21 +446,6 @@ local function GetBlockedCooldownInfo(spellID, actionSlot)
 			return nil
 		end
 	end
-
-	local startTime, duration, enabled = API.GetSpellCooldown(normalized)
-	startTime = ToSafeNumber(startTime)
-	duration = ToSafeNumber(duration)
-	enabled = ToSafeNumber(enabled)
-	if enabled == 0 or not IsCooldownActive(startTime, duration) then
-		return nil
-	end
-
-	local gcdStart, gcdDuration = API.GetSpellCooldown(61304)
-	if IsSameCooldownWindow(startTime, duration, gcdStart, gcdDuration) then
-		return nil
-	end
-
-	return startTime, duration
 end
 
 local function ClearPendingInstantIntent()
@@ -513,15 +453,10 @@ local function ClearPendingInstantIntent()
 	pendingInstantAt = 0
 	pendingInstantCastGUID = nil
 	pendingInstantSource = nil
-	pendingInstantToken = pendingInstantToken + 1
 end
 
 local function CancelRejectedAttemptFeedback()
 	rejectedAttemptToken = rejectedAttemptToken + 1
-end
-
-local function CancelActionCooldownProbe()
-	actionCooldownProbeToken = actionCooldownProbeToken + 1
 end
 
 local function RecordLastAttemptedSpell(spellID, actionSlot)
@@ -582,62 +517,6 @@ local function GetFreshLastSentSpellID(castGUID)
 		return nil
 	end
 	return lastSentSpellID
-end
-
-local function QueueActionCooldownProbe(spellID)
-	if not ShouldShowCooldownBlockedFeedback() then
-		return
-	end
-
-	local resolvedSpellID = ResolvePlayerFacingSpellID(spellID)
-	if not resolvedSpellID then
-		return
-	end
-
-	TraceRejectedDebug("QueueProbe spell=" .. tostring(resolvedSpellID))
-	CancelActionCooldownProbe()
-	local token = actionCooldownProbeToken
-
-	local function ProbeCooldown(attempt)
-		if token ~= actionCooldownProbeToken then
-			TraceRejectedDebug("Probe cancelled attempt=" .. tostring(attempt) .. " spell=" .. tostring(resolvedSpellID))
-			return
-		end
-		if not moduleEnabled then
-			return
-		end
-		if isCasting or interruptFlashActive then
-			return
-		end
-		if UnitCastingInfo("player") or UnitChannelInfo("player") then
-			return
-		end
-		TraceRejectedDebug(
-			"Probe attempt="
-				.. tostring(attempt)
-				.. " spell="
-				.. tostring(resolvedSpellID)
-				.. " current="
-				.. tostring(currentSpellID)
-				.. " confirmed="
-				.. tostring(instantIconConfirmed)
-				.. " expiryActive="
-				.. tostring(instantIconExpiry > GetTime())
-		)
-		if TryShowActionCooldownBlocked and TryShowActionCooldownBlocked(resolvedSpellID) then
-			return
-		end
-
-		if attempt < ACTION_COOLDOWN_PROBE_ATTEMPTS then
-			C_Timer.After(ACTION_COOLDOWN_PROBE_DELAY, function()
-				ProbeCooldown(attempt + 1)
-			end)
-		end
-	end
-
-	C_Timer.After(0, function()
-		ProbeCooldown(1)
-	end)
 end
 
 local function HasFreshPendingInstantIntent()
@@ -738,11 +617,6 @@ addon.Modules.CastObj = Cast
 
 function Cast:GetFrame()
 	return castFrame
-end
-
-function Cast:SetRejectedDebugEnabled(enabled)
-	rejectedDebugEnabled = enabled == true
-	TraceRejectedDebug(rejectedDebugEnabled and "Rejected debug enabled" or "Rejected debug disabled")
 end
 
 local function ApplySpellIconMask()
@@ -894,22 +768,11 @@ function Cast:UpdateSpellIcon()
 	if instantIconMode == "failed" and castFrame.iconFrame.errorIcon then
 		castFrame.iconFrame.errorIcon:Show()
 	end
-	TraceRejectedDebug(
-		"UpdateSpellIcon mode="
-			.. tostring(instantIconMode)
-			.. " spell="
-			.. tostring(currentSpellID)
-			.. " confirmed="
-			.. tostring(instantIconConfirmed)
-			.. " expiry="
-			.. tostring(instantIconExpiry - GetTime())
-	)
 	castFrame.iconFrame:Show()
 	self:UpdateIconCooldown()
 end
 
 ClearInstantIcon = function(reason)
-	TraceRejectedDebug("ClearInstantIcon reason=" .. tostring(reason) .. " mode=" .. tostring(instantIconMode) .. " spell=" .. tostring(currentSpellID))
 	instantIconActive = false
 	instantIconConfirmed = false
 	instantIconMode = "instant"
@@ -941,20 +804,9 @@ local function ShowSpellIconFeedback(spellID, opts)
 
 	-- Only optimistic instant previews should be blocked by an existing confirmed icon.
 	if instantIconConfirmed and not opts.isConfirmed and (opts.mode or "instant") == "instant" then
-		TraceRejectedDebug("ShowFeedback blocked mode=" .. tostring(opts.mode or "instant") .. " spell=" .. tostring(resolvedSpellID) .. " current=" .. tostring(currentSpellID))
 		return
 	end
 
-	TraceRejectedDebug(
-		"ShowFeedback mode="
-			.. tostring(opts.mode or "instant")
-			.. " spell="
-			.. tostring(resolvedSpellID)
-			.. " confirmed="
-			.. tostring(opts.isConfirmed == true)
-			.. " duration="
-			.. tostring(opts.duration)
-	)
 	currentSpellID = resolvedSpellID
 	currentSpellName = info.name or currentSpellName
 	currentSpellTexture = info.iconID or currentSpellTexture
@@ -998,7 +850,6 @@ local function ShowSpellIconFeedback(spellID, opts)
 end
 
 local function ShowInstantSpellIcon(spellID, isConfirmed)
-	TraceRejectedDebug("ShowInstant spell=" .. tostring(spellID) .. " confirmed=" .. tostring(isConfirmed))
 	ShowSpellIconFeedback(spellID, {
 		requireInstant = true,
 		isConfirmed = isConfirmed,
@@ -1010,7 +861,6 @@ local function ShowFailedAttemptIcon(spellID)
 	if GetFailedAttemptFeedbackStyle() ~= "ERROR_ICON" then
 		return
 	end
-	TraceRejectedDebug("ShowFailed spell=" .. tostring(spellID))
 	ShowSpellIconFeedback(spellID, {
 		requireInstant = false,
 		isConfirmed = false,
@@ -1029,7 +879,6 @@ ShowCooldownBlockedIcon = function(spellID, cooldownStart, cooldownDuration)
 		return
 	end
 
-	TraceRejectedDebug("ShowCooldownBlocked spell=" .. tostring(spellID) .. " remaining=" .. tostring(remaining))
 	ShowSpellIconFeedback(spellID, {
 		requireInstant = false,
 		isConfirmed = false,
@@ -1038,32 +887,6 @@ ShowCooldownBlockedIcon = function(spellID, cooldownStart, cooldownDuration)
 		cooldownStart = cooldownStart,
 		cooldownDuration = cooldownDuration,
 	})
-end
-
-local function TryShowPendingInstantSpell(token)
-	if not ShouldUsePendingInstantPreview() then
-		return
-	end
-	if token ~= pendingInstantToken then
-		return
-	end
-	if not ShouldShowPlayerInstantCasts() then
-		return
-	end
-	if not spellIconEnabled then
-		return
-	end
-	if isCasting or interruptFlashActive then
-		return
-	end
-	if UnitCastingInfo("player") or UnitChannelInfo("player") then
-		return
-	end
-	if not HasFreshPendingInstantIntent() then
-		return
-	end
-
-	ShowInstantSpellIcon(pendingInstantResolvedSpellID, false)
 end
 
 local function RecordPendingInstantIntent(spellID, source, castGUID)
@@ -1109,13 +932,6 @@ local function RecordPendingInstantIntent(spellID, source, castGUID)
 	pendingInstantAt = GetTime()
 	pendingInstantCastGUID = castGUID
 	pendingInstantSource = source
-
-	if ShouldUsePendingInstantPreview() then
-		local token = pendingInstantToken
-		C_Timer.After(INSTANT_SENT_FALLBACK_DELAY, function()
-			TryShowPendingInstantSpell(token)
-		end)
-	end
 end
 
 local function InstallActionIntentHook()
@@ -1136,10 +952,8 @@ local function InstallActionIntentHook()
 
 		local actionSpellID = GetActionSpellID(slot)
 		if actionSpellID then
-			TraceRejectedDebug("UseAction slot=" .. tostring(slot) .. " spell=" .. tostring(actionSpellID))
 			RecordLastAttemptedSpell(actionSpellID, slot)
 			RecordPendingInstantIntent(actionSpellID, PENDING_SOURCE_ACTION)
-			QueueActionCooldownProbe(actionSpellID)
 		end
 	end)
 
@@ -1211,37 +1025,24 @@ TryShowActionCooldownBlocked = function(spellID)
 
 	local resolvedSpellID = ResolvePlayerFacingSpellID(spellID)
 	if not resolvedSpellID or not HasRecentAttemptedSpell(resolvedSpellID) then
-		TraceRejectedDebug("TryCooldownBlocked skip spell=" .. tostring(resolvedSpellID) .. " recentAttempt=false")
 		return false
 	end
 	if isCasting or interruptFlashActive then
-		TraceRejectedDebug("TryCooldownBlocked skip spell=" .. tostring(resolvedSpellID) .. " castingOrInterrupt=true")
 		return false
 	end
 	if UnitCastingInfo("player") or UnitChannelInfo("player") then
-		TraceRejectedDebug("TryCooldownBlocked skip spell=" .. tostring(resolvedSpellID) .. " unitCasting=true")
 		return false
 	end
 	if ShouldPreserveConfirmedInstantIcon(resolvedSpellID) then
-		TraceRejectedDebug(
-			"TryCooldownBlocked preserveConfirmed spell="
-				.. tostring(resolvedSpellID)
-				.. " current="
-				.. tostring(currentSpellID)
-				.. " expiry="
-				.. tostring(instantIconExpiry - GetTime())
-		)
 		return false
 	end
 
 	local actionSlot = GetRecentAttemptedActionSlot(resolvedSpellID)
 	local cooldownStart, cooldownDuration = GetBlockedCooldownInfo(resolvedSpellID, actionSlot)
 	if not (cooldownStart and cooldownDuration) then
-		TraceRejectedDebug("TryCooldownBlocked miss spell=" .. tostring(resolvedSpellID) .. " start=nil duration=nil")
 		return false
 	end
 
-	TraceRejectedDebug("TryCooldownBlocked hit spell=" .. tostring(resolvedSpellID) .. " remaining=" .. tostring((cooldownStart + cooldownDuration) - GetTime()))
 	ClearPendingInstantIntent()
 	ClearInstantIcon("actionCooldownBlocked")
 	ShowCooldownBlockedIcon(resolvedSpellID, cooldownStart, cooldownDuration)
@@ -1250,7 +1051,6 @@ end
 
 local function ShowRejectedAttemptFeedback(spellID, castGUID)
 	if ShouldPreserveConfirmedInstantIcon(spellID, castGUID) then
-		TraceRejectedDebug("Rejected preserveConfirmed raw=" .. tostring(spellID) .. " castGUID=" .. tostring(castGUID))
 		return
 	end
 
@@ -1265,7 +1065,6 @@ local function ShowRejectedAttemptFeedback(spellID, castGUID)
 	local feedbackSpellID = GetAttemptFeedbackSpellID(spellID, castGUID)
 	if not feedbackSpellID then
 		local token = rejectedAttemptToken
-		TraceRejectedDebug("Rejected noFeedbackSpell raw=" .. tostring(spellID) .. " castGUID=" .. tostring(castGUID))
 		C_Timer.After(0, function()
 			if token ~= rejectedAttemptToken then
 				return
@@ -1275,29 +1074,20 @@ local function ShowRejectedAttemptFeedback(spellID, castGUID)
 		return
 	end
 
-	TraceRejectedDebug("Rejected start raw=" .. tostring(spellID) .. " feedback=" .. tostring(feedbackSpellID) .. " castGUID=" .. tostring(castGUID))
 	if TryShowActionCooldownBlocked(feedbackSpellID) then
-		TraceRejectedDebug("Rejected resolved cooldown spell=" .. tostring(feedbackSpellID))
 		return
 	end
 
 	if ShouldShowFailedAttempts() then
-		TraceRejectedDebug("Rejected resolved failed spell=" .. tostring(feedbackSpellID))
 		ClearInstantIcon("rejectedAttempt")
 		ShowFailedAttemptIcon(feedbackSpellID)
 	else
-		TraceRejectedDebug("Rejected resolved hide spell=" .. tostring(feedbackSpellID))
 		ClearInstantIcon("rejectedAttempt")
-	end
-
-	if ShouldShowCooldownBlockedFeedback() then
-		QueueActionCooldownProbe(feedbackSpellID)
 	end
 end
 
 function Cast:ACTIONBAR_UPDATE_COOLDOWN()
 	local attemptedSpellID = GetFreshLastAttemptedSpellID()
-	TraceRejectedDebug("CooldownEvent ACTIONBAR attempted=" .. tostring(attemptedSpellID))
 	if attemptedSpellID then
 		TryShowActionCooldownBlocked(attemptedSpellID)
 	end
@@ -1779,7 +1569,6 @@ function Cast:UNIT_SPELLCAST_STOP(event, unit, castGUID, spellID)
 		return
 	end
 	CancelRejectedAttemptFeedback()
-	CancelActionCooldownProbe()
 	ClearPendingInstantIntent()
 	if not isCasting then
 		return
@@ -1797,7 +1586,6 @@ function Cast:UNIT_SPELLCAST_INTERRUPTED(event, unit, castGUID, spellID)
 		return
 	end
 	CancelRejectedAttemptFeedback()
-	CancelActionCooldownProbe()
 	ClearPendingInstantIntent()
 	if not isCasting then
 		return
@@ -1811,13 +1599,11 @@ function Cast:UNIT_SPELLCAST_FAILED(event, unit, castGUID, spellID)
 	if unit ~= "player" then
 		return
 	end
-	TraceRejectedDebug("FAILED raw=" .. tostring(spellID) .. " castGUID=" .. tostring(castGUID) .. " isCasting=" .. tostring(isCasting))
 	if not isCasting then
 		ShowRejectedAttemptFeedback(spellID, castGUID)
 		return
 	end
 	CancelRejectedAttemptFeedback()
-	CancelActionCooldownProbe()
 	ClearPendingInstantIntent()
 	if castGUID == currentCastGUID then
 		self:ShowInterruptFlash(castGUID)
@@ -1828,13 +1614,11 @@ function Cast:UNIT_SPELLCAST_FAILED_QUIET(event, unit, castGUID, spellID)
 	if unit ~= "player" then
 		return
 	end
-	TraceRejectedDebug("FAILED_QUIET raw=" .. tostring(spellID) .. " castGUID=" .. tostring(castGUID) .. " isCasting=" .. tostring(isCasting))
 	if not isCasting then
 		ShowRejectedAttemptFeedback(spellID, castGUID)
 		return
 	end
 	CancelRejectedAttemptFeedback()
-	CancelActionCooldownProbe()
 	ClearPendingInstantIntent()
 	if castGUID == currentCastGUID then
 		self:ShowInterruptFlash(castGUID)
@@ -1867,7 +1651,6 @@ function Cast:UNIT_SPELLCAST_CHANNEL_START(event, unit, castGUID, spellID)
 	instantIconCooldownStart = 0
 	instantIconCooldownDuration = 0
 	CancelRejectedAttemptFeedback()
-	CancelActionCooldownProbe()
 	ClearPendingInstantIntent()
 	interruptFlashToken = interruptFlashToken + 1
 	interruptFlashActive = false
@@ -1908,7 +1691,6 @@ function Cast:UNIT_SPELLCAST_CHANNEL_STOP(event, unit, castGUID, spellID)
 		return
 	end
 	CancelRejectedAttemptFeedback()
-	CancelActionCooldownProbe()
 	if not isCasting then
 		return
 	end
@@ -1938,9 +1720,7 @@ function Cast:UNIT_SPELLCAST_SUCCEEDED(event, unit, castGUID, spellID)
 	if unit ~= "player" then
 		return
 	end
-	TraceRejectedDebug("SUCCEEDED raw=" .. tostring(spellID) .. " castGUID=" .. tostring(castGUID) .. " isCasting=" .. tostring(isCasting))
 	CancelRejectedAttemptFeedback()
-	CancelActionCooldownProbe()
 	if isCasting or interruptFlashActive then
 		return
 	end
@@ -1954,7 +1734,6 @@ function Cast:UNIT_SPELLCAST_SUCCEEDED(event, unit, castGUID, spellID)
 	ClearPendingInstantIntent()
 
 	if playerInstantSpellID then
-		TraceRejectedDebug("SUCCEEDED playerInstant spell=" .. tostring(playerInstantSpellID))
 		if ShouldShowPlayerInstantCasts() then
 			ShowInstantSpellIcon(playerInstantSpellID, true)
 		end
@@ -1962,7 +1741,6 @@ function Cast:UNIT_SPELLCAST_SUCCEEDED(event, unit, castGUID, spellID)
 	end
 
 	if ShouldShowTriggeredInstantCasts() and IsInstantSpell(resolvedSpellID) then
-		TraceRejectedDebug("SUCCEEDED triggeredInstant spell=" .. tostring(resolvedSpellID))
 		ShowInstantSpellIcon(resolvedSpellID, true)
 	end
 end

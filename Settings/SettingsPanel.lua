@@ -999,8 +999,8 @@ local function BuildSettingsPanel()
 	AddCheckbox(
 		iconCategory,
 		"spellicon_showCooldownBlocked",
-		L["Show Cooldown Blocked Presses"] or "Show Cooldown Blocked Presses",
-		L["Show Cooldown Blocked Presses Tooltip"] or "Show the spell icon with remaining cooldown when you press an ability that is still on cooldown"
+		L["Show Cooldown Blocked Presses"] or "Show Readable Cooldown",
+		L["Show Cooldown Blocked Presses Tooltip"] or "Show the spell icon with remaining cooldown only when Blizzard exposes readable cooldown data for the pressed ability"
 	)
 
 	------------------------------------------------------------------------

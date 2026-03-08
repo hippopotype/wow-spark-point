@@ -154,6 +154,18 @@ This addon uses new WoW APIs (C_Spell.*, etc.) without polyfills:
 - `C_Spell.GetSpellCooldown(spellID)` returns cooldown info
 - `C_Spell.DoesSpellExist(spellID)` for validation
 
+## Secret Value Handling Policy (Non-Negotiable)
+
+- If required API data is secret/protected and cannot be safely consumed, stop and report it.
+- Do not implement brittle workaround chains for secret values.
+- Safe handling only:
+  - Convert readable secret numerics via `tostring` then `tonumber` when allowed.
+  - Never directly boolean-test secret fields (for example `if info.isEnabled then`).
+- Escalation flow:
+  1. Identify and report the exact API field and call site.
+  2. Offer supported alternatives (different API/event or narrower feature scope).
+  3. If no stable path exists, drop/disable the feature.
+
 ## Coding Style
 
 - Tab-based indentation
