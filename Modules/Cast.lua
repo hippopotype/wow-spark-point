@@ -55,12 +55,16 @@ local instantIconForcedShell = false
 local instantIconConfirmed = false
 local pendingInstantResolvedSpellID
 local pendingInstantAt = 0
+local pendingInstantCastGUID
+local pendingInstantSource
 local pendingInstantToken = 0
 local interruptFlashToken = 0
 local interruptFlashActive = false
 local INTERRUPT_FLASH_DURATION = 0.2
 local INSTANT_SENT_FALLBACK_DELAY = 0.12
 local INSTANT_PENDING_WINDOW = 0.75
+local PENDING_SOURCE_SENT = "sent"
+local PENDING_SOURCE_ACTION = "action"
 local CAST_OVERLAY_DEFAULT = "cast_glow"
 local CAST_OVERLAY_INTERRUPT = "cast_error"
 
@@ -76,6 +80,9 @@ local UnitCastingInfo = UnitCastingInfo
 local UnitChannelInfo = UnitChannelInfo
 local IsMouseButtonDown = IsMouseButtonDown
 local cos, sin, rad = math.cos, math.sin, math.rad
+local ShouldShowPlayerInstantCasts
+local ShouldShowTriggeredInstantCasts
+local ShouldShowAnyInstantCasts
 
 local function NormalizeProviderID(providerID)
 	if type(providerID) ~= "string" then
@@ -135,7 +142,7 @@ local function ShouldBypassHoverHideForInstantIcon()
 	if not instantIconActive or isCasting or interruptFlashActive then
 		return false
 	end
-	if not GetDBBool("spellicon_showInstantCasts") or not spellIconEnabled then
+	if not ShouldShowAnyInstantCasts() or not spellIconEnabled then
 		return false
 	end
 	if not Visibility:ShouldHideOnUIHover() then
@@ -152,6 +159,18 @@ local function IsInstantIconVisibilityAllowed()
 		return true
 	end
 	return ShouldBypassHoverHideForInstantIcon()
+end
+
+ShouldShowPlayerInstantCasts = function()
+	return GetDBBool("spellicon_showInstantCasts")
+end
+
+ShouldShowTriggeredInstantCasts = function()
+	return GetDBBool("spellicon_showTriggeredInstantCasts")
+end
+
+ShouldShowAnyInstantCasts = function()
+	return ShouldShowPlayerInstantCasts() or ShouldShowTriggeredInstantCasts()
 end
 
 local function NormalizeSpellID(spellID)
@@ -285,9 +304,50 @@ local function ResolvePlayerFacingSpellID(spellID)
 	return NormalizeSpellID(spellID)
 end
 
+local function AreSpellIntentsEquivalent(firstSpellID, secondSpellID)
+	local firstResolved = NormalizeSpellID(firstSpellID)
+	local secondResolved = NormalizeSpellID(secondSpellID)
+	if not firstResolved or not secondResolved then
+		return false
+	end
+	if firstResolved == secondResolved then
+		return true
+	end
+
+	local candidates = {}
+	for _, candidate in ipairs(BuildSpellCandidateList(firstResolved)) do
+		candidates[candidate] = true
+	end
+	for _, candidate in ipairs(BuildSpellCandidateList(secondResolved)) do
+		if candidates[candidate] then
+			return true
+		end
+	end
+
+	return false
+end
+
+local function GetPendingIntentPriority(source)
+	if source == PENDING_SOURCE_ACTION then
+		return 2
+	end
+	return 1
+end
+
+local function IsInstantSpell(spellID)
+	local normalized = NormalizeSpellID(spellID)
+	if not normalized then
+		return false
+	end
+	local info = C_Spell.GetSpellInfo(normalized)
+	return info and (info.castTime or 0) <= 0 or false
+end
+
 local function ClearPendingInstantIntent()
 	pendingInstantResolvedSpellID = nil
 	pendingInstantAt = 0
+	pendingInstantCastGUID = nil
+	pendingInstantSource = nil
 	pendingInstantToken = pendingInstantToken + 1
 end
 
@@ -610,7 +670,7 @@ local function TryShowPendingInstantSpell(token)
 	if token ~= pendingInstantToken then
 		return
 	end
-	if not GetDBBool("spellicon_showInstantCasts") then
+	if not ShouldShowPlayerInstantCasts() then
 		return
 	end
 	if not spellIconEnabled then
@@ -629,12 +689,7 @@ local function TryShowPendingInstantSpell(token)
 	ShowInstantSpellIcon(pendingInstantResolvedSpellID, false)
 end
 
-local function RecordPendingInstantIntent(spellID)
-	ClearPendingInstantIntent()
-
-	if not GetDBBool("spellicon_showInstantCasts") then
-		return
-	end
+local function RecordPendingInstantIntent(spellID, source, castGUID)
 	if not spellIconEnabled then
 		return
 	end
@@ -644,13 +699,39 @@ local function RecordPendingInstantIntent(spellID)
 		return
 	end
 
-	local info = C_Spell.GetSpellInfo(resolvedSpellID)
-	if not info or (info.castTime or 0) > 0 then
+	if not IsInstantSpell(resolvedSpellID) then
 		return
 	end
 
+	source = source or PENDING_SOURCE_SENT
+
+	if HasFreshPendingInstantIntent() then
+		local sameIntent = AreSpellIntentsEquivalent(pendingInstantResolvedSpellID, resolvedSpellID)
+		local pendingPriority = GetPendingIntentPriority(pendingInstantSource)
+		local newPriority = GetPendingIntentPriority(source)
+
+		if sameIntent then
+			pendingInstantResolvedSpellID = resolvedSpellID
+			pendingInstantAt = GetTime()
+			if newPriority > pendingPriority then
+				pendingInstantSource = source
+			end
+			if castGUID then
+				pendingInstantCastGUID = castGUID
+			end
+			return
+		end
+
+		if pendingPriority > newPriority then
+			return
+		end
+	end
+
+	ClearPendingInstantIntent()
 	pendingInstantResolvedSpellID = resolvedSpellID
 	pendingInstantAt = GetTime()
+	pendingInstantCastGUID = castGUID
+	pendingInstantSource = source
 
 	local token = pendingInstantToken
 	C_Timer.After(INSTANT_SENT_FALLBACK_DELAY, function()
@@ -676,11 +757,26 @@ local function InstallActionIntentHook()
 
 		local actionSpellID = GetActionSpellID(slot)
 		if actionSpellID then
-			RecordPendingInstantIntent(actionSpellID)
+			RecordPendingInstantIntent(actionSpellID, PENDING_SOURCE_ACTION)
 		end
 	end)
 
 	actionIntentHookInstalled = true
+end
+
+local function GetConfirmedPlayerInstantSpellID(castGUID, spellID)
+	if not HasFreshPendingInstantIntent() then
+		return nil
+	end
+
+	local resolvedSpellID = ResolvePlayerFacingSpellID(spellID)
+	local matchesPlayerIntent = (pendingInstantCastGUID and pendingInstantCastGUID == castGUID) or AreSpellIntentsEquivalent(pendingInstantResolvedSpellID, resolvedSpellID)
+
+	if not matchesPlayerIntent then
+		return nil
+	end
+
+	return pendingInstantResolvedSpellID or resolvedSpellID
 end
 
 function Cast:UpdateIconCooldown()
@@ -1087,7 +1183,7 @@ function Cast:UNIT_SPELLCAST_SENT(event, unit, target, castGUID, spellID)
 	castSent = GetTime() * 1000
 
 	if not isCasting and not interruptFlashActive and not UnitCastingInfo("player") and not UnitChannelInfo("player") then
-		RecordPendingInstantIntent(spellID)
+		RecordPendingInstantIntent(spellID, PENDING_SOURCE_SENT, castGUID)
 	end
 end
 
@@ -1286,13 +1382,21 @@ function Cast:UNIT_SPELLCAST_SUCCEEDED(event, unit, castGUID, spellID)
 		return
 	end
 
-	local displaySpellID = ResolvePlayerFacingSpellID(spellID)
-	if HasFreshPendingInstantIntent() then
-		displaySpellID = pendingInstantResolvedSpellID or displaySpellID
-	end
+	local playerInstantSpellID = GetConfirmedPlayerInstantSpellID(castGUID, spellID)
+	local resolvedSpellID = ResolvePlayerFacingSpellID(spellID)
 
 	ClearPendingInstantIntent()
-	ShowInstantSpellIcon(displaySpellID, true)
+
+	if playerInstantSpellID then
+		if ShouldShowPlayerInstantCasts() then
+			ShowInstantSpellIcon(playerInstantSpellID, true)
+		end
+		return
+	end
+
+	if ShouldShowTriggeredInstantCasts() and IsInstantSpell(resolvedSpellID) then
+		ShowInstantSpellIcon(resolvedSpellID, true)
+	end
 end
 
 -- Evoker Empower support

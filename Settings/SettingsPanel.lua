@@ -984,7 +984,13 @@ local function BuildSettingsPanel()
 		iconCategory,
 		"spellicon_showInstantCasts",
 		L["Show On Instant Casts"] or "Show On Instant Casts",
-		L["Show On Instant Casts Tooltip"] or "Render the spell icon briefly for instant-cast abilities"
+		L["Show On Instant Casts Tooltip"] or "Render the spell icon briefly for instant abilities you directly trigger"
+	)
+	AddCheckbox(
+		iconCategory,
+		"spellicon_showTriggeredInstantCasts",
+		L["Show Triggered Instant Casts"] or "Show Triggered Instant Casts",
+		L["Show Triggered Instant Casts Tooltip"] or "Also render instant spells triggered automatically after your action, such as procs or follow-up effects"
 	)
 
 	------------------------------------------------------------------------

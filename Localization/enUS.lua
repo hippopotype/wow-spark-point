@@ -238,6 +238,10 @@ L["Decorative Ring Description"] = "Displays a decorative rotating ring around t
 --------------------------------------------------------------------------------
 L["Spell Icon"] = "Spell Icon"
 L["Spell Icon Description"] = "Displays the icon of the spell being cast near the cursor"
+L["Show On Instant Casts"] = "Show On Instant Casts"
+L["Show On Instant Casts Tooltip"] = "Render the spell icon briefly for instant abilities you directly trigger"
+L["Show Triggered Instant Casts"] = "Show Triggered Instant Casts"
+L["Show Triggered Instant Casts Tooltip"] = "Also render instant spells triggered automatically after your action, such as procs or follow-up effects"
 
 --------------------------------------------------------------------------------
 -- Assisted Highlight

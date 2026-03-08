@@ -127,6 +127,7 @@ addon.DefaultValues = {
 	spellicon_castProgressSwipe = false,
 	spellicon_castProgressSwipeColor = { r = 0, g = 0, b = 0, a = 0.5 },
 	spellicon_showInstantCasts = false,
+	spellicon_showTriggeredInstantCasts = false,
 
 	-- AssistedHighlight module settings
 	assistedhighlight_size = 40,

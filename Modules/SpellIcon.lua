@@ -48,6 +48,7 @@ local settingKeys = {
 	"spellicon_castProgressSwipe",
 	"spellicon_castProgressSwipeColor",
 	"spellicon_showInstantCasts",
+	"spellicon_showTriggeredInstantCasts",
 }
 
 for _, key in ipairs(settingKeys) do
