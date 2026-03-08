@@ -242,6 +242,12 @@ L["Show On Instant Casts"] = "Show On Instant Casts"
 L["Show On Instant Casts Tooltip"] = "Render the spell icon briefly for instant abilities you directly trigger"
 L["Show Triggered Instant Casts"] = "Show Triggered Instant Casts"
 L["Show Triggered Instant Casts Tooltip"] = "Also render instant spells triggered automatically after your action, such as procs or follow-up effects"
+L["Failed Cast Style"] = "Failed Cast Style"
+L["Failed Cast Style Tooltip"] = "Choose how Spell Icon reacts when a cast attempt fails for a reason other than cooldown"
+L["Failed Cast Style Hide"] = "Hide"
+L["Failed Cast Style Error Icon"] = "Error Icon"
+L["Show Cooldown Blocked Presses"] = "Show Cooldown Blocked Presses"
+L["Show Cooldown Blocked Presses Tooltip"] = "Show the spell icon with remaining cooldown when you press an ability that is still on cooldown"
 
 --------------------------------------------------------------------------------
 -- Assisted Highlight

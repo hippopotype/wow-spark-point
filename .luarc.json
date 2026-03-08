@@ -28,6 +28,8 @@
     "FindBaseSpellByID",
     "FindSpellOverrideByID",
     "GetActionInfo",
+    "GetActionCharges",
+    "GetActionCooldown",
     "GetCursorPosition",
     "GetBindingKey",
     "GetBindingText",

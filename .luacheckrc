@@ -21,6 +21,8 @@ globals = {
     "FindBaseSpellByID", "FindSpellOverrideByID",
     "GetBindingKey", "GetBindingText", "GetCursorPosition", "GetCVar", "GetCVarBool", "GetMouseFoci", "GetMouseFocus", "GetNetStats", "GetRuneCooldown", "GetSpecialization", "GetTime",
     "GetActionInfo",
+    "GetActionCharges",
+    "GetActionCooldown",
     "GetMinimapShape",
     "GRAY_FONT_COLOR",
     "InCombatLockdown",

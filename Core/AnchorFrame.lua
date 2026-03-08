@@ -371,6 +371,16 @@ SlashCmdList["SPARKPOINT"] = function(msg)
 		addon.SetDBValue("position_y", 400, true)
 		addon.SetDBValue("attachToMouse", true, true)
 		print("SparkPoint: Position reset to defaults.")
+	elseif msg == "debug reject on" then
+		if addon.Modules and addon.Modules.CastObj and addon.Modules.CastObj.SetRejectedDebugEnabled then
+			addon.Modules.CastObj:SetRejectedDebugEnabled(true)
+			print("SparkPoint: Rejected debug enabled.")
+		end
+	elseif msg == "debug reject off" then
+		if addon.Modules and addon.Modules.CastObj and addon.Modules.CastObj.SetRejectedDebugEnabled then
+			addon.Modules.CastObj:SetRejectedDebugEnabled(false)
+			print("SparkPoint: Rejected debug disabled.")
+		end
 	else
 		OpenSettingsSafely()
 	end

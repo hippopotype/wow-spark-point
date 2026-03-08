@@ -992,6 +992,16 @@ local function BuildSettingsPanel()
 		L["Show Triggered Instant Casts"] or "Show Triggered Instant Casts",
 		L["Show Triggered Instant Casts Tooltip"] or "Also render instant spells triggered automatically after your action, such as procs or follow-up effects"
 	)
+	AddDropdown(iconCategory, "spellicon_failedCastStyle", L["Failed Cast Style"] or "Failed Cast Style", {
+		{ value = "HIDE", label = L["Failed Cast Style Hide"] or "Hide" },
+		{ value = "ERROR_ICON", label = L["Failed Cast Style Error Icon"] or "Error Icon" },
+	}, L["Failed Cast Style Tooltip"] or "Choose how Spell Icon reacts when a cast attempt fails for a reason other than cooldown")
+	AddCheckbox(
+		iconCategory,
+		"spellicon_showCooldownBlocked",
+		L["Show Cooldown Blocked Presses"] or "Show Cooldown Blocked Presses",
+		L["Show Cooldown Blocked Presses Tooltip"] or "Show the spell icon with remaining cooldown when you press an ability that is still on cooldown"
+	)
 
 	------------------------------------------------------------------------
 	-- Assisted Highlight Settings Subcategory

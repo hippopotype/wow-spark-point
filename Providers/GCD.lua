@@ -103,6 +103,9 @@ function GCDProvider:Enable()
 	EL:RegisterEvent("PLAYER_STOPPED_MOVING")
 	EL:RegisterEvent("SPELLS_CHANGED")
 	EL:RegisterUnitEvent("UNIT_SPELLCAST_START", "player")
+	EL:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTED", "player")
+	EL:RegisterUnitEvent("UNIT_SPELLCAST_FAILED", "player")
+	EL:RegisterUnitEvent("UNIT_SPELLCAST_FAILED_QUIET", "player")
 	EL:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
 	self:DetectSpell()
 	self:ACTIONBAR_UPDATE_COOLDOWN()
@@ -115,9 +118,9 @@ function GCDProvider:Disable()
 	isEnabled = false
 
 	EL:UnregisterAllEvents()
-	isTracking = false
 	gcdStartTime = nil
 	gcdDuration = nil
+	isTracking = false
 end
 
 --------------------------------------------------------------------------------
@@ -148,6 +151,12 @@ local function StartTrackingWindow(startTime, duration)
 	gcdStartTime = startTime
 	gcdDuration = duration
 	isTracking = true
+end
+
+local function ClearTrackingWindow()
+	gcdStartTime = nil
+	gcdDuration = nil
+	isTracking = false
 end
 
 local function StartFallbackTracking(spellID)
@@ -190,7 +199,16 @@ local function UpdateTrackingFromSpellCooldown(spellID, allowFallback)
 	elseif HasActiveTrackingWindow() then
 		return
 	else
-		isTracking = false
+		ClearTrackingWindow()
+	end
+end
+
+local function RefreshOrClearTracking()
+	local start, duration = API.GetSpellCooldown(gcdSpellID)
+	if CooldownActive(start, duration) and duration <= 1.5 then
+		StartTrackingWindow(start, duration)
+	else
+		ClearTrackingWindow()
 	end
 end
 
@@ -222,6 +240,22 @@ function GCDProvider:UNIT_SPELLCAST_SUCCEEDED(event, unit, castGUID, spellID)
 		end
 	end)
 end
+
+function GCDProvider:UNIT_SPELLCAST_INTERRUPTED(event, unit, castGUID, spellID)
+	if unit ~= "player" then
+		return
+	end
+	RefreshOrClearTracking()
+end
+
+function GCDProvider:UNIT_SPELLCAST_FAILED(event, unit, castGUID, spellID)
+	if unit ~= "player" then
+		return
+	end
+	RefreshOrClearTracking()
+end
+
+GCDProvider.UNIT_SPELLCAST_FAILED_QUIET = GCDProvider.UNIT_SPELLCAST_FAILED
 
 function GCDProvider:ACTIONBAR_UPDATE_COOLDOWN()
 	UpdateTrackingFromSpellCooldown(gcdSpellID)

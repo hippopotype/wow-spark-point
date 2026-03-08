@@ -6,6 +6,24 @@ local _, addon = ...
 local API = {}
 addon.API = API
 
+local function SafeNumber(value, fallback)
+	if value == nil then
+		return fallback
+	end
+
+	local ok, stringValue = pcall(tostring, value)
+	if not ok then
+		return fallback
+	end
+
+	local numericValue = tonumber(stringValue)
+	if numericValue == nil then
+		return fallback
+	end
+
+	return numericValue
+end
+
 function API.GetSpellCooldown(spellID)
 	if not spellID then
 		return 0, 0, 0
@@ -14,7 +32,10 @@ function API.GetSpellCooldown(spellID)
 	if type(info) ~= "table" then
 		return 0, 0, 0, 1
 	end
-	return info.startTime or 0, info.duration or 0, (info.isEnabled and 1 or 0), info.modRate or 1
+	local startTime = SafeNumber(info.startTime, 0)
+	local duration = SafeNumber(info.duration, 0)
+	local enabled = (startTime > 0 or duration > 0) and 1 or 0
+	return startTime, duration, enabled, SafeNumber(info.modRate, 1)
 end
 
 --------------------------------------------------------------------------------
