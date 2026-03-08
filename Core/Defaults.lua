@@ -126,6 +126,7 @@ addon.DefaultValues = {
 	spellicon_offsetY = 0,
 	spellicon_castProgressSwipe = false,
 	spellicon_castProgressSwipeColor = { r = 0, g = 0, b = 0, a = 0.5 },
+	spellicon_cooldownBlockedSwipeColor = { r = 0.85, g = 0.2, b = 0.2, a = 0.4 },
 	spellicon_showInstantCasts = false,
 	spellicon_showTriggeredInstantCasts = false,
 	spellicon_failedCastStyle = "HIDE",

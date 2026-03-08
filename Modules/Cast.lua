@@ -642,6 +642,20 @@ local function LayoutSpellIconCooldown()
 	IconMask:LayoutToIcon(castFrame.iconFrame.cooldown, castFrame.iconFrame.icon, SPELL_ICON_MASK_BASE_EXPAND)
 end
 
+local function GetSpellIconSwipeColor(mode)
+	local colorKey = "spellicon_castProgressSwipeColor"
+	if mode == "cooldownBlocked" then
+		colorKey = "spellicon_cooldownBlockedSwipeColor"
+	end
+
+	local color = GetDBValue(colorKey)
+	if type(color) ~= "table" then
+		return 1, 1, 1, 1
+	end
+
+	return color.r or 1, color.g or 1, color.b or 1, color.a or 1
+end
+
 function Cast:SetSpellIconEnabled(enabled)
 	spellIconEnabled = enabled == true
 	if castFrame and castFrame.iconFrame then
@@ -678,21 +692,6 @@ function Cast:ApplyIconOptions()
 	local offsetX = GetDBValue("spellicon_offsetX")
 	local offsetY = GetDBValue("spellicon_offsetY")
 	local showCooldown = GetDBBool("spellicon_castProgressSwipe")
-	local swipeColor = GetDBValue("spellicon_castProgressSwipeColor")
-	local swipeR, swipeG, swipeB, swipeA
-	if type(swipeColor) == "table" then
-		swipeR = swipeColor.r or 1
-		swipeG = swipeColor.g or 1
-		swipeB = swipeColor.b or 1
-		swipeA = swipeColor.a or 1
-	else
-		-- Legacy fallback: preserve previous opacity-only behavior for old profiles.
-		local legacyOpacity = GetDBValue("spellicon_castProgressSwipeOpacity")
-		if legacyOpacity == nil then
-			legacyOpacity = 1
-		end
-		swipeR, swipeG, swipeB, swipeA = 1, 1, 1, legacyOpacity
-	end
 
 	castFrame.iconFrame:SetSize(size, size)
 	castFrame.iconFrame:ClearAllPoints()
@@ -709,6 +708,7 @@ function Cast:ApplyIconOptions()
 		end
 		LayoutSpellIconCooldown()
 		if castFrame.iconFrame.cooldown.SetSwipeColor then
+			local swipeR, swipeG, swipeB, swipeA = GetSpellIconSwipeColor("cast")
 			castFrame.iconFrame.cooldown:SetSwipeColor(swipeR, swipeG, swipeB, swipeA)
 		end
 		castFrame.iconFrame.cooldown:Show()
@@ -1104,8 +1104,16 @@ function Cast:UpdateIconCooldown()
 			castFrame.iconFrame.cooldown:Hide()
 			return
 		end
+		if castFrame.iconFrame.cooldown.SetSwipeColor then
+			local swipeR, swipeG, swipeB, swipeA = GetSpellIconSwipeColor("cast")
+			castFrame.iconFrame.cooldown:SetSwipeColor(swipeR, swipeG, swipeB, swipeA)
+		end
 		castFrame.iconFrame.cooldown:SetCooldown(castStartTime / 1000, castDuration / 1000)
 	elseif instantIconActive and instantIconMode == "cooldownBlocked" and instantIconCooldownStart > 0 and instantIconCooldownDuration > 0 then
+		if castFrame.iconFrame.cooldown.SetSwipeColor then
+			local swipeR, swipeG, swipeB, swipeA = GetSpellIconSwipeColor("cooldownBlocked")
+			castFrame.iconFrame.cooldown:SetSwipeColor(swipeR, swipeG, swipeB, swipeA)
+		end
 		castFrame.iconFrame.cooldown:SetCooldown(instantIconCooldownStart, instantIconCooldownDuration)
 	else
 		castFrame.iconFrame.cooldown:Hide()
@@ -2193,6 +2201,7 @@ local settingKeys = {
 	"spellicon_offsetY",
 	"spellicon_castProgressSwipe",
 	"spellicon_castProgressSwipeColor",
+	"spellicon_cooldownBlockedSwipeColor",
 }
 
 for _, key in ipairs(settingKeys) do

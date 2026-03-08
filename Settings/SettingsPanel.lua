@@ -1002,6 +1002,12 @@ local function BuildSettingsPanel()
 		L["Show Cooldown Blocked Presses"] or "Show Readable Cooldown",
 		L["Show Cooldown Blocked Presses Tooltip"] or "Show the spell icon with remaining cooldown only when Blizzard exposes readable cooldown data for the pressed ability"
 	)
+	AddColor(
+		iconCategory,
+		"spellicon_cooldownBlockedSwipeColor",
+		L["Readable Cooldown Swipe Color"] or "Readable Cooldown Swipe Color",
+		L["Readable Cooldown Swipe Color Tooltip"] or "Tint color and opacity of the readable cooldown swipe shown after a blocked press"
+	)
 
 	------------------------------------------------------------------------
 	-- Assisted Highlight Settings Subcategory

@@ -47,6 +47,7 @@ local settingKeys = {
 	"spellicon_offsetY",
 	"spellicon_castProgressSwipe",
 	"spellicon_castProgressSwipeColor",
+	"spellicon_cooldownBlockedSwipeColor",
 	"spellicon_showInstantCasts",
 	"spellicon_showTriggeredInstantCasts",
 	"spellicon_failedCastStyle",
