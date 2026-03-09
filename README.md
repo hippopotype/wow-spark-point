@@ -10,7 +10,7 @@
 
 <p align="center">
   <img alt="WoW Version" src="https://img.shields.io/badge/WoW-12.0%2F12.0.1-blue" />
-  <img alt="Version" src="https://img.shields.io/badge/version-1.3.0-green" />
+  <img alt="Version" src="https://img.shields.io/badge/version-1.3.1-green" />
   <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0-blue" />
   <a href="https://www.curseforge.com/wow/addons/sparkpoint">
     <img alt="CurseForge" src="https://img.shields.io/badge/CurseForge-SparkPoint-orange" />
@@ -29,12 +29,18 @@ It currently includes:
 - Up to 3 assignable inner ring slots
 - Class resource display in pip or text mode
 - Decorative rotating ring
-- Spell icon with optional cast progress swipe and instant-cast support
+- Spell icon with cast swipe, instant-cast feedback, and cooldown-blocked feedback
 - Assisted Highlight support for Blizzard's suggested-spell system
 - Shared visibility rules, per-module overrides, and optional HUD transitions
 - Cursor-attached mode, fixed anchor mode, minimap button, and profile support
 
-## New In v1.3.0
+## New In v1.3.1
+
+- Added richer Spell Icon feedback for direct instant casts, triggered instant casts, failed casts, and readable cooldown-blocked presses
+- Added a dedicated readable cooldown swipe color with optional class-color override
+- Standardized slash commands to the `/sparkpoint` command family only
+
+## Previously In v1.3.0
 
 - Added HUD transition effects with configurable fade timing, easing, and show/hide hysteresis
 - Added visibility control to hide SparkPoint while hovering clickable UI for cleaner world targeting
@@ -100,7 +106,11 @@ Displays the icon of the currently cast spell below the ring.
 
 - Optional cast-progress swipe
 - Configurable swipe RGBA color
-- Optional instant-cast icon display
+- Optional instant-cast icon display for direct casts
+- Optional triggered instant-cast icon display for procs and follow-up effects
+- Configurable failed-cast response
+- Optional readable cooldown-blocked feedback with remaining-cooldown swipe
+- Separate readable cooldown swipe color with optional class-color override
 - Configurable size and offsets
 
 ### Assisted Highlight
@@ -140,7 +150,7 @@ Additional behavior:
 - Attach to cursor or use a fixed anchor
 - Minimap button with optional fade behavior
 - Global or class-specific profiles
-- Slash commands for settings and anchor control
+- Standardized `/sparkpoint` slash commands for settings and anchor control
 
 ## Installation
 

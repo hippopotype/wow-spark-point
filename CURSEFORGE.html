@@ -99,7 +99,10 @@
   <li>Up to 3 assignable inner ring slots</li>
   <li>Class resource display in pip or text mode</li>
   <li>Decorative rotating ring</li>
-  <li>Spell icon with optional cast progress swipe and instant-cast support</li>
+  <li>
+    Spell icon with cast swipe, instant-cast feedback, and cooldown-blocked
+    feedback
+  </li>
   <li>Assisted Highlight support for Blizzard's suggested-spell system</li>
   <li>
     Shared visibility rules, per-module overrides, and optional HUD transitions
@@ -108,7 +111,19 @@
     Cursor-attached mode, fixed anchor mode, minimap button, and profile support
   </li>
 </ul>
-<h2><strong>New In v1.3.0</strong></h2>
+<h2><strong>New In v1.3.1</strong></h2>
+<ul>
+  <li>
+    Added richer Spell Icon feedback for direct instant casts, triggered
+    instant casts, failed casts, and readable cooldown-blocked presses
+  </li>
+  <li>
+    Added a dedicated readable cooldown swipe color with optional class-color
+    override
+  </li>
+  <li>Standardized slash commands to the <code>/sparkpoint</code> family only</li>
+</ul>
+<h2><strong>Previously In v1.3.0</strong></h2>
 <ul>
   <li>
     Added HUD transition effects with configurable fade timing, easing, and
@@ -190,7 +205,11 @@
 <ul>
   <li>Optional cast-progress swipe</li>
   <li>Configurable swipe RGBA color</li>
-  <li>Optional instant-cast icon display</li>
+  <li>Optional instant-cast icon display for direct casts</li>
+  <li>Optional triggered instant-cast icon display for procs and follow-up effects</li>
+  <li>Configurable failed-cast response</li>
+  <li>Optional readable cooldown-blocked feedback with remaining-cooldown swipe</li>
+  <li>Separate readable cooldown swipe color with optional class-color override</li>
   <li>Configurable size and offsets</li>
 </ul>
 <h3>Assisted Highlight</h3>
@@ -238,7 +257,7 @@
   <li>Attach to cursor or use a fixed anchor</li>
   <li>Minimap button with optional fade behavior</li>
   <li>Global or class-specific profiles</li>
-  <li>Slash commands for settings and anchor control</li>
+  <li>Standardized <code>/sparkpoint</code> slash commands for settings and anchor control</li>
 </ul>
 <hr />
 <h2><strong>Configuration</strong></h2>
