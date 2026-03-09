@@ -18,6 +18,51 @@ local ADDON_TITLE = "SparkPoint"
 local PROFILE_MODE_CONFIRM_POPUP = "SPARKPOINT_CONFIRM_PROFILE_MODE_CHANGE"
 local PROFILE_COPY_CONFIRM_POPUP = "SPARKPOINT_CONFIRM_PROFILE_COPY"
 
+local NEW_SETTINGS = {
+	spellicon_showTriggeredInstantCasts = true,
+	spellicon_failedCastStyle = true,
+	spellicon_showCooldownBlocked = true,
+	spellicon_cooldownBlockedUseClassColor = true,
+}
+
+local function ApplyNewFeatureBadge(initializer, isNew)
+	if not initializer or not isNew or initializer._sparkPointNewFeatureWrapped then
+		return nil
+	end
+	initializer._sparkPointNewFeatureWrapped = true
+
+	local originalInitFrame = initializer.InitFrame
+	function initializer:InitFrame(frame)
+		if originalInitFrame then
+			originalInitFrame(self, frame)
+		end
+
+		if not frame then
+			return
+		end
+
+		local badge = frame.NewFeature
+		if not badge then
+			local anchor = frame.Text or frame.Label or (frame.Button and frame.Button.Text) or (frame.GetFontString and frame:GetFontString())
+			if not anchor then
+				return
+			end
+
+			badge = CreateFrame("Frame", nil, frame, "NewFeatureLabelTemplate")
+			frame.NewFeature = badge
+			badge:SetScale(0.8)
+			badge:SetFrameStrata("HIGH")
+			badge:SetFrameLevel((frame:GetFrameLevel() or 0) + 5)
+			badge:ClearAllPoints()
+			badge:SetPoint("BOTTOMRIGHT", anchor, "LEFT", 16, -10)
+		end
+
+		badge:SetShown(true)
+	end
+
+	return initializer
+end
+
 local function BuildSettingsPanel()
 	-- Create main settings category
 	local category, layout = Settings.RegisterVerticalLayoutCategory(ADDON_TITLE)
@@ -39,7 +84,8 @@ local function BuildSettingsPanel()
 		setting:SetValueChangedCallback(function(_, value)
 			SetDBValue(dbKey, value, true)
 		end)
-		Settings.CreateCheckbox(cat, setting, tooltip)
+		local initializer = Settings.CreateCheckbox(cat, setting, tooltip)
+		ApplyNewFeatureBadge(initializer, NEW_SETTINGS[dbKey] == true)
 		return setting
 	end
 
@@ -125,14 +171,15 @@ local function BuildSettingsPanel()
 			end
 			return container:GetData()
 		end
-		Settings.CreateDropdown(cat, setting, GetOptions, tooltip)
+		local initializer = Settings.CreateDropdown(cat, setting, GetOptions, tooltip)
+		ApplyNewFeatureBadge(initializer, NEW_SETTINGS[dbKey] == true)
 		return setting
 	end
 
 	------------------------------------------------------------------------
 	-- Helper function to create a color picker (ColorOverride row)
 	------------------------------------------------------------------------
-	local function AddColor(cat, dbKey, displayName, tooltip, hasOpacity)
+	local function AddColor(cat, dbKey, displayName, tooltip, hasOpacity, isNew)
 		local initializer = Settings.CreateElementInitializer("SparkPointColorOverridesPanelNoHead", {
 			categoryID = cat:GetID(),
 			entries = { { key = dbKey, label = displayName, tooltip = tooltip } },
@@ -151,6 +198,7 @@ local function BuildSettingsPanel()
 				return 1, 1, 1, 1
 			end,
 			hasOpacity = hasOpacity ~= false,
+			isNew = isNew == true,
 		})
 		Settings.RegisterInitializer(cat, initializer)
 		return initializer
@@ -1012,7 +1060,9 @@ local function BuildSettingsPanel()
 		iconCategory,
 		"spellicon_cooldownBlockedSwipeColor",
 		L["Readable Cooldown Swipe Color"] or "Readable Cooldown Swipe Color",
-		L["Readable Cooldown Swipe Color Tooltip"] or "Tint color and opacity of the readable cooldown swipe shown after a blocked press"
+		L["Readable Cooldown Swipe Color Tooltip"] or "Tint color and opacity of the readable cooldown swipe shown after a blocked press",
+		nil,
+		true
 	)
 
 	------------------------------------------------------------------------

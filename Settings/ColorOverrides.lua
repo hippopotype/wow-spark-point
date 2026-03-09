@@ -48,12 +48,13 @@ function SparkPointColorOverridesMixin:Init(initializer)
 	self.parentCheck = initializer.data.parentCheck
 	self.colorizeLabel = initializer.data.colorizeLabel or initializer.data.colorizeText
 	self.hasOpacity = initializer.data.hasOpacity == true
+	self.isNew = initializer.data.isNew == true
 
 	if self.Header then
 		self.Header:SetText(self.headerText)
 	end
 	if self.NewFeature then
-		self.NewFeature:SetShown(false)
+		self.NewFeature:SetShown(self.isNew)
 	end
 
 	if not self.callbacksRegistered then
