@@ -60,6 +60,8 @@ addon.DefaultValues = {
 	cast_sparkColor = { r = 1, g = 0.82, b = 0.44, a = 0.72 },
 	cast_sparkScale = 0.5,
 	cast_latencyColor = { r = 1, g = 0.30, b = 0.44, a = 0.82 },
+	cast_channelBarColor = { r = 0.38, g = 0.78, b = 1, a = 0.85 },
+	cast_displayMode = "ALL",
 	cast_reverseChanneling = true,
 	cast_useClassColor = true,
 	cast_visibilitySource = "INHERIT",

@@ -717,6 +717,11 @@ local function BuildSettingsPanel()
 		L["Cast Reverse Channeling"] or "Cast Reverse Channeling",
 		L["Reverse Channeling Tooltip"] or "Reverse the direction for channeled spells"
 	)
+	AddDropdown(castCategory, "cast_displayMode", L["Cast Progress Display"] or "Cast Progress Display", {
+		{ value = "ALL", label = L["Cast Progress Display All"] or "All Casts" },
+		{ value = "NON_CHANNEL", label = L["Cast Progress Display Normal"] or "Normal Casts Only" },
+		{ value = "CHANNEL", label = L["Cast Progress Display Channelled"] or "Channelled Spells Only" },
+	}, L["Cast Progress Display Tooltip"] or "Choose which cast types animate the progress fill. This does not change overall SparkPoint visibility.")
 	local castVisibilityCategory = Settings.RegisterVerticalLayoutSubcategory(castCategory, L["Visibility"] or "Visibility")
 	AddDropdown(
 		castVisibilityCategory,
@@ -734,6 +739,12 @@ local function BuildSettingsPanel()
 	)
 
 	AddColor(castCategory, "cast_barColor", L["Cast Bar Color"] or "Cast Bar Color")
+	AddColor(
+		castCategory,
+		"cast_channelBarColor",
+		L["Channelled Cast Color"] or "Channelled Cast Color",
+		L["Channelled Cast Color Tooltip"] or "Color used for the cast ring fill while channeling"
+	)
 	AddColor(
 		castCategory,
 		"cast_backgroundColor",

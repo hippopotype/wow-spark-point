@@ -40,6 +40,7 @@ local SLOT_SPARK_RADIUS_RATIOS = { 0.5929, 0.4875, 0.3819 }
 local castFrame
 local castDonut, latencyDonut
 local isCasting = false
+local isChanneling = false
 local castStartTime, castEndTime, castDuration
 local castLatency = 0
 local castGlowMaxOpacity = 0.8
@@ -153,6 +154,28 @@ end
 
 local function IsCastVisibilityAllowed()
 	return (not Visibility) or Visibility:ShouldShow("cast")
+end
+
+local function ShouldShowCurrentCastProgress()
+	local mode = GetDBValue("cast_displayMode")
+	if mode == "CHANNEL" then
+		return isChanneling
+	end
+	if mode == "NON_CHANNEL" then
+		return not isChanneling
+	end
+	return true
+end
+
+local function GetActiveCastBarColor()
+	if isChanneling then
+		return GetDBColorTable("cast_channelBarColor")
+	end
+	if GetDBBool("cast_useClassColor") then
+		local r, g, b, a = API.GetPlayerClassColor()
+		return { r = r, g = g, b = b, a = a }
+	end
+	return GetDBColorTable("cast_barColor")
 end
 
 local function ShouldBypassHoverHideForInstantIcon()
@@ -1241,12 +1264,30 @@ local function OnUpdate(self, elapsed)
 		cr, cg, cb, ca = API.GetPlayerClassColor()
 	end
 
+	if not ShouldShowCurrentCastProgress() then
+		if castDonut then
+			castDonut:SetAngle(0)
+			castDonut:SetOverlayAlpha(0)
+			castDonut:SetOverlayShown(false)
+		end
+		if latencyDonut then
+			latencyDonut:Hide()
+		end
+		if castFrame.sparkTexture then
+			castFrame.sparkTexture:Hide()
+		end
+		if castPerc >= 1 then
+			Cast:Hide()
+		end
+		return
+	end
+
 	if castPerc < 1 then
 		local angle = castPerc * 360
 		local clampedPerc = math.max(0, math.min(1, castPerc))
 
 		-- Reverse for channeled spells if enabled
-		if GetDBBool("cast_reverseChanneling") and UnitChannelInfo("player") then
+		if GetDBBool("cast_reverseChanneling") and isChanneling then
 			angle = (1 - castPerc) * 360
 		end
 
@@ -1305,8 +1346,16 @@ function Cast:Show()
 	end
 	ShowCastFrame()
 
+	if castDonut and not ShouldShowCurrentCastProgress() then
+		castDonut:SetOverlayTextureBase(CAST_OVERLAY_DEFAULT)
+		castDonut:Show()
+		castDonut:SetAngle(0)
+		castDonut:SetOverlayShown(false)
+		castDonut:SetOverlayAlpha(0)
+	end
+
 	-- Show latency indicator
-	if latencyDonut then
+	if latencyDonut and ShouldShowCurrentCastProgress() then
 		local latencyAngle = math.max(0.1, castLatency * 360)
 		latencyDonut:SetAngle(latencyAngle)
 		if castDonut then
@@ -1323,8 +1372,10 @@ function Cast:Show()
 	if castFrame.frameTexture then
 		castFrame.frameTexture:Show()
 	end
-	if castFrame.sparkTexture then
+	if castFrame.sparkTexture and ShouldShowCurrentCastProgress() then
 		castFrame.sparkTexture:Show()
+	elseif castFrame.sparkTexture then
+		castFrame.sparkTexture:Hide()
 	end
 
 	pendingVisuals = true
@@ -1419,6 +1470,7 @@ function Cast:Hide()
 	interruptFlashToken = interruptFlashToken + 1
 	interruptFlashActive = false
 	isCasting = false
+	isChanneling = false
 	currentCastGUID = nil
 	pendingVisuals = false
 	if castDonut then
@@ -1472,6 +1524,7 @@ function Cast:ShowInterruptFlash(castGUID)
 
 	-- Stop cast progress lifecycle from racing this brief flash.
 	isCasting = false
+	isChanneling = false
 	castDuration = 0
 	castStartTime = 0
 	castEndTime = 0
@@ -1564,6 +1617,7 @@ function Cast:UNIT_SPELLCAST_START(event, unit, castGUID, spellID)
 		return
 	end
 
+	isChanneling = false
 	currentCastGUID = castGUID
 	castStartTime = startTimeMS
 	castEndTime = endTimeMS
@@ -1686,6 +1740,7 @@ function Cast:UNIT_SPELLCAST_CHANNEL_START(event, unit, castGUID, spellID)
 		return
 	end
 
+	isChanneling = true
 	currentCastGUID = castGUID
 	castStartTime = startTimeMS
 	castEndTime = endTimeMS
@@ -1941,7 +1996,7 @@ function Cast:ApplyOptions()
 			radius = radius,
 			thickness = thickness,
 			useThicknessSuffix = false,
-			barColor = useClassColor and { r = cr, g = cg, b = cb, a = ca } or GetDBColorTable("cast_barColor"),
+			barColor = GetActiveCastBarColor(),
 			backgroundColor = backgroundColor,
 			backgroundTextureBase = "cast_background",
 			progressTextureBase = "cast_fill",
@@ -1953,7 +2008,7 @@ function Cast:ApplyOptions()
 		-- Update existing donuts
 		castDonut:SetRadius(radius)
 		castDonut:SetThickness(thickness)
-		castDonut:SetBarColor(useClassColor and { r = cr, g = cg, b = cb, a = ca } or GetDBColorTable("cast_barColor"))
+		castDonut:SetBarColor(GetActiveCastBarColor())
 		castDonut:SetBackgroundColor(backgroundColor)
 
 		latencyDonut:SetRadius(radius)
@@ -2193,6 +2248,7 @@ end)
 local settingKeys = {
 	"cast_radius",
 	"cast_barColor",
+	"cast_channelBarColor",
 	"cast_backgroundColor",
 	"cast_backgroundOpacity",
 	"cast_frameOpacity",
@@ -2206,6 +2262,7 @@ local settingKeys = {
 	"cast_clickFeedbackRightColor",
 	"cast_sparkColor",
 	"cast_latencyColor",
+	"cast_displayMode",
 	"cast_useClassColor",
 	"cast_spellTextEnabled",
 	"cast_spellTextFont",
