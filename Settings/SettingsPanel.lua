@@ -23,6 +23,11 @@ local NEW_SETTINGS = {
 	spellicon_failedCastStyle = true,
 	spellicon_showCooldownBlocked = true,
 	spellicon_cooldownBlockedUseClassColor = true,
+	cast_displayMode = true,
+	cast_fillColorSource = true,
+	cast_channelBarColor = true,
+	cast_sparkUseClassColor = true,
+	cast_spellTextUseClassColor = true,
 }
 
 local function ApplyNewFeatureBadge(initializer, isNew)
@@ -228,9 +233,9 @@ local function BuildSettingsPanel()
 		{ key = "IN_COMBAT", label = L["Visibility In Combat"] or "In Combat" },
 		{ key = "OUT_OF_COMBAT", label = L["Visibility Out of Combat"] or "Out of Combat" },
 		{ key = "HAS_TARGET", label = L["Visibility Has Target"] or "Has Target" },
-		{ key = "TARGET_HOSTILE", label = L["Visibility Target Hostile"] or "Hostile / Unfriendly", indent = 1 },
-		{ key = "TARGET_NEUTRAL", label = L["Visibility Target Neutral"] or "Neutral", indent = 1 },
-		{ key = "TARGET_FRIENDLY", label = L["Visibility Target Friendly"] or "Friendly", indent = 1 },
+		{ key = "TARGET_HOSTILE", label = L["Visibility Target Hostile"] or "Hostile / Unfriendly", indent = 1, isNew = true },
+		{ key = "TARGET_NEUTRAL", label = L["Visibility Target Neutral"] or "Neutral", indent = 1, isNew = true },
+		{ key = "TARGET_FRIENDLY", label = L["Visibility Target Friendly"] or "Friendly", indent = 1, isNew = true },
 		{ key = "CASTING", label = L["Visibility While Casting"] or "While Casting" },
 		{ key = "AFTER_INSTANT_CAST", label = L["Visibility After Instant Cast"] or "After Instant Cast" },
 		{ key = "IN_PARTY", label = L["Visibility In Party"] or "In Party" },
@@ -355,11 +360,13 @@ local function BuildSettingsPanel()
 			end)
 			settings[#settings + 1] = setting
 			settingsByRuleKey[option.key] = setting
-			controls[#controls + 1] = Settings.CreateCheckbox(
+			local initializer = Settings.CreateCheckbox(
 				groupCategory,
 				setting,
 				tooltip or (L["Visibility Multi Select Tooltip"] or "Select one or more rules. The element shows when any selected rule is true.")
 			)
+			ApplyNewFeatureBadge(initializer, option.isNew == true)
+			controls[#controls + 1] = initializer
 		end
 		return {
 			category = groupCategory,
@@ -756,7 +763,9 @@ local function BuildSettingsPanel()
 		castCategory,
 		"cast_channelBarColor",
 		L["Channelled Cast Color"] or "Channelled Cast Color",
-		L["Channelled Cast Color Tooltip"] or "Color used for the cast ring fill while channeling"
+		L["Channelled Cast Color Tooltip"] or "Color used for the cast ring fill while channeling",
+		true,
+		true
 	)
 	AddColor(
 		castCategory,
