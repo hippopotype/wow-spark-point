@@ -228,6 +228,9 @@ local function BuildSettingsPanel()
 		{ key = "IN_COMBAT", label = L["Visibility In Combat"] or "In Combat" },
 		{ key = "OUT_OF_COMBAT", label = L["Visibility Out of Combat"] or "Out of Combat" },
 		{ key = "HAS_TARGET", label = L["Visibility Has Target"] or "Has Target" },
+		{ key = "TARGET_HOSTILE", label = L["Visibility Target Hostile"] or "Hostile / Unfriendly", indent = 1 },
+		{ key = "TARGET_NEUTRAL", label = L["Visibility Target Neutral"] or "Neutral", indent = 1 },
+		{ key = "TARGET_FRIENDLY", label = L["Visibility Target Friendly"] or "Friendly", indent = 1 },
 		{ key = "CASTING", label = L["Visibility While Casting"] or "While Casting" },
 		{ key = "AFTER_INSTANT_CAST", label = L["Visibility After Instant Cast"] or "After Instant Cast" },
 		{ key = "IN_PARTY", label = L["Visibility In Party"] or "In Party" },
@@ -304,7 +307,7 @@ local function BuildSettingsPanel()
 				proxyKey,
 				visibilityRuleProxy,
 				Settings.VarType.Boolean,
-				option.label,
+				((option.indent and option.indent > 0) and (string.rep("  ", option.indent) .. option.label) or option.label),
 				defaultRules[option.key] == true
 			)
 			setting:SetValueChangedCallback(function(_, value)

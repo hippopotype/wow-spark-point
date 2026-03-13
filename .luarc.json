@@ -68,14 +68,17 @@
     "StaticPopupDialogs",
     "UIParent",
     "UnitAffectingCombat",
+    "UnitCanAttack",
     "UnitCastingInfo",
     "UnitChannelInfo",
     "UnitClass",
     "UnitExists",
+    "UnitIsFriend",
     "UseAction",
     "hooksecurefunc",
     "UnitPower",
     "UnitPowerMax",
+    "UnitReaction",
     "WorldFrame"
   ],
   "Lua.workspace.ignoreDir": [".clones", ".git"]

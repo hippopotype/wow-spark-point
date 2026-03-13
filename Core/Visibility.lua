@@ -16,6 +16,9 @@ Visibility.MODES = {
 	IN_COMBAT = "IN_COMBAT",
 	OUT_OF_COMBAT = "OUT_OF_COMBAT",
 	HAS_TARGET = "HAS_TARGET",
+	TARGET_HOSTILE = "TARGET_HOSTILE",
+	TARGET_NEUTRAL = "TARGET_NEUTRAL",
+	TARGET_FRIENDLY = "TARGET_FRIENDLY",
 	CASTING = "CASTING",
 	AFTER_INSTANT_CAST = "AFTER_INSTANT_CAST",
 	IN_PARTY = "IN_PARTY",
@@ -33,6 +36,9 @@ local VisibilityRuleOrder = {
 	Visibility.MODES.IN_COMBAT,
 	Visibility.MODES.OUT_OF_COMBAT,
 	Visibility.MODES.HAS_TARGET,
+	Visibility.MODES.TARGET_HOSTILE,
+	Visibility.MODES.TARGET_NEUTRAL,
+	Visibility.MODES.TARGET_FRIENDLY,
 	Visibility.MODES.CASTING,
 	Visibility.MODES.AFTER_INSTANT_CAST,
 	Visibility.MODES.IN_PARTY,
@@ -363,6 +369,39 @@ function Visibility:IsPlayerCasting()
 	return UnitCastingInfo("player") ~= nil or UnitChannelInfo("player") ~= nil
 end
 
+function Visibility:GetTargetDisposition()
+	if not (UnitExists and UnitExists("target")) then
+		return "NONE"
+	end
+
+	local reaction = UnitReaction and UnitReaction("target", "player")
+	if type(reaction) == "number" then
+		if reaction <= 3 then
+			return "HOSTILE"
+		end
+		if reaction == 4 then
+			return "NEUTRAL"
+		end
+		if reaction >= 5 then
+			return "FRIENDLY"
+		end
+	end
+
+	if UnitCanAttack and UnitCanAttack("target", "player") then
+		return "HOSTILE"
+	end
+
+	if UnitCanAttack and UnitCanAttack("player", "target") then
+		return "NEUTRAL"
+	end
+
+	if UnitIsFriend and UnitIsFriend("player", "target") then
+		return "FRIENDLY"
+	end
+
+	return "NONE"
+end
+
 function Visibility:EvaluateRules(rules)
 	rules = NormalizeRules(rules)
 	if rules[Visibility.MODES.ALWAYS] then
@@ -376,6 +415,7 @@ function Visibility:EvaluateRules(rules)
 		inCombat = UnitAffectingCombat("player") and true or false
 	end
 	local hasTarget = UnitExists and UnitExists("target") and true or false
+	local targetDisposition = self:GetTargetDisposition()
 	local isCasting = self:IsPlayerCasting()
 	local afterInstantCast = self:IsAfterInstantCastActive()
 	local inRaid = IsInRaid and IsInRaid() and true or false
@@ -392,6 +432,15 @@ function Visibility:EvaluateRules(rules)
 		return true
 	end
 	if rules[Visibility.MODES.HAS_TARGET] and hasTarget then
+		return true
+	end
+	if rules[Visibility.MODES.TARGET_HOSTILE] and targetDisposition == "HOSTILE" then
+		return true
+	end
+	if rules[Visibility.MODES.TARGET_NEUTRAL] and targetDisposition == "NEUTRAL" then
+		return true
+	end
+	if rules[Visibility.MODES.TARGET_FRIENDLY] and targetDisposition == "FRIENDLY" then
 		return true
 	end
 	if rules[Visibility.MODES.CASTING] and isCasting then
