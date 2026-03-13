@@ -5,7 +5,7 @@ local addonName, addon = ...
 _G.SparkPoint = addon
 
 -- Version info
-addon.VERSION = "1.0.0"
+addon.VERSION = "1.3.2"
 
 -- Addon folder path for textures
 addon.addonFolder = "Interface\\AddOns\\" .. addonName

@@ -111,20 +111,36 @@
     Cursor-attached mode, fixed anchor mode, minimap button, and profile support
   </li>
 </ul>
-<h2><strong>New In v1.3.1</strong></h2>
+<h2><strong>New In v1.3.2</strong></h2>
+<ul>
+  <li>Added "Cast Progress Display" setting</li>
+  <li>
+    Split cast fill color controls into explicit source modes with single-color,
+    normal/channelled, and class-color behavior
+  </li>
+  <li>
+    Added separate class-color toggles for the cast spark and cast spell text
+  </li>
+  <li>
+    Expanded visibility rules with hostile/unfriendly, neutral and
+    friendlytarget filters
+  </li>
+  <li>Added interrupt-flash feedback for interrupted channelled casts</li>
+</ul>
+
+<h2><strong>Previously In v1.3.x</strong></h2>
 <ul>
   <li>
-    Added richer Spell Icon feedback for direct instant casts, triggered
-    instant casts, failed casts, and readable cooldown-blocked presses
+    Added richer Spell Icon feedback for direct instant casts, triggered instant
+    casts, failed casts, and readable cooldown-blocked presses
   </li>
   <li>
     Added a dedicated readable cooldown swipe color with optional class-color
     override
   </li>
-  <li>Standardized slash commands to the <code>/sparkpoint</code> family only</li>
-</ul>
-<h2><strong>Previously In v1.3.0</strong></h2>
-<ul>
+  <li>
+    Standardized slash commands to the <code>/sparkpoint</code> family only
+  </li>
   <li>
     Added HUD transition effects with configurable fade timing, easing, and
     show/hide hysteresis
@@ -153,8 +169,11 @@
     Optional spell name text with configurable font, size, outline, color, and
     offsets
   </li>
+  <li>
+    Configurable fill color modes, including class color and separate
+    channelled-cast color
+  </li>
   <li>Configurable bar, spark, glow, frame, and background tint/opacity</li>
-  <li>Optional class-color override</li>
   <li>Click-feedback ring for left and right mouse buttons</li>
 </ul>
 <h3>Inner Ring Slots</h3>
@@ -206,10 +225,16 @@
   <li>Optional cast-progress swipe</li>
   <li>Configurable swipe RGBA color</li>
   <li>Optional instant-cast icon display for direct casts</li>
-  <li>Optional triggered instant-cast icon display for procs and follow-up effects</li>
+  <li>
+    Optional triggered instant-cast icon display for procs and follow-up effects
+  </li>
   <li>Configurable failed-cast response</li>
-  <li>Optional readable cooldown-blocked feedback with remaining-cooldown swipe</li>
-  <li>Separate readable cooldown swipe color with optional class-color override</li>
+  <li>
+    Optional readable cooldown-blocked feedback with remaining-cooldown swipe
+  </li>
+  <li>
+    Separate readable cooldown swipe color with optional class-color override
+  </li>
   <li>Configurable size and offsets</li>
 </ul>
 <h3>Assisted Highlight</h3>
@@ -257,7 +282,10 @@
   <li>Attach to cursor or use a fixed anchor</li>
   <li>Minimap button with optional fade behavior</li>
   <li>Global or class-specific profiles</li>
-  <li>Standardized <code>/sparkpoint</code> slash commands for settings and anchor control</li>
+  <li>
+    Standardized <code>/sparkpoint</code> slash commands for settings and anchor
+    control
+  </li>
 </ul>
 <hr />
 <h2><strong>Configuration</strong></h2>
@@ -291,8 +319,8 @@
 <p>You can also open settings from the minimap button.</p>
 <h3>Settings Layout</h3>
 <p>
-  Open the Blizzard Settings panel via <code>/sparkpoint</code>. SparkPoint provides
-  sections for:
+  Open the Blizzard Settings panel via <code>/sparkpoint</code>. SparkPoint
+  provides sections for:
 </p>
 <ul>
   <li>General</li>

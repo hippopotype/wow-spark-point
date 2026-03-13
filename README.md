@@ -10,7 +10,7 @@
 
 <p align="center">
   <img alt="WoW Version" src="https://img.shields.io/badge/WoW-12.0%2F12.0.1-blue" />
-  <img alt="Version" src="https://img.shields.io/badge/version-1.3.1-green" />
+  <img alt="Version" src="https://img.shields.io/badge/version-1.3.2-green" />
   <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0-blue" />
   <a href="https://www.curseforge.com/wow/addons/sparkpoint">
     <img alt="CurseForge" src="https://img.shields.io/badge/CurseForge-SparkPoint-orange" />
@@ -34,14 +34,19 @@ It currently includes:
 - Shared visibility rules, per-module overrides, and optional HUD transitions
 - Cursor-attached mode, fixed anchor mode, minimap button, and profile support
 
-## New In v1.3.1
+## New In v1.3.2
+
+- Added cast progress display modes for all casts, normal casts only, or channelled spells only
+- Refactored cast fill color controls into explicit source modes, including single-color, split normal/channelled, and class-color behavior
+- Added separate class-color toggles for cast spark and cast spell text
+- Expanded visibility rules with hostile/unfriendly, neutral, and friendly target filters
+- Added interrupt-flash feedback for interrupted channelled casts
+
+## Previously In v1.3.x
 
 - Added richer Spell Icon feedback for direct instant casts, triggered instant casts, failed casts, and readable cooldown-blocked presses
 - Added a dedicated readable cooldown swipe color with optional class-color override
 - Standardized slash commands to the `/sparkpoint` command family only
-
-## Previously In v1.3.0
-
 - Added HUD transition effects with configurable fade timing, easing, and show/hide hysteresis
 - Added visibility control to hide SparkPoint while hovering clickable UI for cleaner world targeting
 - Added customizable background tint colors for the cast ring and inner slot rings
@@ -60,8 +65,9 @@ The main cast ring renders around your cursor and supports:
 - Latency arc
 - Interrupt/failure flash
 - Optional spell name text with configurable font, size, outline, color, and offsets
+- Configurable fill color modes, including class color and separate channelled-cast color
+- Independent class-color toggles for spark and spell text
 - Configurable bar, spark, glow, frame, and background tint/opacity
-- Optional class-color override
 - Click-feedback ring for left and right mouse buttons
 
 ### Inner Ring Slots
@@ -134,6 +140,9 @@ Available rules include:
 - In Combat
 - Out of Combat
 - Has Target
+- Has Hostile / Unfriendly Target
+- Has Neutral Target
+- Has Friendly Target
 - While Casting
 - After Instant Cast
 - In Party
