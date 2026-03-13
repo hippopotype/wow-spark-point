@@ -738,7 +738,17 @@ local function BuildSettingsPanel()
 		L["Hide While Hovering UI Tooltip"] or "Hide SparkPoint while cursor is over clickable UI frames. Keeps SparkPoint visible primarily for world targeting."
 	)
 
-	AddColor(castCategory, "cast_barColor", L["Cast Bar Color"] or "Cast Bar Color")
+	AddDropdown(castCategory, "cast_fillColorSource", L["Cast Fill Color Source"] or "Cast Fill Color Source", {
+		{ value = "SINGLE", label = L["Cast Fill Color Source Single"] or "Single Color" },
+		{ value = "SPLIT", label = L["Cast Fill Color Source Split"] or "Separate Normal / Channelled Colors" },
+		{ value = "CLASS", label = L["Cast Fill Color Source Class"] or "Class Color" },
+	}, L["Cast Fill Color Source Tooltip"] or "Choose how the main cast ring fill color is selected")
+	AddColor(
+		castCategory,
+		"cast_barColor",
+		L["Primary Cast Color"] or "Primary Cast Color",
+		L["Primary Cast Color Tooltip"] or "Used for all casts in Single Color mode, or normal non-channelled casts in Separate mode"
+	)
 	AddColor(
 		castCategory,
 		"cast_channelBarColor",
@@ -751,12 +761,6 @@ local function BuildSettingsPanel()
 		L["Background Color"] or "Background Color",
 		L["Cast Background Color Tooltip"] or "Tint color for the cast ring background texture.",
 		false
-	)
-	AddCheckbox(
-		castCategory,
-		"cast_useClassColor",
-		L["Cast Use Class Color"] or "Cast Use Class Color",
-		L["Cast Use Class Color Tooltip"] or "Override cast colors with your class color"
 	)
 	AddSlider(
 		castCategory,
@@ -815,10 +819,22 @@ local function BuildSettingsPanel()
 		L["Click Feedback Right Color"] or "Right Click Color",
 		L["Click Feedback Right Color Tooltip"] or "Color for right-click feedback when class color is disabled"
 	)
+	AddCheckbox(
+		castCategory,
+		"cast_sparkUseClassColor",
+		L["Cast Spark Use Class Color"] or "Spark Uses Class Color",
+		L["Cast Spark Use Class Color Tooltip"] or "Use your class color for the cast spark instead of the custom spark color"
+	)
 	AddColor(castCategory, "cast_sparkColor", L["Cast Spark Color"] or "Cast Spark Color")
 	AddColor(castCategory, "cast_latencyColor", L["Cast Latency Color"] or "Cast Latency Color")
 
 	AddCheckbox(castCategory, "cast_spellTextEnabled", L["Cast Show Spell Name"] or "Cast Show Spell Name", L["Show Spell Name Tooltip"] or "Display the spell name above the ring")
+	AddCheckbox(
+		castCategory,
+		"cast_spellTextUseClassColor",
+		L["Cast Spell Text Use Class Color"] or "Spell Text Uses Class Color",
+		L["Cast Spell Text Use Class Color Tooltip"] or "Use your class color for spell text instead of the custom text color"
+	)
 	AddColor(castCategory, "cast_spellTextColor", L["Cast Spell Text Color"] or "Cast Spell Text Color")
 	AddSlider(castCategory, "cast_spellTextSize", L["Cast Spell Text Size"] or "Cast Spell Text Size", 8, 24, 1)
 

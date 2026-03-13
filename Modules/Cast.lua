@@ -168,12 +168,13 @@ local function ShouldShowCurrentCastProgress()
 end
 
 local function GetActiveCastBarColor()
-	if isChanneling then
-		return GetDBColorTable("cast_channelBarColor")
-	end
-	if GetDBBool("cast_useClassColor") then
+	local source = GetDBValue("cast_fillColorSource")
+	if source == "CLASS" then
 		local r, g, b, a = API.GetPlayerClassColor()
 		return { r = r, g = g, b = b, a = a }
+	end
+	if source == "SPLIT" and isChanneling then
+		return GetDBColorTable("cast_channelBarColor")
 	end
 	return GetDBColorTable("cast_barColor")
 end
@@ -1258,11 +1259,6 @@ local function OnUpdate(self, elapsed)
 
 	local now = GetTime() * 1000
 	local castPerc = (now - castStartTime) / castDuration
-	local useClassColor = GetDBBool("cast_useClassColor")
-	local cr, cg, cb, ca
-	if useClassColor then
-		cr, cg, cb, ca = API.GetPlayerClassColor()
-	end
 
 	if not ShouldShowCurrentCastProgress() then
 		if castDonut then
@@ -1318,8 +1314,8 @@ local function OnUpdate(self, elapsed)
 		spark:SetPoint("CENTER", castFrame, "CENTER", x, y)
 
 		local r, g, b, a
-		if useClassColor then
-			r, g, b, a = cr, cg, cb, ca
+		if GetDBBool("cast_sparkUseClassColor") then
+			r, g, b, a = API.GetPlayerClassColor()
 		else
 			r, g, b, a = GetDBColor("cast_sparkColor")
 		end
@@ -1345,6 +1341,10 @@ function Cast:Show()
 		return
 	end
 	ShowCastFrame()
+
+	if castDonut then
+		castDonut:SetBarColor(GetActiveCastBarColor())
+	end
 
 	if castDonut and not ShouldShowCurrentCastProgress() then
 		castDonut:SetOverlayTextureBase(CAST_OVERLAY_DEFAULT)
@@ -1934,7 +1934,6 @@ function Cast:ApplyOptions()
 
 	local radius = GetDBValue("cast_radius")
 	local thickness = 20
-	local useClassColor = GetDBBool("cast_useClassColor")
 	local frameOpacity = GetDBValue("cast_frameOpacity")
 	if frameOpacity == nil then
 		frameOpacity = 0.8
@@ -1948,10 +1947,6 @@ function Cast:ApplyOptions()
 		glowOpacity = 0.8
 	end
 	castGlowMaxOpacity = glowOpacity
-	local cr, cg, cb, ca
-	if useClassColor then
-		cr, cg, cb, ca = API.GetPlayerClassColor()
-	end
 	local backgroundColorSetting = GetDBColorTable("cast_backgroundColor") or { r = 1, g = 1, b = 1, a = 1 }
 	local backgroundColor = {
 		r = backgroundColorSetting.r or 1,
@@ -1964,8 +1959,8 @@ function Cast:ApplyOptions()
 
 	-- Update spark
 	local r, g, b, a
-	if useClassColor then
-		r, g, b, a = cr, cg, cb, ca
+	if GetDBBool("cast_sparkUseClassColor") then
+		r, g, b, a = API.GetPlayerClassColor()
 	else
 		r, g, b, a = GetDBColor("cast_sparkColor")
 	end
@@ -2066,8 +2061,8 @@ function Cast:ApplyOptions()
 		castFrame.spellText:SetFont(font, size, outline)
 
 		local tr, tg, tb, ta
-		if useClassColor then
-			tr, tg, tb, ta = cr, cg, cb, ca
+		if GetDBBool("cast_spellTextUseClassColor") then
+			tr, tg, tb, ta = API.GetPlayerClassColor()
 		else
 			tr, tg, tb, ta = GetDBColor("cast_spellTextColor")
 		end
@@ -2249,6 +2244,7 @@ local settingKeys = {
 	"cast_radius",
 	"cast_barColor",
 	"cast_channelBarColor",
+	"cast_fillColorSource",
 	"cast_backgroundColor",
 	"cast_backgroundOpacity",
 	"cast_frameOpacity",
@@ -2261,14 +2257,15 @@ local settingKeys = {
 	"cast_clickFeedbackLeftColor",
 	"cast_clickFeedbackRightColor",
 	"cast_sparkColor",
+	"cast_sparkUseClassColor",
 	"cast_latencyColor",
 	"cast_displayMode",
-	"cast_useClassColor",
 	"cast_spellTextEnabled",
 	"cast_spellTextFont",
 	"cast_spellTextSize",
 	"cast_spellTextOutline",
 	"cast_spellTextColor",
+	"cast_spellTextUseClassColor",
 	"cast_spellTextOffsetX",
 	"cast_spellTextOffsetY",
 	"spellicon_size",
