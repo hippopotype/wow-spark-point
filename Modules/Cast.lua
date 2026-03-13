@@ -71,6 +71,7 @@ local pendingInstantSource
 local interruptFlashToken = 0
 local interruptFlashActive = false
 local INTERRUPT_FLASH_DURATION = 0.2
+local CHANNEL_INTERRUPT_EARLY_STOP_GRACE_MS = 150
 local INSTANT_PENDING_WINDOW = 0.75
 local FAILED_ATTEMPT_FEEDBACK_DURATION = 0.45
 local LAST_ATTEMPT_WINDOW = 0.35
@@ -177,6 +178,16 @@ local function GetActiveCastBarColor()
 		return GetDBColorTable("cast_channelBarColor")
 	end
 	return GetDBColorTable("cast_barColor")
+end
+
+local function DidChannelEndEarly(interruptedBy)
+	if interruptedBy then
+		return true
+	end
+	if not isChanneling or castEndTime == 0 then
+		return false
+	end
+	return (GetTime() * 1000) < (castEndTime - CHANNEL_INTERRUPT_EARLY_STOP_GRACE_MS)
 end
 
 local function ShouldBypassHoverHideForInstantIcon()
@@ -1767,7 +1778,7 @@ function Cast:UNIT_SPELLCAST_CHANNEL_START(event, unit, castGUID, spellID)
 	self:Show()
 end
 
-function Cast:UNIT_SPELLCAST_CHANNEL_STOP(event, unit, castGUID, spellID)
+function Cast:UNIT_SPELLCAST_CHANNEL_STOP(event, unit, castGUID, spellID, interruptedBy)
 	if unit ~= "player" then
 		return
 	end
@@ -1779,7 +1790,11 @@ function Cast:UNIT_SPELLCAST_CHANNEL_STOP(event, unit, castGUID, spellID)
 		return
 	end
 	if castGUID == currentCastGUID then
-		self:Hide()
+		if DidChannelEndEarly(interruptedBy) then
+			self:ShowInterruptFlash(castGUID)
+		else
+			self:Hide()
+		end
 	end
 end
 
