@@ -232,7 +232,7 @@ local function BuildSettingsPanel()
 		{ key = "ALWAYS", label = L["Visibility Always"] or "Always" },
 		{ key = "IN_COMBAT", label = L["Visibility In Combat"] or "In Combat" },
 		{ key = "OUT_OF_COMBAT", label = L["Visibility Out of Combat"] or "Out of Combat" },
-		{ key = "HAS_TARGET", label = L["Visibility Has Target"] or "Has Target" },
+		{ key = "HAS_TARGET", label = L["Visibility Has Target"] or "Has Any Target" },
 		{ key = "TARGET_HOSTILE", label = L["Visibility Target Hostile"] or "Hostile / Unfriendly", indent = 1, isNew = true },
 		{ key = "TARGET_NEUTRAL", label = L["Visibility Target Neutral"] or "Neutral", indent = 1, isNew = true },
 		{ key = "TARGET_FRIENDLY", label = L["Visibility Target Friendly"] or "Friendly", indent = 1, isNew = true },
