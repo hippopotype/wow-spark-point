@@ -40,7 +40,7 @@ addon.DefaultValues = {
 	transition_outDurationMs = 360,
 	transition_easing = "outSine",
 	transition_hysteresisShowMs = 40,
-	transition_hysteresisHideMs = 180,
+	transition_hysteresisHideMs = 300,
 
 	-- Module enable flags
 	moduleEnabled_Cast = true,
