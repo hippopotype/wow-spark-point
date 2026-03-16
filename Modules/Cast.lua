@@ -707,6 +707,26 @@ local function ActivateAfterInstantCastVisibility(duration)
 	end
 end
 
+local function ActivateAfterPlayerInstantCastVisibility(duration)
+	if not Visibility or not Visibility.ActivateAfterPlayerInstantCastWindow then
+		return
+	end
+
+	if Visibility:ActivateAfterPlayerInstantCastWindow(duration) then
+		CallbackRegistry:Trigger("VisibilityContextChanged", "SPELL_ICON_FEEDBACK_AFTER_PLAYER_INSTANT_CAST")
+	end
+end
+
+local function ActivateAfterTriggeredInstantCastVisibility(duration)
+	if not Visibility or not Visibility.ActivateAfterTriggeredInstantCastWindow then
+		return
+	end
+
+	if Visibility:ActivateAfterTriggeredInstantCastWindow(duration) then
+		CallbackRegistry:Trigger("VisibilityContextChanged", "SPELL_ICON_FEEDBACK_AFTER_TRIGGERED_INSTANT_CAST")
+	end
+end
+
 function Cast:SetSpellIconEnabled(enabled)
 	spellIconEnabled = enabled == true
 	if castFrame and castFrame.iconFrame then
@@ -1830,14 +1850,18 @@ function Cast:UNIT_SPELLCAST_SUCCEEDED(event, unit, castGUID, spellID)
 	ClearPendingInstantIntent()
 
 	if playerInstantSpellID then
+		ActivateAfterPlayerInstantCastVisibility()
 		if ShouldShowPlayerInstantCasts() then
 			ShowInstantSpellIcon(playerInstantSpellID, true)
 		end
 		return
 	end
 
-	if ShouldShowTriggeredInstantCasts() and IsInstantSpell(resolvedSpellID) then
-		ShowInstantSpellIcon(resolvedSpellID, true)
+	if IsInstantSpell(resolvedSpellID) then
+		ActivateAfterTriggeredInstantCastVisibility()
+		if ShouldShowTriggeredInstantCasts() then
+			ShowInstantSpellIcon(resolvedSpellID, true)
+		end
 	end
 end
 

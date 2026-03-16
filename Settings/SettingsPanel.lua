@@ -240,6 +240,7 @@ local function BuildSettingsPanel()
 		{ key = "TARGET_FRIENDLY", label = L["Visibility Target Friendly"] or "Friendly", indent = 1, isNew = true },
 		{ key = "CASTING", label = L["Visibility While Casting"] or "While Casting" },
 		{ key = "AFTER_INSTANT_CAST", label = L["Visibility After Instant Cast"] or "After Instant Cast" },
+		{ key = "AFTER_TRIGGERED_INSTANT_CAST", label = L["Visibility After Triggered Instant Cast"] or "After Triggered Instant Cast", isNew = true },
 		{ key = "IN_PARTY", label = L["Visibility In Party"] or "In Party" },
 		{ key = "IN_RAID", label = L["Visibility In Raid"] or "In Raid" },
 		{ key = "IN_INSTANCE", label = L["Visibility In Instanced Content"] or "In Instanced Content" },
