@@ -16,6 +16,8 @@ Visibility.MODES = {
 	IN_COMBAT = "IN_COMBAT",
 	OUT_OF_COMBAT = "OUT_OF_COMBAT",
 	HAS_TARGET = "HAS_TARGET",
+	TARGET_ALIVE = "TARGET_ALIVE",
+	TARGET_DEAD = "TARGET_DEAD",
 	TARGET_HOSTILE = "TARGET_HOSTILE",
 	TARGET_NEUTRAL = "TARGET_NEUTRAL",
 	TARGET_FRIENDLY = "TARGET_FRIENDLY",
@@ -36,6 +38,8 @@ local VisibilityRuleOrder = {
 	Visibility.MODES.IN_COMBAT,
 	Visibility.MODES.OUT_OF_COMBAT,
 	Visibility.MODES.HAS_TARGET,
+	Visibility.MODES.TARGET_ALIVE,
+	Visibility.MODES.TARGET_DEAD,
 	Visibility.MODES.TARGET_HOSTILE,
 	Visibility.MODES.TARGET_NEUTRAL,
 	Visibility.MODES.TARGET_FRIENDLY,
@@ -402,6 +406,55 @@ function Visibility:GetTargetDisposition()
 	return "NONE"
 end
 
+function Visibility:GetTargetLifeState()
+	if not (UnitExists and UnitExists("target")) then
+		return "NONE"
+	end
+
+	-- Matches the simple alive/dead condition split used by clone references like WeakTextures.
+	if UnitIsDeadOrGhost and UnitIsDeadOrGhost("target") then
+		return "DEAD"
+	end
+
+	return "ALIVE"
+end
+
+function Visibility:EvaluateTargetRules(rules)
+	local hasTarget = UnitExists and UnitExists("target") and true or false
+	if not hasTarget then
+		return false
+	end
+
+	local wantsAnyTarget = rules[Visibility.MODES.HAS_TARGET] == true
+	local wantsAlive = rules[Visibility.MODES.TARGET_ALIVE] == true
+	local wantsDead = rules[Visibility.MODES.TARGET_DEAD] == true
+	local wantsHostile = rules[Visibility.MODES.TARGET_HOSTILE] == true
+	local wantsNeutral = rules[Visibility.MODES.TARGET_NEUTRAL] == true
+	local wantsFriendly = rules[Visibility.MODES.TARGET_FRIENDLY] == true
+
+	local hasTargetSubfilter = wantsAlive or wantsDead or wantsHostile or wantsNeutral or wantsFriendly
+	if not wantsAnyTarget and not hasTargetSubfilter then
+		return false
+	end
+
+	local targetLifeState = self:GetTargetLifeState()
+	local targetDisposition = self:GetTargetDisposition()
+
+	local matchesLifeState = true
+	if wantsAlive or wantsDead then
+		matchesLifeState = (wantsAlive and targetLifeState == "ALIVE") or (wantsDead and targetLifeState == "DEAD")
+	end
+
+	local matchesDisposition = true
+	if wantsHostile or wantsNeutral or wantsFriendly then
+		matchesDisposition = (wantsHostile and targetDisposition == "HOSTILE")
+			or (wantsNeutral and targetDisposition == "NEUTRAL")
+			or (wantsFriendly and targetDisposition == "FRIENDLY")
+	end
+
+	return matchesLifeState and matchesDisposition
+end
+
 function Visibility:EvaluateRules(rules)
 	rules = NormalizeRules(rules)
 	if rules[Visibility.MODES.ALWAYS] then
@@ -414,8 +467,6 @@ function Visibility:EvaluateRules(rules)
 	elseif UnitAffectingCombat then
 		inCombat = UnitAffectingCombat("player") and true or false
 	end
-	local hasTarget = UnitExists and UnitExists("target") and true or false
-	local targetDisposition = self:GetTargetDisposition()
 	local isCasting = self:IsPlayerCasting()
 	local afterInstantCast = self:IsAfterInstantCastActive()
 	local inRaid = IsInRaid and IsInRaid() and true or false
@@ -431,16 +482,7 @@ function Visibility:EvaluateRules(rules)
 	if rules[Visibility.MODES.OUT_OF_COMBAT] and not inCombat then
 		return true
 	end
-	if rules[Visibility.MODES.HAS_TARGET] and hasTarget then
-		return true
-	end
-	if rules[Visibility.MODES.TARGET_HOSTILE] and targetDisposition == "HOSTILE" then
-		return true
-	end
-	if rules[Visibility.MODES.TARGET_NEUTRAL] and targetDisposition == "NEUTRAL" then
-		return true
-	end
-	if rules[Visibility.MODES.TARGET_FRIENDLY] and targetDisposition == "FRIENDLY" then
+	if self:EvaluateTargetRules(rules) then
 		return true
 	end
 	if rules[Visibility.MODES.CASTING] and isCasting then
@@ -555,6 +597,8 @@ EL:RegisterEvent("PLAYER_ENTERING_WORLD")
 EL:RegisterEvent("PLAYER_REGEN_DISABLED")
 EL:RegisterEvent("PLAYER_REGEN_ENABLED")
 EL:RegisterUnitEvent("UNIT_FLAGS", "player")
+EL:RegisterUnitEvent("UNIT_FLAGS", "target")
+EL:RegisterUnitEvent("UNIT_HEALTH", "target")
 EL:RegisterEvent("PLAYER_TARGET_CHANGED")
 EL:RegisterEvent("GROUP_ROSTER_UPDATE")
 EL:RegisterEvent("ZONE_CHANGED_NEW_AREA")

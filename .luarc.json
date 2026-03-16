@@ -73,6 +73,7 @@
     "UnitChannelInfo",
     "UnitClass",
     "UnitExists",
+    "UnitIsDeadOrGhost",
     "UnitIsFriend",
     "UseAction",
     "hooksecurefunc",

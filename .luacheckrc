@@ -38,7 +38,7 @@ globals = {
     "SLASH_SPARKPOINT1", "SLASH_SPARKPOINT2", "SlashCmdList", "SparkPointDB",
     "StaticPopup_Show", "StaticPopupDialogs", "STATICPOPUP_NUMDIALOGS",
     "UIParent",
-    "UnitAffectingCombat", "UnitCanAttack", "UnitCastingInfo", "UnitChannelInfo", "UnitClass", "UnitExists", "UnitIsFriend", "UnitReaction",
+    "UnitAffectingCombat", "UnitCanAttack", "UnitCastingInfo", "UnitChannelInfo", "UnitClass", "UnitExists", "UnitIsDeadOrGhost", "UnitIsFriend", "UnitReaction",
     "UseAction", "hooksecurefunc",
     "UnitPower", "UnitPowerMax",
     "WorldFrame",
