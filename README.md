@@ -10,7 +10,7 @@
 
 <p align="center">
   <img alt="WoW Version" src="https://img.shields.io/badge/WoW-12.0%2F12.0.1-blue" />
-  <img alt="Version" src="https://img.shields.io/badge/version-1.3.2-green" />
+  <img alt="Version" src="https://img.shields.io/badge/version-1.3.3-green" />
   <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0-blue" />
   <a href="https://www.curseforge.com/wow/addons/sparkpoint">
     <img alt="CurseForge" src="https://img.shields.io/badge/CurseForge-SparkPoint-orange" />
@@ -34,16 +34,19 @@ It currently includes:
 - Shared visibility rules, per-module overrides, and optional HUD transitions
 - Cursor-attached mode, fixed anchor mode, minimap button, and profile support
 
-## New In v1.3.2
+## New In v1.3.3
+
+- Added target alive/dead visibility filters
+- Split instant-cast visibility into direct instant casts and triggered instant casts
+- Improved Visibility setting tooltips so each rule explains exactly what it does
+
+## Previously In v1.3.x
 
 - Added cast progress display modes for all casts, normal casts only, or channelled spells only
 - Refactored cast fill color controls into explicit source modes, including single-color, split normal/channelled, and class-color behavior
 - Added separate class-color toggles for cast spark and cast spell text
 - Expanded visibility rules with hostile/unfriendly, neutral, and friendly target filters
 - Added interrupt-flash feedback for interrupted channelled casts
-
-## Previously In v1.3.x
-
 - Added richer Spell Icon feedback for direct instant casts, triggered instant casts, failed casts, and readable cooldown-blocked presses
 - Added a dedicated readable cooldown swipe color with optional class-color override
 - Standardized slash commands to the `/sparkpoint` command family only
