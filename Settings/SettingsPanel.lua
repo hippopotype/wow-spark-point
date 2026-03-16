@@ -229,21 +229,76 @@ local function BuildSettingsPanel()
 	end
 
 	local visibilityRuleOptions = {
-		{ key = "ALWAYS", label = L["Visibility Always"] or "Always" },
-		{ key = "IN_COMBAT", label = L["Visibility In Combat"] or "In Combat" },
-		{ key = "OUT_OF_COMBAT", label = L["Visibility Out of Combat"] or "Out of Combat" },
-		{ key = "HAS_TARGET", label = L["Visibility Has Target"] or "Has Any Target" },
-		{ key = "TARGET_ALIVE", label = L["Visibility Target Alive"] or "Alive", indent = 1, isNew = true },
-		{ key = "TARGET_DEAD", label = L["Visibility Target Dead"] or "Dead", indent = 1, isNew = true },
-		{ key = "TARGET_HOSTILE", label = L["Visibility Target Hostile"] or "Hostile / Unfriendly", indent = 1, isNew = true },
-		{ key = "TARGET_NEUTRAL", label = L["Visibility Target Neutral"] or "Neutral", indent = 1, isNew = true },
-		{ key = "TARGET_FRIENDLY", label = L["Visibility Target Friendly"] or "Friendly", indent = 1, isNew = true },
-		{ key = "CASTING", label = L["Visibility While Casting"] or "While Casting" },
-		{ key = "AFTER_INSTANT_CAST", label = L["Visibility After Instant Cast"] or "After Instant Cast" },
-		{ key = "AFTER_TRIGGERED_INSTANT_CAST", label = L["Visibility After Triggered Instant Cast"] or "After Triggered Instant Cast", isNew = true },
-		{ key = "IN_PARTY", label = L["Visibility In Party"] or "In Party" },
-		{ key = "IN_RAID", label = L["Visibility In Raid"] or "In Raid" },
-		{ key = "IN_INSTANCE", label = L["Visibility In Instanced Content"] or "In Instanced Content" },
+		{
+			key = "ALWAYS",
+			label = L["Visibility Always"] or "Always",
+			tooltip = L["Visibility Always Tooltip"] or "Keep this element visible at all times. Selecting this clears the other visibility conditions.",
+		},
+		{ key = "IN_COMBAT", label = L["Visibility In Combat"] or "In Combat", tooltip = L["Visibility In Combat Tooltip"] or "Show while you are in combat." },
+		{ key = "OUT_OF_COMBAT", label = L["Visibility Out of Combat"] or "Out of Combat", tooltip = L["Visibility Out of Combat Tooltip"] or "Show while you are out of combat." },
+		{
+			key = "HAS_TARGET",
+			label = L["Visibility Has Target"] or "Has Any Target",
+			tooltip = L["Visibility Has Target Tooltip"] or "Show when you have any target selected. The nested target options refine which targets count.",
+		},
+		{
+			key = "TARGET_ALIVE",
+			label = L["Visibility Target Alive"] or "Alive",
+			tooltip = L["Visibility Target Alive Tooltip"] or "Only count living targets. Combine with target reaction filters to narrow it further.",
+			indent = 1,
+			isNew = true,
+		},
+		{
+			key = "TARGET_DEAD",
+			label = L["Visibility Target Dead"] or "Dead",
+			tooltip = L["Visibility Target Dead Tooltip"] or "Only count dead or ghost targets. Combine with target reaction filters to narrow it further.",
+			indent = 1,
+			isNew = true,
+		},
+		{
+			key = "TARGET_HOSTILE",
+			label = L["Visibility Target Hostile"] or "Hostile / Unfriendly",
+			tooltip = L["Visibility Target Hostile Tooltip"] or "Only count hostile or otherwise attackable enemy targets.",
+			indent = 1,
+			isNew = true,
+		},
+		{
+			key = "TARGET_NEUTRAL",
+			label = L["Visibility Target Neutral"] or "Neutral",
+			tooltip = L["Visibility Target Neutral Tooltip"] or "Only count neutral targets that are not friendly but are not currently hostile.",
+			indent = 1,
+			isNew = true,
+		},
+		{
+			key = "TARGET_FRIENDLY",
+			label = L["Visibility Target Friendly"] or "Friendly",
+			tooltip = L["Visibility Target Friendly Tooltip"] or "Only count friendly targets.",
+			indent = 1,
+			isNew = true,
+		},
+		{
+			key = "CASTING",
+			label = L["Visibility While Casting"] or "While Casting",
+			tooltip = L["Visibility While Casting Tooltip"] or "Show while you are actively casting or channeling a spell.",
+		},
+		{
+			key = "AFTER_INSTANT_CAST",
+			label = L["Visibility After Instant Cast"] or "After Instant Cast",
+			tooltip = L["Visibility After Instant Cast Tooltip"] or "Show briefly after an instant spell you directly triggered succeeds.",
+		},
+		{
+			key = "AFTER_TRIGGERED_INSTANT_CAST",
+			label = L["Visibility After Triggered Instant Cast"] or "After Triggered Instant Cast",
+			tooltip = L["Visibility After Triggered Instant Cast Tooltip"] or "Show briefly after an instant spell triggered automatically by another action or effect succeeds.",
+			isNew = true,
+		},
+		{ key = "IN_PARTY", label = L["Visibility In Party"] or "In Party", tooltip = L["Visibility In Party Tooltip"] or "Show while you are in a party group but not a raid." },
+		{ key = "IN_RAID", label = L["Visibility In Raid"] or "In Raid", tooltip = L["Visibility In Raid Tooltip"] or "Show while you are in a raid group." },
+		{
+			key = "IN_INSTANCE",
+			label = L["Visibility In Instanced Content"] or "In Instanced Content",
+			tooltip = L["Visibility In Instanced Content Tooltip"] or "Show while you are inside an instance such as a dungeon, raid, scenario, or arena.",
+		},
 	}
 	local visibilitySourceOptions = {
 		{ value = "INHERIT", label = L["Visibility Inherit"] or "Inherit" },
@@ -366,7 +421,7 @@ local function BuildSettingsPanel()
 			local initializer = Settings.CreateCheckbox(
 				groupCategory,
 				setting,
-				tooltip or (L["Visibility Multi Select Tooltip"] or "Select one or more rules. The element shows when any selected rule is true.")
+				option.tooltip or tooltip or (L["Visibility Multi Select Tooltip"] or "Select one or more rules. The element shows when any selected rule is true.")
 			)
 			ApplyNewFeatureBadge(initializer, option.isNew == true)
 			controls[#controls + 1] = initializer
