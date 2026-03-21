@@ -46,6 +46,7 @@ addon.DefaultValues = {
 
 	-- Module enable flags
 	moduleEnabled_Cast = true,
+	moduleEnabled_BarSlots = true,
 	moduleEnabled_ClassResource = true,
 	moduleEnabled_Ring = true,
 	moduleEnabled_SpellIcon = true,
@@ -104,6 +105,20 @@ addon.DefaultValues = {
 	slot3_useClassColor = false,
 	slot3_backgroundColor = { r = 1, g = 1, b = 1, a = 1 },
 	slot3_backgroundOpacity = 0.5,
+
+	-- Top bar slot settings
+	barslot1_provider = "NONE",
+	barslot1_barColor = { r = 1, g = 1, b = 1, a = 1 },
+	barslot1_backgroundColor = { r = 1, g = 1, b = 1, a = 1 },
+	barslot1_frameColor = { r = 1, g = 1, b = 1, a = 1 },
+	barslot1_offsetX = 0,
+	barslot1_offsetY = 0,
+	barslot1_scale = 1,
+	barslots_visibilitySource = "INHERIT",
+	barslots_visibility = { ALWAYS = true },
+	barslots_hideOnUIHover = false,
+	barslots_hideInPetBattle = true,
+	barslots_hideInSpecialActionBarContext = true,
 
 	-- ClassResource module settings
 	classresource_mode = "PIPS",

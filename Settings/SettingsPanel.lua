@@ -34,6 +34,8 @@ local NEW_SETTINGS = {
 	cast_hideInSpecialActionBarContext = true,
 	classresource_hideInPetBattle = true,
 	classresource_hideInSpecialActionBarContext = true,
+	barslots_hideInPetBattle = true,
+	barslots_hideInSpecialActionBarContext = true,
 	ring_hideInPetBattle = true,
 	ring_hideInSpecialActionBarContext = true,
 	assistedhighlight_hideInPetBattle = true,
@@ -1005,6 +1007,73 @@ local function BuildSettingsPanel()
 			false
 		)
 	end
+
+	------------------------------------------------------------------------
+	-- Bar Slots Settings Subcategory
+	------------------------------------------------------------------------
+	local barSlotsCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Bar Slots"] or "Bar Slots")
+	local barSlotProviderOptions = {
+		{ value = "NONE", label = L["None"] or "None" },
+	}
+	if addon.BarProviders and addon.BarProviders.GetDropdownOptions then
+		barSlotProviderOptions = addon.BarProviders:GetDropdownOptions()
+	end
+
+	AddDropdown(
+		barSlotsCategory,
+		"barslot1_provider",
+		L["Top Bar Slot"] or "Top Bar Slot",
+		barSlotProviderOptions,
+		L["Bar Slot Source Tooltip"] or "Choose what to display in the top bar slot"
+	)
+	AddColor(barSlotsCategory, "barslot1_barColor", (L["Top Bar Slot"] or "Top Bar Slot") .. " " .. (L["Bar Color"] or "Bar Color"))
+	AddColor(
+		barSlotsCategory,
+		"barslot1_backgroundColor",
+		(L["Top Bar Slot"] or "Top Bar Slot") .. " " .. (L["Background Color"] or "Background Color"),
+		(L["Slot Background Color Tooltip"] or "Tint color for the slot background ring texture."),
+		false
+	)
+	AddColor(
+		barSlotsCategory,
+		"barslot1_frameColor",
+		(L["Top Bar Slot"] or "Top Bar Slot") .. " " .. (L["Bar Frame Color"] or "Frame Color"),
+		L["Bar Frame Color Tooltip"] or "Tint color for the top bar slot frame texture.",
+		false
+	)
+	AddSlider(barSlotsCategory, "barslot1_scale", L["Bar Slot Scale"] or "Scale", 0.5, 2.0, 0.05, L["Bar Slot Scale Tooltip"] or "Scale multiplier for the top bar slot width")
+	AddSlider(barSlotsCategory, "barslot1_offsetX", L["Bar Slot Horizontal Offset"] or "Horizontal Offset", -240, 240, 1)
+	AddSlider(barSlotsCategory, "barslot1_offsetY", L["Bar Slot Vertical Offset"] or "Vertical Offset", -240, 240, 1)
+
+	local barSlotsVisibilityCategory = Settings.RegisterVerticalLayoutSubcategory(barSlotsCategory, L["Visibility"] or "Visibility")
+	AddDropdown(
+		barSlotsVisibilityCategory,
+		"barslots_visibilitySource",
+		L["Visibility Source"] or "Visibility Source",
+		visibilitySourceOptions,
+		L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility"
+	)
+	AddVisibilityRuleGroup(barSlotsVisibilityCategory, "barslots_visibility", nil, L["Bar Slot Visibility Tooltip"] or "When to show the top bar slot module")
+	local barSlotsHideCategory = Settings.RegisterVerticalLayoutSubcategory(barSlotsVisibilityCategory, L["Hide Overrides"] or "Hide Overrides")
+	AddCheckbox(
+		barSlotsHideCategory,
+		"barslots_hideOnUIHover",
+		L["Hide While Hovering UI"] or "Hide While Hovering UI",
+		L["Hide While Hovering UI Tooltip"] or "Hide SparkPoint while cursor is over clickable UI frames. Keeps SparkPoint visible primarily for world targeting."
+	)
+	AddCheckbox(
+		barSlotsHideCategory,
+		"barslots_hideInPetBattle",
+		L["Hide While In Pet Battle"] or "Hide While In Pet Battle",
+		L["Hide While In Pet Battle Tooltip"] or "Hide SparkPoint while you are in a pet battle."
+	)
+	AddCheckbox(
+		barSlotsHideCategory,
+		"barslots_hideInSpecialActionBarContext",
+		L["Hide While In Special Action Bar Context"] or "Hide While In Special Action Bar Context",
+		L["Hide While In Special Action Bar Context Tooltip"]
+			or "Hide SparkPoint while Blizzard replaces your normal action bar with a special context such as vehicle, override, possess, or temporary shapeshift bars."
+	)
 
 	------------------------------------------------------------------------
 	-- Class Resource Settings Subcategory

@@ -17,18 +17,23 @@ Core\Transition.lua
 Core\Visibility.lua
 Core\ModuleRegistry.lua
 Core\SlotProviders.lua
+Core\BarProviders.lua
 Core\AnchorFrame.lua
 Core\MinimapButton.lua
 
 # Widgets
 Widgets\DonutWidget.lua
 Widgets\SlotRingWidget.lua
+Widgets\BarSlotWidget.lua
 
 # Providers
 Providers\GCD.lua
+Providers\HealthBar.lua
+Providers\ManaBar.lua
 
 # Modules
 Modules\Cast.lua
+Modules\BarSlots.lua
 Modules\ClassResource.lua
 Modules\DecorativeRing.lua
 Modules\SpellIcon.lua

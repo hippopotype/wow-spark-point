@@ -76,6 +76,17 @@ L["Cast Spark Use Class Color Tooltip"] = "Use your class color for the cast spa
 L["Cast Spell Text Use Class Color"] = "Spell Text Uses Class Color"
 L["Cast Spell Text Use Class Color Tooltip"] = "Use your class color for spell text instead of the custom text color"
 L["Inner Ring Slots"] = "Inner Ring Slots"
+L["Bar Slots"] = "Bar Slots"
+L["Top Bar Slot"] = "Top Bar Slot"
+L["Bar Slot Source Tooltip"] = "Choose what to display in the top bar slot"
+L["Bar Slot Scale"] = "Scale"
+L["Bar Slot Scale Tooltip"] = "Scale multiplier for the top bar slot width"
+L["Bar Slot Horizontal Offset"] = "Horizontal Offset"
+L["Bar Slot Vertical Offset"] = "Vertical Offset"
+L["Bar Slot Visibility"] = "Visibility"
+L["Bar Slot Visibility Tooltip"] = "When to show the top bar slot module"
+L["Bar Frame Color"] = "Frame Color"
+L["Bar Frame Color Tooltip"] = "Tint color for the top bar slot frame texture."
 L["Slot"] = "Slot"
 L["Slot Source"] = "Slot"
 L["Source"] = "Source"
@@ -273,6 +284,7 @@ L["Spell Text Size"] = "Spell Text Size"
 --------------------------------------------------------------------------------
 L["Class Resource"] = "Class Resource"
 L["Class Resource Description"] = "Displays class resources near the cursor"
+L["Bar Slots Description"] = "Displays curved top bar slots above the cast ring"
 
 --------------------------------------------------------------------------------
 -- Ring
