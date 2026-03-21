@@ -411,6 +411,10 @@ CallbackRegistry:Register("VisibilityContextChanged", function()
 	BarSlots:UpdateVisibility()
 end, BarSlots)
 
+CallbackRegistry:Register("HUDLayersChanged", function()
+	ApplyFrameLevel()
+end, BarSlots)
+
 EL:SetScript("OnEvent", function(self, event, ...)
 	if BarSlots[event] then
 		BarSlots[event](BarSlots, event, ...)

@@ -48,6 +48,22 @@ local DEFAULT_TEXTURE_KEY = (RING_TEXTURE_DEFINITIONS[1] and RING_TEXTURE_DEFINI
 
 Ring.TEXTURE_OPTIONS = RING_TEXTURE_OPTIONS
 
+local function ApplyLayering()
+	if not ringFrame then
+		return
+	end
+
+	local parent = ringFrame:GetParent()
+	if not parent then
+		return
+	end
+
+	if parent.GetFrameStrata then
+		ringFrame:SetFrameStrata(parent:GetFrameStrata())
+	end
+	ringFrame:SetFrameLevel(parent:GetFrameLevel() or 0)
+end
+
 local function SetTextureSmooth(texture, texturePath)
 	if not texture then
 		return
@@ -215,8 +231,7 @@ function Ring:Initialize()
 	local layerRoot = (HUDLayers and HUDLayers:GetLayerFrame(HUDLayers.Names.DECORATIVE_RING)) or anchor
 	ringFrame = CreateFrame("Frame", nil, layerRoot)
 	ringFrame:SetAllPoints()
-	ringFrame:SetFrameStrata(layerRoot:GetFrameStrata())
-	ringFrame:SetFrameLevel(layerRoot:GetFrameLevel() or 0)
+	ApplyLayering()
 	ringFrame:Hide()
 
 	-- Initialize rotation state
@@ -281,6 +296,10 @@ end
 
 CallbackRegistry:Register("VisibilityContextChanged", function()
 	Ring:UpdateVisibility()
+end, Ring)
+
+CallbackRegistry:Register("HUDLayersChanged", function()
+	ApplyLayering()
 end, Ring)
 
 --------------------------------------------------------------------------------

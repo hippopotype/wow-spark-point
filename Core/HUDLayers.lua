@@ -65,6 +65,8 @@ local function ApplyRootStrata()
 			frame:SetFrameStrata(strata)
 		end
 	end
+
+	CallbackRegistry:Trigger("HUDLayersChanged", strata)
 end
 
 local function EnsureLayerRoots()

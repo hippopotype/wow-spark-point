@@ -121,6 +121,36 @@ local function GetCastBaseContentLevel()
 	return GetCastFrameLevel()
 end
 
+local function ApplyLayering()
+	if castFrame and castFrame:GetParent() then
+		local parent = castFrame:GetParent()
+		if parent.GetFrameStrata then
+			castFrame:SetFrameStrata(parent:GetFrameStrata())
+		end
+		castFrame:SetFrameLevel(parent:GetFrameLevel() or 0)
+	end
+
+	if castShadowFrame and castShadowFrame:GetParent() then
+		local parent = castShadowFrame:GetParent()
+		if parent.GetFrameStrata then
+			castShadowFrame:SetFrameStrata(parent:GetFrameStrata())
+		end
+		castShadowFrame:SetFrameLevel(parent:GetFrameLevel() or 0)
+	end
+
+	if castFrame and castFrame.feedbackFrame and castFrame.feedbackFrame:GetParent() then
+		local parent = castFrame.feedbackFrame:GetParent()
+		if parent.GetFrameStrata then
+			castFrame.feedbackFrame:SetFrameStrata(parent:GetFrameStrata())
+		end
+		castFrame.feedbackFrame:SetFrameLevel(parent:GetFrameLevel() or 0)
+	end
+
+	if castFrame and castFrame.overlayFrame then
+		castFrame.overlayFrame:SetFrameLevel(Cast:GetOverlayFrameLevel())
+	end
+end
+
 local function NormalizeProviderID(providerID)
 	if type(providerID) ~= "string" then
 		return "NONE"
@@ -2214,15 +2244,11 @@ function Cast:Initialize()
 	local layerRoot = (HUDLayers and HUDLayers:GetLayerFrame(HUDLayers.Names.CAST_BASE)) or anchor
 	castFrame = CreateFrame("Frame", nil, layerRoot)
 	castFrame:SetAllPoints()
-	castFrame:SetFrameStrata(layerRoot:GetFrameStrata())
-	castFrame:SetFrameLevel(layerRoot:GetFrameLevel() or 0)
 	castFrame:Hide()
 
 	local shadowLayerRoot = (HUDLayers and HUDLayers:GetLayerFrame(HUDLayers.Names.CAST_SHADOW)) or anchor
 	castShadowFrame = CreateFrame("Frame", nil, shadowLayerRoot)
 	castShadowFrame:SetAllPoints()
-	castShadowFrame:SetFrameStrata(shadowLayerRoot:GetFrameStrata())
-	castShadowFrame:SetFrameLevel(shadowLayerRoot:GetFrameLevel() or 0)
 	castShadowFrame:Hide()
 	castShadowFrame.texture = castShadowFrame:CreateTexture(nil, "BACKGROUND")
 	castShadowFrame.texture:Hide()
@@ -2231,13 +2257,10 @@ function Cast:Initialize()
 	local feedbackLayerRoot = (HUDLayers and HUDLayers:GetLayerFrame(HUDLayers.Names.CAST_FEEDBACK)) or castFrame
 	castFrame.feedbackFrame = CreateFrame("Frame", nil, feedbackLayerRoot)
 	castFrame.feedbackFrame:SetAllPoints()
-	castFrame.feedbackFrame:SetFrameStrata(feedbackLayerRoot:GetFrameStrata())
-	castFrame.feedbackFrame:SetFrameLevel(feedbackLayerRoot:GetFrameLevel() or 0)
 
 	-- Create overlay frame for top-most cast visuals.
 	castFrame.overlayFrame = CreateFrame("Frame", nil, castFrame)
 	castFrame.overlayFrame:SetAllPoints()
-	castFrame.overlayFrame:SetFrameLevel(self:GetOverlayFrameLevel())
 
 	-- Create spark texture (above rings)
 	castFrame.sparkTexture = castFrame.overlayFrame:CreateTexture(nil, "OVERLAY")
@@ -2290,6 +2313,8 @@ function Cast:Initialize()
 	end
 
 	castFrame.iconMaskReady = ApplySpellIconMask()
+
+	ApplyLayering()
 
 	-- Create inner ring slot widgets
 	local radius = GetDBValue("cast_radius")
@@ -2438,6 +2463,13 @@ end
 
 CallbackRegistry:Register("VisibilityContextChanged", function()
 	Cast:UpdateShellVisibility()
+end, Cast)
+
+CallbackRegistry:Register("HUDLayersChanged", function()
+	ApplyLayering()
+	if castFrame and castFrame.sparkTexture and castFrame.feedbackTexture and castFrame.frameTexture then
+		Cast:ApplyOptions()
+	end
 end, Cast)
 
 -- Slot provider assignment callbacks
