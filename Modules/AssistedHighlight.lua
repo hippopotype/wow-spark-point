@@ -33,6 +33,27 @@ local PI2 = math.pi * 2
 local actionSlotCommandMap
 local assistedActionSlotSet
 
+local function GetResolvedFrameLevel()
+	local castObj = addon.Modules and addon.Modules.CastObj
+	if castObj and castObj.GetOverlayFrameLevel then
+		local level = castObj:GetOverlayFrameLevel() + 1
+		if type(level) == "number" then
+			return level
+		end
+	end
+	return 11
+end
+
+local function ApplyFrameLevel()
+	if not moduleFrame or not moduleFrame.iconFrame then
+		return
+	end
+
+	local frameLevel = GetResolvedFrameLevel()
+	moduleFrame:SetFrameLevel(frameLevel)
+	moduleFrame.iconFrame:SetFrameLevel(frameLevel)
+end
+
 local function IsVisibilityAllowed()
 	return (not Visibility) or Visibility:ShouldShow("assistedhighlight")
 end
@@ -407,6 +428,8 @@ function AssistedHighlight:ApplyOptions()
 		return
 	end
 
+	ApplyFrameLevel()
+
 	local size = tonumber(GetDBValue("assistedhighlight_size")) or 40
 	local offsetX = tonumber(GetDBValue("assistedhighlight_offsetX")) or 0
 	local offsetY = tonumber(GetDBValue("assistedhighlight_offsetY")) or 0
@@ -579,6 +602,7 @@ function AssistedHighlight:Initialize()
 	moduleFrame.iconFrame.keybindText:SetText("")
 	moduleFrame.iconFrame.keybindText:Hide()
 
+	ApplyFrameLevel()
 	self:RefreshCVarState()
 	self:ApplyOptions()
 	self:UpdateVisibility()
@@ -690,6 +714,7 @@ end
 
 for _, key in ipairs({
 	"visibility_mode",
+	"moduleEnabled_Cast",
 	"assistedhighlight_visibilitySource",
 	"assistedhighlight_visibility",
 	"visibility_hideOnUIHover",

@@ -26,6 +26,27 @@ local widget
 local assignedProvider
 local assignedProviderID = "NONE"
 
+local function GetResolvedFrameLevel()
+	local castObj = addon.Modules and addon.Modules.CastObj
+	if castObj and castObj.GetBarSlotFrameLevel then
+		local level = castObj:GetBarSlotFrameLevel()
+		if type(level) == "number" then
+			return level
+		end
+	end
+	return 9
+end
+
+local function ApplyFrameLevel()
+	if not moduleFrame or not widget then
+		return
+	end
+
+	local frameLevel = GetResolvedFrameLevel()
+	moduleFrame:SetFrameLevel(frameLevel)
+	widget:SetFrameLevel(frameLevel)
+end
+
 local function ReleaseAnchorIfUnused()
 	if moduleFrame and not moduleFrame:IsShown() then
 		AnchorFrame:Hide("barslots")
@@ -106,6 +127,8 @@ function BarSlots:ApplyLayout()
 		return
 	end
 
+	ApplyFrameLevel()
+
 	local radius = GetDBValue("cast_radius") or 40
 	local scale = GetDBValue("barslot1_scale") or 1
 	local width = math.max(1, (radius * 2) * scale)
@@ -164,7 +187,6 @@ function BarSlots:Initialize()
 	local anchor = AnchorFrame:GetFrame()
 	moduleFrame = CreateFrame("Frame", nil, anchor)
 	moduleFrame:Hide()
-	moduleFrame:SetFrameLevel(11)
 
 	widget = addon.BarSlotWidget:Create({
 		parent = moduleFrame,
@@ -177,9 +199,9 @@ function BarSlots:Initialize()
 		backgroundColor = GetDBColorTable("barslot1_backgroundColor"),
 		frameColor = GetDBColorTable("barslot1_frameColor"),
 	})
-	widget:SetFrameLevel(11)
 	widget:AttachTo(moduleFrame)
 	widget:GetFrame():SetAllPoints(moduleFrame)
+	ApplyFrameLevel()
 
 	self:ApplyLayout()
 end
@@ -268,6 +290,7 @@ end
 
 for _, key in ipairs({
 	"cast_radius",
+	"moduleEnabled_Cast",
 	"barslot1_offsetX",
 	"barslot1_offsetY",
 	"barslot1_scale",

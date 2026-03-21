@@ -18,7 +18,7 @@ local GetDBColorTable = addon.GetDBColorTable
 local SlotRingWidget = addon.SlotRingWidget
 local SlotProviders = addon.SlotProviders
 
-local Cast
+local Cast = {}
 local SPELL_ICON_COOLDOWN_SWIPE_PATH = addon.addonFolder .. "\\Textures\\spell_icon_cooldown_swipe.png"
 local SPELL_ICON_ERROR_PATH = addon.addonFolder .. "\\Textures\\spell_icon_error.png"
 local CAST_FEEDBACK_PATH = addon.addonFolder .. "\\Textures\\cast_feedback.png"
@@ -81,6 +81,9 @@ local PENDING_SOURCE_SENT = "sent"
 local PENDING_SOURCE_ACTION = "action"
 local CAST_OVERLAY_DEFAULT = "cast_glow"
 local CAST_OVERLAY_INTERRUPT = "cast_error"
+local CAST_FEEDBACK_LEVEL_OFFSET = 8
+local CAST_BAR_SLOT_LEVEL_OFFSET = 9
+local CAST_OVERLAY_LEVEL_OFFSET = 10
 
 -- Inner ring slots
 local slots = {} -- {widget, provider, providerID} per slot
@@ -106,6 +109,13 @@ local ShouldPreserveConfirmedInstantIcon
 local TryShowActionCooldownBlocked
 local rejectedAttemptToken = 0
 
+local function GetCastFrameLevel()
+	if not castFrame then
+		return 0
+	end
+	return castFrame:GetFrameLevel() or 0
+end
+
 local function NormalizeProviderID(providerID)
 	if type(providerID) ~= "string" then
 		return "NONE"
@@ -115,6 +125,18 @@ local function NormalizeProviderID(providerID)
 		return "NONE"
 	end
 	return normalized
+end
+
+function Cast:GetFeedbackFrameLevel()
+	return GetCastFrameLevel() + CAST_FEEDBACK_LEVEL_OFFSET
+end
+
+function Cast:GetBarSlotFrameLevel()
+	return GetCastFrameLevel() + CAST_BAR_SLOT_LEVEL_OFFSET
+end
+
+function Cast:GetOverlayFrameLevel()
+	return GetCastFrameLevel() + CAST_OVERLAY_LEVEL_OFFSET
 end
 
 local function DisableSlotProviders()
@@ -648,7 +670,6 @@ local actionIntentHookInstalled = false
 --------------------------------------------------------------------------------
 -- Cast Module Object
 --------------------------------------------------------------------------------
-Cast = {}
 addon.Modules.CastObj = Cast
 
 function Cast:GetFrame()
@@ -2072,7 +2093,7 @@ function Cast:ApplyOptions()
 		castFrame.feedbackTexture:SetBlendMode("ADD")
 		castFrame.feedbackTexture:SetSize(radius * 2, radius * 2)
 		castFrame.feedbackTexture:ClearAllPoints()
-		castFrame.feedbackTexture:SetPoint("CENTER", castFrame.overlayFrame, "CENTER")
+		castFrame.feedbackTexture:SetPoint("CENTER", castFrame.feedbackFrame, "CENTER")
 		self:UpdateClickFeedbackVisual()
 	end
 
@@ -2081,11 +2102,17 @@ function Cast:ApplyOptions()
 	if castFrame.iconFrame then
 		castFrame.iconFrame:SetFrameLevel(0)
 	end
+	if castFrame.feedbackFrame then
+		castFrame.feedbackFrame:SetFrameLevel(self:GetFeedbackFrameLevel())
+	end
 	if castDonut then
 		castDonut:SetFrameLevel(NUM_SLOTS + 1)
 	end
 	if latencyDonut then
 		latencyDonut:SetFrameLevel(NUM_SLOTS + 2)
+	end
+	if castFrame.overlayFrame then
+		castFrame.overlayFrame:SetFrameLevel(self:GetOverlayFrameLevel())
 	end
 
 	-- Update inner ring slot options
@@ -2133,10 +2160,15 @@ function Cast:Initialize()
 	castFrame:SetAllPoints()
 	castFrame:Hide()
 
-	-- Create overlay frame for top-most elements
+	-- Create feedback frame below top overlay elements but above module siblings.
+	castFrame.feedbackFrame = CreateFrame("Frame", nil, castFrame)
+	castFrame.feedbackFrame:SetAllPoints()
+	castFrame.feedbackFrame:SetFrameLevel(self:GetFeedbackFrameLevel())
+
+	-- Create overlay frame for top-most cast visuals.
 	castFrame.overlayFrame = CreateFrame("Frame", nil, castFrame)
 	castFrame.overlayFrame:SetAllPoints()
-	castFrame.overlayFrame:SetFrameLevel(castFrame:GetFrameLevel() + 10)
+	castFrame.overlayFrame:SetFrameLevel(self:GetOverlayFrameLevel())
 
 	-- Create spark texture (above rings)
 	castFrame.sparkTexture = castFrame.overlayFrame:CreateTexture(nil, "OVERLAY")
@@ -2145,7 +2177,7 @@ function Cast:Initialize()
 	castFrame.sparkTexture:SetSize(32, 32)
 
 	-- Create click feedback overlay texture
-	castFrame.feedbackTexture = castFrame.overlayFrame:CreateTexture(nil, "OVERLAY")
+	castFrame.feedbackTexture = castFrame.feedbackFrame:CreateTexture(nil, "OVERLAY")
 	castFrame.feedbackTexture:SetDrawLayer("OVERLAY", 6)
 	castFrame.feedbackTexture:Hide()
 
