@@ -48,6 +48,9 @@ local function ApplyFrameLevel()
 		return
 	end
 
+	moduleFrame:SetFrameStrata("LOW")
+	widget:SetFrameStrata("LOW")
+
 	local frameLevel = GetResolvedFrameLevel()
 	moduleFrame:SetFrameLevel(frameLevel)
 	widget:SetFrameLevel(frameLevel)

@@ -213,6 +213,7 @@ function Ring:Initialize()
 
 	ringFrame = CreateFrame("Frame", nil, anchor)
 	ringFrame:SetAllPoints()
+	ringFrame:SetFrameStrata("BACKGROUND")
 	ringFrame:Hide()
 
 	-- Initialize rotation state

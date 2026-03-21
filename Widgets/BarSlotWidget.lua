@@ -151,6 +151,12 @@ function BarSlotWidget:SetFrameLevel(level)
 	self.statusBar:SetFrameLevel(math.max(0, level))
 end
 
+function BarSlotWidget:SetFrameStrata(strata)
+	self.frame:SetFrameStrata(strata)
+	self.fillFrame:SetFrameStrata(strata)
+	self.statusBar:SetFrameStrata(strata)
+end
+
 function BarSlotWidget:Show()
 	self.frame:Show()
 end
