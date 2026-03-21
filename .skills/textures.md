@@ -21,9 +21,15 @@ Keep ring/cast textures visually smooth in-game and avoid accidental fallback to
 
 ## Asset Export Guidance
 - Source format: SVG is fine; export raster from high resolution.
+- Texture dimensions should use powers of two on both axes.
+  - Good: `256x256`, `512x512`, `1024x512`, `1024x1024`
+  - Avoid: `1024x400`, `512x200`, other non-power-of-two heights or widths
+- Even when non-power-of-two PNGs load, they may render worse in WoW UI than equivalent power-of-two exports.
+- If a wide HUD element needs a shorter visible shape, keep the art centered inside a power-of-two canvas with transparent padding rather than exporting a non-power-of-two height.
 - Recommended texture dimensions:
   - Start at `512x512` for ring layers.
   - Move to `1024x1024` if edges are still rough and perf is acceptable.
+- For non-square HUD shells or bars, prefer `512x256` or `1024x512`.
 - Keep transparent edge pixels color-bleeded (no black RGB under full alpha transparency).
 - Use straight alpha export (avoid premultiplied-alpha dark fringes).
 

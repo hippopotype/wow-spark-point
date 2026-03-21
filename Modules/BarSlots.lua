@@ -13,10 +13,10 @@ local GetDBValue = addon.GetDBValue
 local GetDBColorTable = addon.GetDBColorTable
 
 local BAR_TEXTURE_WIDTH = 1024
-local BAR_TEXTURE_HEIGHT = 400
+local BAR_TEXTURE_HEIGHT = 512
 local BAR_TEXTURE_ASPECT = BAR_TEXTURE_HEIGHT / BAR_TEXTURE_WIDTH
 local MODULE_PREFIX = "barslots"
-local BAR_BASE_OFFSET_Y = -20
+local BAR_BASE_OFFSET_Y = -25
 local EL = CreateFrame("Frame")
 
 local BarSlots = {}
@@ -27,6 +27,10 @@ local moduleFrame
 local widget
 local assignedProvider
 local assignedProviderID = "NONE"
+
+local function RoundToPixel(value)
+	return math.floor((tonumber(value) or 0) + 0.5)
+end
 
 local function GetResolvedFrameLevel()
 	local castObj = addon.Modules and addon.Modules.CastObj
@@ -190,11 +194,11 @@ function BarSlots:ApplyLayout()
 
 	local radius = GetDBValue("cast_radius") or 40
 	local scale = GetDBValue("barslot1_scale") or 1
-	local width = math.max(1, (radius * 2) * scale)
-	local height = math.max(1, width * BAR_TEXTURE_ASPECT)
-	local offsetX = GetDBValue("barslot1_offsetX") or 0
-	local offsetY = GetDBValue("barslot1_offsetY") or 0
-	local centerY = radius + (height * 0.5) + BAR_BASE_OFFSET_Y + offsetY
+	local width = math.max(1, RoundToPixel((radius * 2) * scale))
+	local height = math.max(1, RoundToPixel(width * BAR_TEXTURE_ASPECT))
+	local offsetX = RoundToPixel(GetDBValue("barslot1_offsetX") or 0)
+	local offsetY = RoundToPixel(GetDBValue("barslot1_offsetY") or 0)
+	local centerY = RoundToPixel(radius + (height * 0.5) + BAR_BASE_OFFSET_Y + offsetY)
 
 	moduleFrame:ClearAllPoints()
 	moduleFrame:SetPoint("CENTER", AnchorFrame:GetFrame(), "CENTER", offsetX, centerY)
