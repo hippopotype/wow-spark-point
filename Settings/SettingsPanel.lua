@@ -1026,7 +1026,21 @@ local function BuildSettingsPanel()
 		barSlotProviderOptions,
 		L["Bar Slot Source Tooltip"] or "Choose what to display in the top bar slot"
 	)
-	AddColor(barSlotsCategory, "barslot1_barColor", (L["Top Bar Slot"] or "Top Bar Slot") .. " " .. (L["Bar Color"] or "Bar Color"))
+	AddDropdown(barSlotsCategory, "barslot1_fillColorSource", L["Bar Slot Fill Color Source"] or "Fill Color Source", {
+		{ value = "CUSTOM", label = L["Bar Slot Fill Color Source Custom"] or "Custom Color" },
+		{ value = "CLASS", label = L["Bar Slot Fill Color Source Class"] or "Class Color" },
+		{ value = "PROVIDER", label = L["Bar Slot Fill Color Source Provider"] or "Resource Color" },
+	}, L["Bar Slot Fill Color Source Tooltip"] or "Choose how the top bar slot fill color is selected")
+	AddColor(barSlotsCategory, "barslot1_barColor", (L["Top Bar Slot"] or "Top Bar Slot") .. " " .. (L["Bar Color"] or "Bar Color"), nil, false)
+	AddSlider(
+		barSlotsCategory,
+		"barslot1_fillOpacity",
+		L["Bar Slot Fill Opacity"] or "Fill Opacity",
+		0,
+		1,
+		0.05,
+		L["Bar Slot Fill Opacity Tooltip"] or "Opacity of the top bar slot fill regardless of selected color source"
+	)
 	AddColor(
 		barSlotsCategory,
 		"barslot1_backgroundColor",
@@ -1040,6 +1054,24 @@ local function BuildSettingsPanel()
 		(L["Top Bar Slot"] or "Top Bar Slot") .. " " .. (L["Bar Frame Color"] or "Frame Color"),
 		L["Bar Frame Color Tooltip"] or "Tint color for the top bar slot frame texture.",
 		false
+	)
+	AddSlider(
+		barSlotsCategory,
+		"barslot1_backgroundOpacity",
+		L["Bar Slot Background Opacity"] or "Background Opacity",
+		0,
+		1,
+		0.05,
+		L["Bar Slot Background Opacity Tooltip"] or "Opacity of the top bar slot background"
+	)
+	AddSlider(
+		barSlotsCategory,
+		"barslot1_frameOpacity",
+		L["Bar Slot Frame Opacity"] or "Frame Opacity",
+		0,
+		1,
+		0.05,
+		L["Bar Slot Frame Opacity Tooltip"] or "Opacity of the top bar slot frame"
 	)
 	AddSlider(barSlotsCategory, "barslot1_scale", L["Bar Slot Scale"] or "Scale", 0.5, 2.0, 0.05, L["Bar Slot Scale Tooltip"] or "Scale multiplier for the top bar slot width")
 	AddSlider(barSlotsCategory, "barslot1_offsetX", L["Bar Slot Horizontal Offset"] or "Horizontal Offset", -240, 240, 1)

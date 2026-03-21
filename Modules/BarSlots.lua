@@ -3,6 +3,7 @@
 
 local _, addon = ...
 local L = addon.L
+local API = addon.API
 local CallbackRegistry = addon.CallbackRegistry
 local AnchorFrame = addon.AnchorFrame
 local Visibility = addon.Visibility
@@ -96,15 +97,72 @@ local function IsModuleVisibleByRules()
 end
 
 local function GetConfiguredBarColor(result)
-	return GetDBColorTable("barslot1_barColor")
+	local opacity = tonumber(GetDBValue("barslot1_fillOpacity"))
+	if opacity == nil then
+		opacity = 1
+	end
+	if opacity < 0 then
+		opacity = 0
+	elseif opacity > 1 then
+		opacity = 1
+	end
+
+	local source = tostring(GetDBValue("barslot1_fillColorSource") or "CUSTOM")
+	if source == "CLASS" then
+		local r, g, b, a = API.GetPlayerClassColor()
+		return { r = r, g = g, b = b, a = opacity }
+	end
+	if source == "PROVIDER" and result and result.barColor then
+		return {
+			r = result.barColor.r or 1,
+			g = result.barColor.g or 1,
+			b = result.barColor.b or 1,
+			a = opacity,
+		}
+	end
+	local color = GetDBColorTable("barslot1_barColor") or { r = 1, g = 1, b = 1, a = 1 }
+	return {
+		r = color.r or 1,
+		g = color.g or 1,
+		b = color.b or 1,
+		a = opacity,
+	}
+end
+
+local function GetConfiguredBackgroundColor()
+	local color = GetDBColorTable("barslot1_backgroundColor") or { r = 1, g = 1, b = 1, a = 1 }
+	local opacity = tonumber(GetDBValue("barslot1_backgroundOpacity"))
+	if opacity == nil then
+		opacity = 0.8
+	end
+	return {
+		r = color.r or 1,
+		g = color.g or 1,
+		b = color.b or 1,
+		a = opacity,
+	}
+end
+
+local function GetConfiguredFrameColor()
+	local color = GetDBColorTable("barslot1_frameColor") or { r = 1, g = 1, b = 1, a = 1 }
+	local opacity = tonumber(GetDBValue("barslot1_frameOpacity"))
+	if opacity == nil then
+		opacity = 1
+	end
+	return {
+		r = color.r or 1,
+		g = color.g or 1,
+		b = color.b or 1,
+		a = opacity,
+	}
 end
 
 local function UpdateWidgetVisualOptions()
 	if not widget then
 		return
 	end
-	widget:SetBackgroundColor(GetDBColorTable("barslot1_backgroundColor"))
-	widget:SetFrameColor(GetDBColorTable("barslot1_frameColor"))
+	widget:SetBackgroundColor(GetConfiguredBackgroundColor())
+	widget:SetFrameColor(GetConfiguredFrameColor())
 end
 
 local function ApplyAssignments()
@@ -141,6 +199,7 @@ function BarSlots:ApplyLayout()
 	moduleFrame:ClearAllPoints()
 	moduleFrame:SetPoint("CENTER", AnchorFrame:GetFrame(), "CENTER", offsetX, centerY)
 	moduleFrame:SetSize(width, height)
+	moduleFrame:SetAlpha(1)
 
 	widget:SetSize(width, height)
 	UpdateWidgetVisualOptions()
@@ -197,8 +256,8 @@ function BarSlots:Initialize()
 		fillBase = "bar_fill",
 		frameBase = "bar_frame",
 		barColor = GetDBColorTable("barslot1_barColor"),
-		backgroundColor = GetDBColorTable("barslot1_backgroundColor"),
-		frameColor = GetDBColorTable("barslot1_frameColor"),
+		backgroundColor = GetConfiguredBackgroundColor(),
+		frameColor = GetConfiguredFrameColor(),
 	})
 	widget:AttachTo(moduleFrame)
 	widget:GetFrame():SetAllPoints(moduleFrame)
@@ -302,9 +361,13 @@ for _, key in ipairs({
 end
 
 for _, key in ipairs({
+	"barslot1_fillColorSource",
 	"barslot1_barColor",
+	"barslot1_fillOpacity",
 	"barslot1_backgroundColor",
+	"barslot1_backgroundOpacity",
 	"barslot1_frameColor",
+	"barslot1_frameOpacity",
 }) do
 	CallbackRegistry:RegisterSettingCallback(key, function()
 		UpdateWidgetVisualOptions()

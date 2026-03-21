@@ -108,9 +108,13 @@ addon.DefaultValues = {
 
 	-- Top bar slot settings
 	barslot1_provider = "NONE",
+	barslot1_fillColorSource = "CUSTOM",
 	barslot1_barColor = { r = 1, g = 1, b = 1, a = 1 },
+	barslot1_fillOpacity = 1,
 	barslot1_backgroundColor = { r = 1, g = 1, b = 1, a = 1 },
+	barslot1_backgroundOpacity = 0.8,
 	barslot1_frameColor = { r = 1, g = 1, b = 1, a = 1 },
+	barslot1_frameOpacity = 1,
 	barslot1_offsetX = 0,
 	barslot1_offsetY = 0,
 	barslot1_scale = 1,
