@@ -313,22 +313,65 @@ local function GetTopMouseFocus()
 	return nil
 end
 
-local function IsFrameMouseInteractive(frame)
-	if not frame then
+local INTERACTIVE_OBJECT_TYPES = {
+	Button = true,
+	CheckButton = true,
+	Slider = true,
+	EditBox = true,
+	PlayerModel = true,
+	DressUpModel = true,
+	Model = true,
+}
+
+local INTERACTIVE_MOUSE_SCRIPTS = {
+	OnMouseDown = true,
+	OnMouseUp = true,
+	OnClick = true,
+	OnDoubleClick = true,
+	OnMouseWheel = true,
+	OnDragStart = true,
+	OnDragStop = true,
+	OnReceiveDrag = true,
+}
+
+local function HasInteractiveMouseScript(frame)
+	if not (frame and frame.HasScript and frame.GetScript) then
 		return false
 	end
-	if frame.IsMouseEnabled then
-		local ok, enabled = pcall(frame.IsMouseEnabled, frame)
-		if ok and enabled then
+
+	for scriptName in pairs(INTERACTIVE_MOUSE_SCRIPTS) do
+		if frame:HasScript(scriptName) and frame:GetScript(scriptName) then
 			return true
 		end
 	end
-	if frame.IsMouseClickEnabled then
-		local ok, enabled = pcall(frame.IsMouseClickEnabled, frame)
-		if ok and enabled then
+
+	return false
+end
+
+local function IsFrameMouseInteractive(frame)
+	local current = frame
+	local depth = 0
+
+	while current and depth < 12 do
+		if current.IsObjectType then
+			for objectType in pairs(INTERACTIVE_OBJECT_TYPES) do
+				if current:IsObjectType(objectType) then
+					return true
+				end
+			end
+		end
+
+		if HasInteractiveMouseScript(current) then
 			return true
 		end
+
+		if not current.GetParent then
+			break
+		end
+		current = current:GetParent()
+		depth = depth + 1
 	end
+
 	return false
 end
 
