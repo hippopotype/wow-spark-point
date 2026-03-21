@@ -6,6 +6,19 @@ local _, addon = ...
 local BarSlotWidget = {}
 addon.BarSlotWidget = BarSlotWidget
 
+local BAR_TEXTURE_WIDTH = 1024
+local BAR_TEXTURE_HEIGHT = 512
+-- The expanded fill texture is authored on the full 1024x512 canvas, but the
+-- shell art only accepts fill cleanly inside this narrower fit rectangle.
+-- These bounds are in source-texture pixels and are normalized below when the
+-- widget is laid out at runtime.
+local FILL_FIT_BOUNDS = {
+	left = 200,
+	right = 830,
+	top = 100,
+	bottom = 435,
+}
+
 local function SafeCall(obj, method, ...)
 	if obj and obj[method] then
 		obj[method](obj, ...)
@@ -37,8 +50,10 @@ function BarSlotWidget:Create(config)
 	widget.background = widget.frame:CreateTexture(nil, "BACKGROUND")
 	widget.background:SetAllPoints(widget.frame)
 
-	widget.statusBar = CreateFrame("StatusBar", nil, widget.frame)
-	widget.statusBar:SetAllPoints(widget.frame)
+	widget.fillFrame = CreateFrame("Frame", nil, widget.frame)
+
+	widget.statusBar = CreateFrame("StatusBar", nil, widget.fillFrame)
+	widget.statusBar:SetAllPoints(widget.fillFrame)
 	widget.statusBar:SetMinMaxValues(0, 1)
 	widget.statusBar:SetValue(0)
 	SafeCall(widget.statusBar, "SetOrientation", "HORIZONTAL")
@@ -84,6 +99,15 @@ end
 
 function BarSlotWidget:SetSize(width, height)
 	self.frame:SetSize(width, height)
+	self.fillFrame:ClearAllPoints()
+	self.fillFrame:SetPoint("TOPLEFT", self.frame, "TOPLEFT", width * (FILL_FIT_BOUNDS.left / BAR_TEXTURE_WIDTH), -(height * (FILL_FIT_BOUNDS.top / BAR_TEXTURE_HEIGHT)))
+	self.fillFrame:SetPoint(
+		"BOTTOMRIGHT",
+		self.frame,
+		"BOTTOMRIGHT",
+		-(width * ((BAR_TEXTURE_WIDTH - FILL_FIT_BOUNDS.right) / BAR_TEXTURE_WIDTH)),
+		height * ((BAR_TEXTURE_HEIGHT - FILL_FIT_BOUNDS.bottom) / BAR_TEXTURE_HEIGHT)
+	)
 end
 
 function BarSlotWidget:SetValueRange(value, maxValue)
@@ -123,6 +147,7 @@ end
 
 function BarSlotWidget:SetFrameLevel(level)
 	self.frame:SetFrameLevel(level)
+	self.fillFrame:SetFrameLevel(math.max(0, level))
 	self.statusBar:SetFrameLevel(math.max(0, level))
 end
 

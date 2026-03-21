@@ -257,7 +257,7 @@ function BarSlots:Initialize()
 		width = 1,
 		height = 1,
 		backgroundBase = "bar_background",
-		fillBase = "bar_fill",
+		fillBase = "bar_fill_expanded",
 		frameBase = "bar_frame",
 		barColor = GetDBColorTable("barslot1_barColor"),
 		backgroundColor = GetConfiguredBackgroundColor(),
