@@ -657,6 +657,17 @@ local function BuildSettingsPanel()
 		end, L["Copy Settings From Tooltip"] or "Copy settings from another existing profile into the current profile")
 	end
 
+	AddDropdown(category, "hud_frameStrata", L["HUD Frame Strata"] or "HUD Frame Strata", {
+		{ value = "BACKGROUND", label = L["HUD Frame Strata Background"] or "Background" },
+		{ value = "LOW", label = L["HUD Frame Strata Low"] or "Low" },
+		{ value = "MEDIUM", label = L["HUD Frame Strata Medium"] or "Medium" },
+		{ value = "HIGH", label = L["HUD Frame Strata High"] or "High" },
+		{ value = "DIALOG", label = L["HUD Frame Strata Dialog"] or "Dialog" },
+		{ value = "FULLSCREEN", label = L["HUD Frame Strata Fullscreen"] or "Fullscreen" },
+		{ value = "FULLSCREEN_DIALOG", label = L["HUD Frame Strata FullscreenDialog"] or "Fullscreen Dialog" },
+		{ value = "TOOLTIP", label = L["HUD Frame Strata Tooltip Layer"] or "Tooltip" },
+	}, L["HUD Frame Strata Tooltip"] or "Choose the WoW frame strata used by the entire SparkPoint HUD.")
+
 	local visibilityCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Visibility"] or "Visibility")
 	AddVisibilityRuleGroup(visibilityCategory, "visibility_mode", nil, L["Addon Visibility Tooltip"] or "Default visibility rule used by modules set to inherit")
 	local globalHideCategory = Settings.RegisterVerticalLayoutSubcategory(visibilityCategory, L["Hide Overrides"] or "Hide Overrides")

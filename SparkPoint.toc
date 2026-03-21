@@ -19,6 +19,7 @@ Core\ModuleRegistry.lua
 Core\SlotProviders.lua
 Core\BarProviders.lua
 Core\AnchorFrame.lua
+Core\HUDLayers.lua
 Core\MinimapButton.lua
 
 # Widgets

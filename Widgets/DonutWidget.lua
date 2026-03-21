@@ -314,8 +314,17 @@ end
 -- SetFrameLevel: Adjust ringFrame layering
 --------------------------------------------------------------------------------
 function DonutWidget:SetFrameLevel(level)
+	if self.bgFrame then
+		self.bgFrame:SetFrameLevel(level)
+	end
+	if self.frame then
+		self.frame:SetFrameLevel(level)
+	end
 	if self.ringFrame then
 		self.ringFrame:SetFrameLevel(level)
+	end
+	if self.cooldown then
+		self.cooldown:SetFrameLevel(level + 4)
 	end
 end
 

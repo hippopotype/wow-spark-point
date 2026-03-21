@@ -146,7 +146,7 @@ end
 local function Initialize()
 	anchor = CreateFrame("Frame", "SparkPointAnchor", UIParent)
 	anchor:SetSize(64, 64)
-	anchor:SetFrameStrata("HIGH")
+	anchor:SetFrameStrata(tostring(GetDBValue("hud_frameStrata") or "HIGH"))
 	anchor:SetScript("OnUpdate", OnUpdate)
 	anchor:Hide()
 	anchor:SetAlpha(1)

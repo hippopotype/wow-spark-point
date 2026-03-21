@@ -16,7 +16,7 @@ local FILL_FIT_BOUNDS = {
 	left = 200,
 	right = 830,
 	top = 100,
-	bottom = 435,
+	bottom = 425,
 }
 
 local function SafeCall(obj, method, ...)

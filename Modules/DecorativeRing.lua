@@ -6,6 +6,7 @@ local L = addon.L
 local API = addon.API
 local CallbackRegistry = addon.CallbackRegistry
 local AnchorFrame = addon.AnchorFrame
+local HUDLayers = addon.HUDLayers
 local Visibility = addon.Visibility
 local Transition = addon.Transition
 local GetDBValue = addon.GetDBValue
@@ -211,9 +212,11 @@ function Ring:Initialize()
 		return
 	end
 
-	ringFrame = CreateFrame("Frame", nil, anchor)
+	local layerRoot = (HUDLayers and HUDLayers:GetLayerFrame(HUDLayers.Names.DECORATIVE_RING)) or anchor
+	ringFrame = CreateFrame("Frame", nil, layerRoot)
 	ringFrame:SetAllPoints()
-	ringFrame:SetFrameStrata("BACKGROUND")
+	ringFrame:SetFrameStrata(layerRoot:GetFrameStrata())
+	ringFrame:SetFrameLevel(layerRoot:GetFrameLevel() or 0)
 	ringFrame:Hide()
 
 	-- Initialize rotation state

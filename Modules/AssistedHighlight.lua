@@ -6,6 +6,7 @@ local L = addon.L
 local IconMask = addon.IconMask
 local CallbackRegistry = addon.CallbackRegistry
 local AnchorFrame = addon.AnchorFrame
+local HUDLayers = addon.HUDLayers
 local Visibility = addon.Visibility
 local Transition = addon.Transition
 local GetDBValue = addon.GetDBValue
@@ -34,14 +35,13 @@ local actionSlotCommandMap
 local assistedActionSlotSet
 
 local function GetResolvedFrameLevel()
-	local castObj = addon.Modules and addon.Modules.CastObj
-	if castObj and castObj.GetOverlayFrameLevel then
-		local level = castObj:GetOverlayFrameLevel() + 1
+	if moduleFrame and moduleFrame:GetParent() then
+		local level = moduleFrame:GetParent():GetFrameLevel()
 		if type(level) == "number" then
 			return level
 		end
 	end
-	return 11
+	return 50
 end
 
 local function ApplyFrameLevel()
@@ -559,8 +559,10 @@ function AssistedHighlight:Initialize()
 		return
 	end
 
-	moduleFrame = CreateFrame("Frame", nil, anchor)
+	local layerRoot = (HUDLayers and HUDLayers:GetLayerFrame(HUDLayers.Names.ASSISTED_HIGHLIGHT)) or anchor
+	moduleFrame = CreateFrame("Frame", nil, layerRoot)
 	moduleFrame:SetAllPoints()
+	moduleFrame:SetFrameLevel(layerRoot:GetFrameLevel() or 0)
 	moduleFrame:Hide()
 
 	moduleFrame.iconFrame = CreateFrame("Frame", nil, moduleFrame)

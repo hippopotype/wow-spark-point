@@ -6,6 +6,7 @@ local L = addon.L
 local API = addon.API
 local CallbackRegistry = addon.CallbackRegistry
 local AnchorFrame = addon.AnchorFrame
+local HUDLayers = addon.HUDLayers
 local Visibility = addon.Visibility
 local Transition = addon.Transition
 local GetDBValue = addon.GetDBValue
@@ -257,9 +258,9 @@ local function EnsureTextFrame()
 		return
 	end
 
-	textFrame = CreateFrame("Frame", nil, anchor)
-	textFrame:SetFrameStrata("HIGH")
-	textFrame:SetFrameLevel((anchor:GetFrameLevel() or 1) + 20)
+	local layerRoot = (HUDLayers and HUDLayers:GetLayerFrame(HUDLayers.Names.CLASS_RESOURCE)) or anchor
+	textFrame = CreateFrame("Frame", nil, layerRoot)
+	textFrame:SetFrameLevel(layerRoot:GetFrameLevel() or 0)
 	textFrame:SetSize(1, 1)
 	textFrame:Hide()
 
@@ -409,9 +410,9 @@ local function EnsureContainer()
 		return
 	end
 
-	container = CreateFrame("Frame", nil, anchor)
-	container:SetFrameStrata("HIGH")
-	container:SetFrameLevel((anchor:GetFrameLevel() or 1) + 20)
+	local layerRoot = (HUDLayers and HUDLayers:GetLayerFrame(HUDLayers.Names.CLASS_RESOURCE)) or anchor
+	container = CreateFrame("Frame", nil, layerRoot)
+	container:SetFrameLevel(layerRoot:GetFrameLevel() or 0)
 	container:SetSize(1, 1)
 	container:Hide()
 end
@@ -644,25 +645,25 @@ function ClassResource:ApplyLayout()
 	end
 
 	if container then
-		container:SetParent(anchor)
 		container:ClearAllPoints()
 		container:SetPoint("CENTER", anchor, "CENTER", offsetX, offsetY)
 		container:SetScale(scale)
 		container:SetAlpha(opacity)
-		container:SetFrameStrata("HIGH")
-		container:SetFrameLevel((anchor:GetFrameLevel() or 1) + 20)
+		if container:GetParent() then
+			container:SetFrameLevel(container:GetParent():GetFrameLevel() or 0)
+		end
 	end
 
 	if textFrame then
 		local textOffsetX = GetDBValue("classresource_textOffsetX") or 0
 		local textOffsetY = GetDBValue("classresource_textOffsetY") or 0
-		textFrame:SetParent(anchor)
 		textFrame:ClearAllPoints()
 		textFrame:SetPoint("CENTER", anchor, "CENTER", textOffsetX, textOffsetY)
 		textFrame:SetScale(1)
 		textFrame:SetAlpha(1)
-		textFrame:SetFrameStrata("HIGH")
-		textFrame:SetFrameLevel((anchor:GetFrameLevel() or 1) + 20)
+		if textFrame:GetParent() then
+			textFrame:SetFrameLevel(textFrame:GetParent():GetFrameLevel() or 0)
+		end
 	end
 end
 

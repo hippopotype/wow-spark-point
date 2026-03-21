@@ -6,6 +6,7 @@ local L = addon.L
 local API = addon.API
 local CallbackRegistry = addon.CallbackRegistry
 local AnchorFrame = addon.AnchorFrame
+local HUDLayers = addon.HUDLayers
 local Visibility = addon.Visibility
 local Transition = addon.Transition
 local BarProviders = addon.BarProviders
@@ -33,14 +34,13 @@ local function RoundToPixel(value)
 end
 
 local function GetResolvedFrameLevel()
-	local castObj = addon.Modules and addon.Modules.CastObj
-	if castObj and castObj.GetBarSlotFrameLevel then
-		local level = castObj:GetBarSlotFrameLevel()
+	if moduleFrame and moduleFrame:GetParent() then
+		local level = moduleFrame:GetParent():GetFrameLevel()
 		if type(level) == "number" then
 			return level
 		end
 	end
-	return 9
+	return 20
 end
 
 local function ApplyFrameLevel()
@@ -48,8 +48,14 @@ local function ApplyFrameLevel()
 		return
 	end
 
-	moduleFrame:SetFrameStrata("LOW")
-	widget:SetFrameStrata("LOW")
+	local parent = moduleFrame:GetParent()
+	if parent and parent.GetFrameStrata then
+		local strata = parent:GetFrameStrata()
+		moduleFrame:SetFrameStrata(strata)
+		if widget.SetFrameStrata then
+			widget:SetFrameStrata(strata)
+		end
+	end
 
 	local frameLevel = GetResolvedFrameLevel()
 	moduleFrame:SetFrameLevel(frameLevel)
@@ -252,7 +258,8 @@ function BarSlots:Initialize()
 	end
 
 	local anchor = AnchorFrame:GetFrame()
-	moduleFrame = CreateFrame("Frame", nil, anchor)
+	local layerRoot = (HUDLayers and HUDLayers:GetLayerFrame(HUDLayers.Names.BAR_SLOTS)) or anchor
+	moduleFrame = CreateFrame("Frame", nil, layerRoot)
 	moduleFrame:Hide()
 
 	widget = addon.BarSlotWidget:Create({

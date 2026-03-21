@@ -8,6 +8,7 @@ local IconMask = addon.IconMask
 local DonutWidget = addon.DonutWidget
 local CallbackRegistry = addon.CallbackRegistry
 local AnchorFrame = addon.AnchorFrame
+local HUDLayers = addon.HUDLayers
 local Visibility = addon.Visibility
 local Transition = addon.Transition
 local GetDBValue = addon.GetDBValue
@@ -22,6 +23,7 @@ local Cast = {}
 local SPELL_ICON_COOLDOWN_SWIPE_PATH = addon.addonFolder .. "\\Textures\\spell_icon_cooldown_swipe.png"
 local SPELL_ICON_ERROR_PATH = addon.addonFolder .. "\\Textures\\spell_icon_error.png"
 local CAST_FEEDBACK_PATH = addon.addonFolder .. "\\Textures\\cast_feedback.png"
+local CAST_BACKGROUND_SHADOW_PATH = addon.addonFolder .. "\\Textures\\cast_background_shadow.png"
 local SPELL_ICON_MASK_BASE_EXPAND = 6
 
 --------------------------------------------------------------------------------
@@ -38,6 +40,7 @@ local SLOT_SPARK_RADIUS_RATIOS = { 0.5929, 0.4875, 0.3819 }
 -- Module State
 --------------------------------------------------------------------------------
 local castFrame
+local castShadowFrame
 local castDonut, latencyDonut
 local isCasting = false
 local isChanneling = false
@@ -81,8 +84,6 @@ local PENDING_SOURCE_SENT = "sent"
 local PENDING_SOURCE_ACTION = "action"
 local CAST_OVERLAY_DEFAULT = "cast_glow"
 local CAST_OVERLAY_INTERRUPT = "cast_error"
-local CAST_FEEDBACK_LEVEL_OFFSET = 8
-local CAST_BAR_SLOT_LEVEL_OFFSET = 9
 local CAST_OVERLAY_LEVEL_OFFSET = 10
 
 -- Inner ring slots
@@ -116,6 +117,10 @@ local function GetCastFrameLevel()
 	return castFrame:GetFrameLevel() or 0
 end
 
+local function GetCastBaseContentLevel()
+	return GetCastFrameLevel()
+end
+
 local function NormalizeProviderID(providerID)
 	if type(providerID) ~= "string" then
 		return "NONE"
@@ -128,11 +133,13 @@ local function NormalizeProviderID(providerID)
 end
 
 function Cast:GetFeedbackFrameLevel()
-	return GetCastFrameLevel() + CAST_FEEDBACK_LEVEL_OFFSET
-end
-
-function Cast:GetBarSlotFrameLevel()
-	return GetCastFrameLevel() + CAST_BAR_SLOT_LEVEL_OFFSET
+	if castFrame and castFrame.feedbackFrame then
+		return castFrame.feedbackFrame:GetFrameLevel() or 0
+	end
+	if HUDLayers and HUDLayers.GetLayerLevel then
+		return HUDLayers:GetLayerLevel(HUDLayers.Names.CAST_FEEDBACK) or 0
+	end
+	return 0
 end
 
 function Cast:GetOverlayFrameLevel()
@@ -586,6 +593,13 @@ local function ShowCastFrame(opts)
 		return
 	end
 	AnchorFrame:Show("cast")
+	if castShadowFrame then
+		if Transition and Transition.ShowFrame then
+			Transition:ShowFrame(castShadowFrame, opts)
+		else
+			castShadowFrame:Show()
+		end
+	end
 	if Transition and Transition.ShowFrame then
 		Transition:ShowFrame(castFrame, opts)
 	else
@@ -609,6 +623,14 @@ local function HideCastFrame(onComplete)
 		end
 	end
 
+	if castShadowFrame then
+		if Transition and Transition.HideFrame then
+			Transition:HideFrame(castShadowFrame)
+		else
+			castShadowFrame:Hide()
+		end
+	end
+
 	if Transition and Transition.HideFrame then
 		Transition:HideFrame(castFrame, { onComplete = Finish })
 	else
@@ -629,6 +651,12 @@ local function ClearCastShellVisuals()
 	end
 	if castFrame and castFrame.frameTexture then
 		castFrame.frameTexture:Hide()
+	end
+	if castShadowFrame and castShadowFrame.texture then
+		castShadowFrame.texture:Hide()
+	end
+	if castShadowFrame then
+		castShadowFrame:Hide()
 	end
 	if castFrame and castFrame.sparkTexture then
 		castFrame.sparkTexture:Hide()
@@ -1399,6 +1427,9 @@ function Cast:Show()
 	end
 
 	if castDonut and not ShouldShowCurrentCastProgress() then
+		if castShadowFrame and castShadowFrame.texture then
+			castShadowFrame.texture:Show()
+		end
 		castDonut:SetOverlayTextureBase(CAST_OVERLAY_DEFAULT)
 		castDonut:Show()
 		castDonut:SetAngle(0)
@@ -1415,6 +1446,9 @@ function Cast:Show()
 		end
 		latencyDonut:Show()
 		if castDonut then
+			if castShadowFrame and castShadowFrame.texture then
+				castShadowFrame.texture:Show()
+			end
 			castDonut:SetOverlayTextureBase(CAST_OVERLAY_DEFAULT)
 			castDonut:Show()
 			castDonut:SetOverlayShown(true)
@@ -1464,6 +1498,9 @@ function Cast:UpdateShellVisibility()
 	end
 
 	if castDonut then
+		if castShadowFrame and castShadowFrame.texture then
+			castShadowFrame.texture:Show()
+		end
 		castDonut:Show()
 		if not isCasting and not interruptFlashActive then
 			castDonut:SetOverlayTextureBase(CAST_OVERLAY_DEFAULT)
@@ -1534,6 +1571,9 @@ function Cast:Hide()
 	if latencyDonut then
 		latencyDonut:Hide()
 	end
+	if castShadowFrame and castShadowFrame.texture then
+		castShadowFrame.texture:Hide()
+	end
 	if castFrame.sparkTexture then
 		castFrame.sparkTexture:Hide()
 	end
@@ -1591,6 +1631,9 @@ function Cast:ShowInterruptFlash(castGUID)
 	if latencyDonut then
 		latencyDonut:SetAngle(0)
 		latencyDonut:Hide()
+	end
+	if castShadowFrame and castShadowFrame.texture then
+		castShadowFrame.texture:Show()
 	end
 	if castFrame.sparkTexture then
 		castFrame.sparkTexture:Hide()
@@ -1963,6 +2006,7 @@ function Cast:ApplySlotOptions()
 	end
 
 	local radius = GetDBValue("cast_radius")
+	local baseLevel = GetCastBaseContentLevel()
 	for i = 1, NUM_SLOTS do
 		local slot = slots[i]
 		if slot then
@@ -1979,7 +2023,7 @@ function Cast:ApplySlotOptions()
 				b = backgroundColor.b or 1,
 				a = backgroundOpacity,
 			})
-			slot.widget:SetFrameLevel(NUM_SLOTS - i + 1)
+			slot.widget:SetFrameLevel(baseLevel + (NUM_SLOTS - i + 1))
 		end
 	end
 end
@@ -2016,6 +2060,7 @@ function Cast:ApplyOptions()
 	}
 	local frameColor = { r = 1, g = 1, b = 1, a = frameOpacity }
 	local glowColor = { r = 1, g = 1, b = 1, a = glowOpacity }
+	local shadowColor = { r = 1, g = 1, b = 1, a = backgroundOpacity }
 
 	-- Update spark
 	local r, g, b, a
@@ -2078,6 +2123,15 @@ function Cast:ApplyOptions()
 		castDonut:SetOverlayColor(glowColor)
 	end
 
+	if castShadowFrame and castShadowFrame.texture then
+		SetTextureSmooth(castShadowFrame.texture, CAST_BACKGROUND_SHADOW_PATH)
+		castShadowFrame.texture:SetVertexColor(shadowColor.r, shadowColor.g, shadowColor.b, shadowColor.a)
+		castShadowFrame.texture:SetSize(radius * 2, radius * 2)
+		castShadowFrame.texture:ClearAllPoints()
+		castShadowFrame.texture:SetPoint("CENTER", castShadowFrame, "CENTER")
+		castShadowFrame.texture:Hide()
+	end
+
 	-- Update frame overlay texture (top border)
 	if castFrame.frameTexture then
 		local texPath = addon.addonFolder .. "\\Textures\\cast_frame.png"
@@ -2098,18 +2152,19 @@ function Cast:ApplyOptions()
 	end
 
 	-- Enforce layering: slots innermost, then cast fill, then latency on top
-	-- Slots are at levels 1..NUM_SLOTS (innermost = 1)
+	-- All levels here are relative to the cast layer root, not absolute UI levels.
+	local baseLevel = GetCastBaseContentLevel()
 	if castFrame.iconFrame then
-		castFrame.iconFrame:SetFrameLevel(0)
+		castFrame.iconFrame:SetFrameLevel(baseLevel)
 	end
 	if castFrame.feedbackFrame then
 		castFrame.feedbackFrame:SetFrameLevel(self:GetFeedbackFrameLevel())
 	end
 	if castDonut then
-		castDonut:SetFrameLevel(NUM_SLOTS + 1)
+		castDonut:SetFrameLevel(baseLevel + NUM_SLOTS + 1)
 	end
 	if latencyDonut then
-		latencyDonut:SetFrameLevel(NUM_SLOTS + 2)
+		latencyDonut:SetFrameLevel(baseLevel + NUM_SLOTS + 2)
 	end
 	if castFrame.overlayFrame then
 		castFrame.overlayFrame:SetFrameLevel(self:GetOverlayFrameLevel())
@@ -2156,14 +2211,28 @@ function Cast:Initialize()
 		return
 	end
 
-	castFrame = CreateFrame("Frame", nil, anchor)
+	local layerRoot = (HUDLayers and HUDLayers:GetLayerFrame(HUDLayers.Names.CAST_BASE)) or anchor
+	castFrame = CreateFrame("Frame", nil, layerRoot)
 	castFrame:SetAllPoints()
+	castFrame:SetFrameStrata(layerRoot:GetFrameStrata())
+	castFrame:SetFrameLevel(layerRoot:GetFrameLevel() or 0)
 	castFrame:Hide()
 
-	-- Create feedback frame below top overlay elements but above module siblings.
-	castFrame.feedbackFrame = CreateFrame("Frame", nil, castFrame)
+	local shadowLayerRoot = (HUDLayers and HUDLayers:GetLayerFrame(HUDLayers.Names.CAST_SHADOW)) or anchor
+	castShadowFrame = CreateFrame("Frame", nil, shadowLayerRoot)
+	castShadowFrame:SetAllPoints()
+	castShadowFrame:SetFrameStrata(shadowLayerRoot:GetFrameStrata())
+	castShadowFrame:SetFrameLevel(shadowLayerRoot:GetFrameLevel() or 0)
+	castShadowFrame:Hide()
+	castShadowFrame.texture = castShadowFrame:CreateTexture(nil, "BACKGROUND")
+	castShadowFrame.texture:Hide()
+
+	-- Click feedback renders below bar slots but still inside SparkPoint's HUD stack.
+	local feedbackLayerRoot = (HUDLayers and HUDLayers:GetLayerFrame(HUDLayers.Names.CAST_FEEDBACK)) or castFrame
+	castFrame.feedbackFrame = CreateFrame("Frame", nil, feedbackLayerRoot)
 	castFrame.feedbackFrame:SetAllPoints()
-	castFrame.feedbackFrame:SetFrameLevel(self:GetFeedbackFrameLevel())
+	castFrame.feedbackFrame:SetFrameStrata(feedbackLayerRoot:GetFrameStrata())
+	castFrame.feedbackFrame:SetFrameLevel(feedbackLayerRoot:GetFrameLevel() or 0)
 
 	-- Create overlay frame for top-most cast visuals.
 	castFrame.overlayFrame = CreateFrame("Frame", nil, castFrame)
