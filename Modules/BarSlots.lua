@@ -15,6 +15,7 @@ local BAR_TEXTURE_WIDTH = 1024
 local BAR_TEXTURE_HEIGHT = 400
 local BAR_TEXTURE_ASPECT = BAR_TEXTURE_HEIGHT / BAR_TEXTURE_WIDTH
 local MODULE_PREFIX = "barslots"
+local BAR_BASE_OFFSET_Y = -20
 local EL = CreateFrame("Frame")
 
 local BarSlots = {}
@@ -135,7 +136,7 @@ function BarSlots:ApplyLayout()
 	local height = math.max(1, width * BAR_TEXTURE_ASPECT)
 	local offsetX = GetDBValue("barslot1_offsetX") or 0
 	local offsetY = GetDBValue("barslot1_offsetY") or 0
-	local centerY = radius + (height * 0.5) + offsetY
+	local centerY = radius + (height * 0.5) + BAR_BASE_OFFSET_Y + offsetY
 
 	moduleFrame:ClearAllPoints()
 	moduleFrame:SetPoint("CENTER", AnchorFrame:GetFrame(), "CENTER", offsetX, centerY)
