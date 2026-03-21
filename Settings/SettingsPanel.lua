@@ -28,6 +28,16 @@ local NEW_SETTINGS = {
 	cast_channelBarColor = true,
 	cast_sparkUseClassColor = true,
 	cast_spellTextUseClassColor = true,
+	visibility_hideInPetBattle = true,
+	visibility_hideInSpecialActionBarContext = true,
+	cast_hideInPetBattle = true,
+	cast_hideInSpecialActionBarContext = true,
+	classresource_hideInPetBattle = true,
+	classresource_hideInSpecialActionBarContext = true,
+	ring_hideInPetBattle = true,
+	ring_hideInSpecialActionBarContext = true,
+	assistedhighlight_hideInPetBattle = true,
+	assistedhighlight_hideInSpecialActionBarContext = true,
 }
 
 local function ApplyNewFeatureBadge(initializer, isNew)
@@ -647,20 +657,21 @@ local function BuildSettingsPanel()
 
 	local visibilityCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Visibility"] or "Visibility")
 	AddVisibilityRuleGroup(visibilityCategory, "visibility_mode", nil, L["Addon Visibility Tooltip"] or "Default visibility rule used by modules set to inherit")
+	local globalHideCategory = Settings.RegisterVerticalLayoutSubcategory(visibilityCategory, L["Hide Overrides"] or "Hide Overrides")
 	AddCheckbox(
-		visibilityCategory,
+		globalHideCategory,
 		"visibility_hideOnUIHover",
 		L["Hide While Hovering UI"] or "Hide While Hovering UI",
 		L["Hide While Hovering UI Tooltip"] or "Hide SparkPoint while cursor is over clickable UI frames. Keeps SparkPoint visible primarily for world targeting."
 	)
 	AddCheckbox(
-		visibilityCategory,
+		globalHideCategory,
 		"visibility_hideInPetBattle",
 		L["Hide While In Pet Battle"] or "Hide While In Pet Battle",
 		L["Hide While In Pet Battle Tooltip"] or "Hide SparkPoint while you are in a pet battle."
 	)
 	AddCheckbox(
-		visibilityCategory,
+		globalHideCategory,
 		"visibility_hideInSpecialActionBarContext",
 		L["Hide While In Special Action Bar Context"] or "Hide While In Special Action Bar Context",
 		L["Hide While In Special Action Bar Context Tooltip"]
@@ -812,20 +823,21 @@ local function BuildSettingsPanel()
 		L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility"
 	)
 	AddVisibilityRuleGroup(castVisibilityCategory, "cast_visibility", nil, L["Cast Ring Visibility Tooltip"] or "When to show the cast ring shell")
+	local castHideCategory = Settings.RegisterVerticalLayoutSubcategory(castVisibilityCategory, L["Hide Overrides"] or "Hide Overrides")
 	AddCheckbox(
-		castVisibilityCategory,
+		castHideCategory,
 		"cast_hideOnUIHover",
 		L["Hide While Hovering UI"] or "Hide While Hovering UI",
 		L["Hide While Hovering UI Tooltip"] or "Hide SparkPoint while cursor is over clickable UI frames. Keeps SparkPoint visible primarily for world targeting."
 	)
 	AddCheckbox(
-		castVisibilityCategory,
+		castHideCategory,
 		"cast_hideInPetBattle",
 		L["Hide While In Pet Battle"] or "Hide While In Pet Battle",
 		L["Hide While In Pet Battle Tooltip"] or "Hide SparkPoint while you are in a pet battle."
 	)
 	AddCheckbox(
-		castVisibilityCategory,
+		castHideCategory,
 		"cast_hideInSpecialActionBarContext",
 		L["Hide While In Special Action Bar Context"] or "Hide While In Special Action Bar Context",
 		L["Hide While In Special Action Bar Context Tooltip"]
@@ -1013,20 +1025,21 @@ local function BuildSettingsPanel()
 		L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility"
 	)
 	AddVisibilityRuleGroup(classResourceVisibilityCategory, "classresource_visibility", nil, L["Class Resource Visibility Tooltip"] or "When to show class resource")
+	local classResourceHideCategory = Settings.RegisterVerticalLayoutSubcategory(classResourceVisibilityCategory, L["Hide Overrides"] or "Hide Overrides")
 	AddCheckbox(
-		classResourceVisibilityCategory,
+		classResourceHideCategory,
 		"classresource_hideOnUIHover",
 		L["Hide While Hovering UI"] or "Hide While Hovering UI",
 		L["Hide While Hovering UI Tooltip"] or "Hide SparkPoint while cursor is over clickable UI frames. Keeps SparkPoint visible primarily for world targeting."
 	)
 	AddCheckbox(
-		classResourceVisibilityCategory,
+		classResourceHideCategory,
 		"classresource_hideInPetBattle",
 		L["Hide While In Pet Battle"] or "Hide While In Pet Battle",
 		L["Hide While In Pet Battle Tooltip"] or "Hide SparkPoint while you are in a pet battle."
 	)
 	AddCheckbox(
-		classResourceVisibilityCategory,
+		classResourceHideCategory,
 		"classresource_hideInSpecialActionBarContext",
 		L["Hide While In Special Action Bar Context"] or "Hide While In Special Action Bar Context",
 		L["Hide While In Special Action Bar Context Tooltip"]
@@ -1122,20 +1135,21 @@ local function BuildSettingsPanel()
 		L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility"
 	)
 	AddVisibilityRuleGroup(ringVisibilityCategory, "ring_visibility", nil, L["Decorative Ring Visibility Tooltip"] or "When to show the decorative ring")
+	local ringHideCategory = Settings.RegisterVerticalLayoutSubcategory(ringVisibilityCategory, L["Hide Overrides"] or "Hide Overrides")
 	AddCheckbox(
-		ringVisibilityCategory,
+		ringHideCategory,
 		"ring_hideOnUIHover",
 		L["Hide While Hovering UI"] or "Hide While Hovering UI",
 		L["Hide While Hovering UI Tooltip"] or "Hide SparkPoint while cursor is over clickable UI frames. Keeps SparkPoint visible primarily for world targeting."
 	)
 	AddCheckbox(
-		ringVisibilityCategory,
+		ringHideCategory,
 		"ring_hideInPetBattle",
 		L["Hide While In Pet Battle"] or "Hide While In Pet Battle",
 		L["Hide While In Pet Battle Tooltip"] or "Hide SparkPoint while you are in a pet battle."
 	)
 	AddCheckbox(
-		ringVisibilityCategory,
+		ringHideCategory,
 		"ring_hideInSpecialActionBarContext",
 		L["Hide While In Special Action Bar Context"] or "Hide While In Special Action Bar Context",
 		L["Hide While In Special Action Bar Context Tooltip"]
@@ -1240,20 +1254,21 @@ local function BuildSettingsPanel()
 		nil,
 		L["Assisted Highlight Visibility Tooltip"] or "When to show the assisted highlight icon"
 	)
+	local assistedHideCategory = Settings.RegisterVerticalLayoutSubcategory(assistedVisibilityCategory, L["Hide Overrides"] or "Hide Overrides")
 	AddCheckbox(
-		assistedVisibilityCategory,
+		assistedHideCategory,
 		"assistedhighlight_hideOnUIHover",
 		L["Hide While Hovering UI"] or "Hide While Hovering UI",
 		L["Hide While Hovering UI Tooltip"] or "Hide SparkPoint while cursor is over clickable UI frames. Keeps SparkPoint visible primarily for world targeting."
 	)
 	AddCheckbox(
-		assistedVisibilityCategory,
+		assistedHideCategory,
 		"assistedhighlight_hideInPetBattle",
 		L["Hide While In Pet Battle"] or "Hide While In Pet Battle",
 		L["Hide While In Pet Battle Tooltip"] or "Hide SparkPoint while you are in a pet battle."
 	)
 	AddCheckbox(
-		assistedVisibilityCategory,
+		assistedHideCategory,
 		"assistedhighlight_hideInSpecialActionBarContext",
 		L["Hide While In Special Action Bar Context"] or "Hide While In Special Action Bar Context",
 		L["Hide While In Special Action Bar Context Tooltip"]
