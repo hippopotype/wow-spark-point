@@ -397,6 +397,14 @@ function Visibility:GetGlobalHideOnUIHover()
 	return GetDBBool and GetDBBool("visibility_hideOnUIHover") or false
 end
 
+function Visibility:GetGlobalHideInPetBattle()
+	return GetDBBool and GetDBBool("visibility_hideInPetBattle") or false
+end
+
+function Visibility:GetGlobalHideInSpecialActionBarContext()
+	return GetDBBool and GetDBBool("visibility_hideInSpecialActionBarContext") or false
+end
+
 function Visibility:GetModuleHideOnUIHover(prefix)
 	if not prefix then
 		return self:GetGlobalHideOnUIHover()
@@ -406,6 +414,28 @@ function Visibility:GetModuleHideOnUIHover(prefix)
 	end
 	local GetDBBoolLocal = addon.GetDBBool
 	return GetDBBoolLocal and GetDBBoolLocal(prefix .. "_hideOnUIHover") or false
+end
+
+function Visibility:GetModuleHideInPetBattle(prefix)
+	if not prefix then
+		return self:GetGlobalHideInPetBattle()
+	end
+	if self:GetModuleSource(prefix) == Visibility.SOURCES.INHERIT then
+		return self:GetGlobalHideInPetBattle()
+	end
+	local GetDBBoolLocal = addon.GetDBBool
+	return GetDBBoolLocal and GetDBBoolLocal(prefix .. "_hideInPetBattle") or false
+end
+
+function Visibility:GetModuleHideInSpecialActionBarContext(prefix)
+	if not prefix then
+		return self:GetGlobalHideInSpecialActionBarContext()
+	end
+	if self:GetModuleSource(prefix) == Visibility.SOURCES.INHERIT then
+		return self:GetGlobalHideInSpecialActionBarContext()
+	end
+	local GetDBBoolLocal = addon.GetDBBool
+	return GetDBBoolLocal and GetDBBoolLocal(prefix .. "_hideInSpecialActionBarContext") or false
 end
 
 function Visibility:IsAnyHoverHideEnabled()
@@ -453,6 +483,37 @@ end
 
 function Visibility:IsPlayerCasting()
 	return UnitCastingInfo("player") ~= nil or UnitChannelInfo("player") ~= nil
+end
+
+function Visibility:IsInPetBattle()
+	return C_PetBattles and C_PetBattles.IsInBattle and (C_PetBattles.IsInBattle() == true) or false
+end
+
+function Visibility:IsVehicleUIActive()
+	local active = false
+	if UnitHasVehicleUI then
+		active = UnitHasVehicleUI("player") == true
+	end
+	if not active and C_ActionBar and C_ActionBar.HasVehicleActionBar then
+		active = C_ActionBar.HasVehicleActionBar() == true
+	end
+	return active
+end
+
+function Visibility:IsOverrideActionBarActive()
+	return C_ActionBar and C_ActionBar.HasOverrideActionBar and (C_ActionBar.HasOverrideActionBar() == true) or false
+end
+
+function Visibility:IsPossessBarActive()
+	return C_ActionBar and C_ActionBar.IsPossessBarVisible and (C_ActionBar.IsPossessBarVisible() == true) or false
+end
+
+function Visibility:IsTempShapeshiftActionBarActive()
+	return C_ActionBar and C_ActionBar.HasTempShapeshiftActionBar and (C_ActionBar.HasTempShapeshiftActionBar() == true) or false
+end
+
+function Visibility:IsSpecialActionBarContextActive()
+	return self:IsVehicleUIActive() or self:IsOverrideActionBarActive() or self:IsPossessBarActive() or self:IsTempShapeshiftActionBarActive()
 end
 
 function Visibility:GetTargetDisposition()
@@ -594,6 +655,12 @@ function Visibility:EvaluateRaw(prefix)
 	if self:ShouldHideOnUIHover() and self:GetModuleHideOnUIHover(prefix) then
 		return false
 	end
+	if self:IsInPetBattle() and self:GetModuleHideInPetBattle(prefix) then
+		return false
+	end
+	if self:IsSpecialActionBarContextActive() and self:GetModuleHideInSpecialActionBarContext(prefix) then
+		return false
+	end
 	return self:EvaluateRules(self:GetModuleRules(prefix))
 end
 
@@ -689,6 +756,8 @@ EL:RegisterEvent("PLAYER_TARGET_CHANGED")
 EL:RegisterEvent("GROUP_ROSTER_UPDATE")
 EL:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 EL:RegisterEvent("PLAYER_DIFFICULTY_CHANGED")
+EL:RegisterEvent("PET_BATTLE_OPENING_START")
+EL:RegisterEvent("PET_BATTLE_CLOSE")
 EL:RegisterUnitEvent("UNIT_SPELLCAST_START", "player")
 EL:RegisterUnitEvent("UNIT_SPELLCAST_STOP", "player")
 EL:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTED", "player")
@@ -698,6 +767,11 @@ EL:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_START", "player")
 EL:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_STOP", "player")
 EL:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_START", "player")
 EL:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_STOP", "player")
+EL:RegisterEvent("UPDATE_VEHICLE_ACTIONBAR")
+EL:RegisterEvent("UPDATE_OVERRIDE_ACTIONBAR")
+EL:RegisterEvent("UPDATE_POSSESS_BAR")
+EL:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
+EL:RegisterEvent("ACTIONBAR_PAGE_CHANGED")
 
 EL:SetScript("OnEvent", function(_, event, ...)
 	CallbackRegistry:Trigger("VisibilityContextChanged", event, ...)
@@ -714,10 +788,34 @@ CallbackRegistry:RegisterSettingCallback("visibility_hideOnUIHover", function()
 	CallbackRegistry:Trigger("VisibilityContextChanged", "visibility_hideOnUIHover")
 end)
 
+CallbackRegistry:RegisterSettingCallback("visibility_hideInPetBattle", function()
+	ResetStableVisibilityState(nil)
+	for _, prefix in ipairs(UI_HOVER_PREFIXES) do
+		ResetStableVisibilityState(prefix)
+	end
+	CallbackRegistry:Trigger("VisibilityContextChanged", "visibility_hideInPetBattle")
+end)
+
+CallbackRegistry:RegisterSettingCallback("visibility_hideInSpecialActionBarContext", function()
+	ResetStableVisibilityState(nil)
+	for _, prefix in ipairs(UI_HOVER_PREFIXES) do
+		ResetStableVisibilityState(prefix)
+	end
+	CallbackRegistry:Trigger("VisibilityContextChanged", "visibility_hideInSpecialActionBarContext")
+end)
+
 for _, prefix in ipairs(UI_HOVER_PREFIXES) do
 	CallbackRegistry:RegisterSettingCallback(prefix .. "_hideOnUIHover", function()
 		ResetStableVisibilityState(prefix)
 		CallbackRegistry:Trigger("VisibilityContextChanged", prefix .. "_hideOnUIHover")
+	end)
+	CallbackRegistry:RegisterSettingCallback(prefix .. "_hideInPetBattle", function()
+		ResetStableVisibilityState(prefix)
+		CallbackRegistry:Trigger("VisibilityContextChanged", prefix .. "_hideInPetBattle")
+	end)
+	CallbackRegistry:RegisterSettingCallback(prefix .. "_hideInSpecialActionBarContext", function()
+		ResetStableVisibilityState(prefix)
+		CallbackRegistry:Trigger("VisibilityContextChanged", prefix .. "_hideInSpecialActionBarContext")
 	end)
 	CallbackRegistry:RegisterSettingCallback(prefix .. "_visibilitySource", function()
 		ResetStableVisibilityState(prefix)

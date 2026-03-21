@@ -27,6 +27,8 @@ addon.DefaultValues = {
 	minimapButtonFadeOpacity = 0,
 	minimapButtonAngle = 225,
 	visibility_hideOnUIHover = false,
+	visibility_hideInPetBattle = true,
+	visibility_hideInSpecialActionBarContext = true,
 	visibility_mode = {
 		IN_COMBAT = true,
 		CASTING = true,
@@ -75,6 +77,8 @@ addon.DefaultValues = {
 	cast_visibilitySource = "INHERIT",
 	cast_visibility = { ALWAYS = true },
 	cast_hideOnUIHover = false,
+	cast_hideInPetBattle = true,
+	cast_hideInSpecialActionBarContext = true,
 	cast_spellTextEnabled = false,
 	cast_spellTextFont = "Fonts\\FRIZQT__.TTF",
 	cast_spellTextSize = 12,
@@ -106,6 +110,8 @@ addon.DefaultValues = {
 	classresource_visibilitySource = "INHERIT",
 	classresource_visibility = { ALWAYS = true },
 	classresource_hideOnUIHover = false,
+	classresource_hideInPetBattle = true,
+	classresource_hideInSpecialActionBarContext = true,
 	classresource_font = "Fonts\\FRIZQT__.TTF",
 	classresource_fontSize = 16,
 	classresource_fontOutline = "",
@@ -130,6 +136,8 @@ addon.DefaultValues = {
 	ring_visibilitySource = "INHERIT",
 	ring_visibility = { ALWAYS = true },
 	ring_hideOnUIHover = false,
+	ring_hideInPetBattle = true,
+	ring_hideInSpecialActionBarContext = true,
 
 	-- SpellIcon module settings
 	spellicon_size = 40,
@@ -166,4 +174,6 @@ addon.DefaultValues = {
 	assistedhighlight_visibilitySource = "INHERIT",
 	assistedhighlight_visibility = { ALWAYS = true },
 	assistedhighlight_hideOnUIHover = false,
+	assistedhighlight_hideInPetBattle = true,
+	assistedhighlight_hideInSpecialActionBarContext = true,
 }

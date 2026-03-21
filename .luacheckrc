@@ -39,11 +39,12 @@ globals = {
     "StaticPopup_Show", "StaticPopupDialogs", "STATICPOPUP_NUMDIALOGS",
     "UIParent",
     "UnitAffectingCombat", "UnitCanAttack", "UnitCastingInfo", "UnitChannelInfo", "UnitClass", "UnitExists", "UnitIsDeadOrGhost", "UnitIsFriend", "UnitReaction",
+    "UnitHasVehicleUI", "UnitInVehicle", "UnitUsingVehicle",
     "UseAction", "hooksecurefunc",
     "UnitPower", "UnitPowerMax",
     "WorldFrame",
     -- WoW locale strings
-    "ACCEPT", "CANCEL", "Enum",
+    "ACCEPT", "CANCEL", "Enum", "C_PetBattles",
     -- WoW font objects
     "GameFontNormalSmall", "GameFontDisableSmall",
     -- Addon XML mixin
