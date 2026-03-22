@@ -11,7 +11,6 @@ local Visibility = addon.Visibility
 local Transition = addon.Transition
 local BarProviders = addon.BarProviders
 local GetDBBool = addon.GetDBBool
-local GetDBColor = addon.GetDBColor
 local GetDBValue = addon.GetDBValue
 local GetDBColorTable = addon.GetDBColorTable
 
@@ -215,7 +214,31 @@ local function UpdateWidgetVisualOptions()
 	widget:SetFrameColor(GetConfiguredFrameColor())
 end
 
-local function ApplyTextOptions()
+local function GetConfiguredTextColor(result)
+	local opacity = tonumber(GetDBValue("barslot1_textOpacity"))
+	if opacity == nil then
+		opacity = 1
+	end
+	if opacity < 0 then
+		opacity = 0
+	elseif opacity > 1 then
+		opacity = 1
+	end
+
+	local source = tostring(GetDBValue("barslot1_textColorSource") or "CUSTOM")
+	if source == "CLASS" then
+		local r, g, b = API.GetPlayerClassColor()
+		return r, g, b, opacity
+	end
+	if source == "PROVIDER" and result and result.barColor then
+		return result.barColor.r or 1, result.barColor.g or 1, result.barColor.b or 1, opacity
+	end
+
+	local color = GetDBColorTable("barslot1_textColor") or { r = 1, g = 1, b = 1, a = 1 }
+	return color.r or 1, color.g or 1, color.b or 1, opacity
+end
+
+local function ApplyTextOptions(result)
 	if not text or not moduleFrame then
 		return
 	end
@@ -225,12 +248,7 @@ local function ApplyTextOptions()
 	local fontOutline = GetDBValue("barslot1_textOutline") or "OUTLINE"
 	text:SetFont(font, fontSize, fontOutline)
 
-	local r, g, b, a
-	if GetDBBool("barslot1_textUseClassColor") then
-		r, g, b, a = API.GetPlayerClassColor()
-	else
-		r, g, b, a = GetDBColor("barslot1_textColor")
-	end
+	local r, g, b, a = GetConfiguredTextColor(result)
 	text:SetTextColor(r, g, b, a)
 
 	local offsetX = tonumber(GetDBValue("barslot1_textOffsetX")) or 0
@@ -298,6 +316,7 @@ local function RefreshBar()
 
 	widget:SetBarColor(GetConfiguredBarColor(result))
 	UpdateWidgetVisualOptions()
+	ApplyTextOptions(result)
 
 	if text then
 		if GetDBBool("barslot1_textEnabled") then
@@ -457,11 +476,12 @@ for _, key in ipairs({
 	"barslot1_textEnabled",
 	"barslot1_textMode",
 	"barslot1_textNumberStyle",
+	"barslot1_textColorSource",
 	"barslot1_textFont",
 	"barslot1_textSize",
 	"barslot1_textOutline",
 	"barslot1_textColor",
-	"barslot1_textUseClassColor",
+	"barslot1_textOpacity",
 	"barslot1_textOffsetX",
 	"barslot1_textOffsetY",
 }) do

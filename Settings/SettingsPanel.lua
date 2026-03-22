@@ -1101,6 +1101,11 @@ local function BuildSettingsPanel()
 		{ value = "SHORT", label = L["Bar Slot Text Number Style Short"] or "Short" },
 		{ value = "FULL", label = L["Bar Slot Text Number Style Full"] or "Full" },
 	}, L["Bar Slot Text Number Style Tooltip"] or "Choose whether current and max values use shortened or full number formatting")
+	AddDropdown(barSlotsTextCategory, "barslot1_textColorSource", L["Bar Slot Text Color Source"] or "Text Color Source", {
+		{ value = "CUSTOM", label = L["Bar Slot Text Color Source Custom"] or "Custom Color" },
+		{ value = "CLASS", label = L["Bar Slot Text Color Source Class"] or "Class Color" },
+		{ value = "PROVIDER", label = L["Bar Slot Text Color Source Provider"] or "Resource Color" },
+	}, L["Bar Slot Text Color Source Tooltip"] or "Choose how the top bar slot text color is selected")
 	AddDropdown(barSlotsTextCategory, "barslot1_textFont", L["Bar Slot Text Font"] or "Font", {
 		{ value = "Fonts\\FRIZQT__.TTF", label = "Friz Quadrata" },
 		{ value = "Fonts\\ARIALN.TTF", label = "Arial Narrow" },
@@ -1116,12 +1121,15 @@ local function BuildSettingsPanel()
 		{ value = "MONOCHROME,THICKOUTLINE", label = "Mono + Thick Outline" },
 	}, L["Bar Slot Text Font Outline Tooltip"] or "Choose the outline style used by top bar slot text")
 	AddSlider(barSlotsTextCategory, "barslot1_textSize", L["Bar Slot Text Font Size"] or "Font Size", 8, 48, 1)
-	AddColor(barSlotsTextCategory, "barslot1_textColor", L["Bar Slot Text Color"] or "Text Color")
-	AddCheckbox(
+	AddColor(barSlotsTextCategory, "barslot1_textColor", L["Bar Slot Text Color"] or "Text Color", nil, false)
+	AddSlider(
 		barSlotsTextCategory,
-		"barslot1_textUseClassColor",
-		L["Bar Slot Text Use Class Color"] or "Text Uses Class Color",
-		L["Bar Slot Text Use Class Color Tooltip"] or "Use your class color for top bar slot text instead of the custom text color"
+		"barslot1_textOpacity",
+		L["Bar Slot Text Opacity"] or "Text Opacity",
+		0,
+		1,
+		0.05,
+		L["Bar Slot Text Opacity Tooltip"] or "Opacity of the top bar slot text regardless of selected color source"
 	)
 	AddSlider(barSlotsTextCategory, "barslot1_textOffsetX", L["Bar Slot Text Horizontal Offset"] or "Horizontal Offset", -240, 240, 1)
 	AddSlider(barSlotsTextCategory, "barslot1_textOffsetY", L["Bar Slot Text Vertical Offset"] or "Vertical Offset", -240, 240, 1)
