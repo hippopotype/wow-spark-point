@@ -64,9 +64,9 @@ function HealthBarProvider:GetTextDisplayData(result, numberStyle)
 	end
 
 	return {
-		current = API.FormatReadableValue(current, numberStyle),
-		max = API.FormatReadableValue(maxValue, numberStyle),
-		percent = API.FormatPercentValue(GetHealthPercentValue(current, maxValue)),
+		current = API.FormatBarTextValue(current, numberStyle),
+		max = API.FormatBarTextValue(maxValue, numberStyle),
+		percent = API.FormatBarTextPercent(GetHealthPercentValue(current, maxValue)),
 	}
 end
 

@@ -204,7 +204,7 @@ local function GetFormattedText(result)
 	local currentText = textData.current or "0"
 	local maxText = textData.max or "0"
 	local percentText = textData.percent or "0%"
-	return API.ComposeBarText(mode, currentText, maxText, percentText)
+	return API.ComposeBarTextDisplay(mode, currentText, maxText, percentText)
 end
 
 local function UpdateWidgetVisualOptions()

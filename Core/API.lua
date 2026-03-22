@@ -29,19 +29,12 @@ function API.SafeReadableNumber(value, fallback)
 	return SafeNumber(value, fallback)
 end
 
-function API.BuildBarTextData(currentValue, maxValue, percentValue)
-	return {
-		current = currentValue,
-		max = maxValue,
-		percent = percentValue,
-	}
-end
-
 local function IsSecretReadableValue(value)
 	return value ~= nil and issecretvalue and issecretvalue(value)
 end
 
-function API.FormatReadableValue(value, style)
+-- Shared bar-slot text helpers used by bar providers and the BarSlots module.
+function API.FormatBarTextValue(value, style)
 	if value == nil then
 		return "0"
 	end
@@ -72,7 +65,7 @@ function API.FormatReadableValue(value, style)
 	return tostring(numericValue)
 end
 
-function API.FormatPercentValue(value)
+function API.FormatBarTextPercent(value)
 	if value == nil then
 		return "0%"
 	end
@@ -97,7 +90,7 @@ function API.FormatPercentValue(value)
 	return string.format("%d%%", math.floor(numericValue + 0.5))
 end
 
-function API.ComposeBarText(mode, currentText, maxText, percentText)
+function API.ComposeBarTextDisplay(mode, currentText, maxText, percentText)
 	if mode == "CURRENT" then
 		return currentText
 	elseif mode == "CURRENT_MAX" then
