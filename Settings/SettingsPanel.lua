@@ -1097,6 +1097,10 @@ local function BuildSettingsPanel()
 		{ value = "CURRENT_PERCENT", label = L["Bar Slot Text Mode Current Percent"] or "Current + Percent" },
 		{ value = "CURRENT_MAX_PERCENT", label = L["Bar Slot Text Mode Current Max Percent"] or "Current / Max + Percent" },
 	}, L["Bar Slot Text Mode Tooltip"] or "Choose how the top bar slot text is formatted")
+	AddDropdown(barSlotsTextCategory, "barslot1_textNumberStyle", L["Bar Slot Text Number Style"] or "Number Style", {
+		{ value = "SHORT", label = L["Bar Slot Text Number Style Short"] or "Short" },
+		{ value = "FULL", label = L["Bar Slot Text Number Style Full"] or "Full" },
+	}, L["Bar Slot Text Number Style Tooltip"] or "Choose whether current and max values use shortened or full number formatting")
 	AddDropdown(barSlotsTextCategory, "barslot1_textFont", L["Bar Slot Text Font"] or "Font", {
 		{ value = "Fonts\\FRIZQT__.TTF", label = "Friz Quadrata" },
 		{ value = "Fonts\\ARIALN.TTF", label = "Arial Narrow" },

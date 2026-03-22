@@ -19,6 +19,7 @@ globals = {
 	"C_CVar",
 	"C_ClassColor",
 	"C_Spell",
+	"C_StringUtil",
 	"C_Timer",
 	"C_UnitAuras",
 	"CVarCallbackRegistry",

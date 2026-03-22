@@ -192,30 +192,19 @@ local function GetFormattedText(result)
 		return nil
 	end
 
-	local parts
-	if assignedProvider and assignedProvider.GetTextParts then
-		parts = assignedProvider:GetTextParts(result)
+	local textData
+	if assignedProvider and assignedProvider.GetTextDisplayData then
+		textData = assignedProvider:GetTextDisplayData(result, tostring(GetDBValue("barslot1_textNumberStyle") or "SHORT"))
 	end
-	if not parts then
+	if not textData then
 		return nil
 	end
 
 	local mode = tostring(GetDBValue("barslot1_textMode") or "CURRENT_PERCENT")
-	local currentText = parts.current or "0"
-	local maxText = parts.max or "0"
-	local percentText = parts.percent or "0%"
-
-	if mode == "CURRENT" then
-		return currentText
-	elseif mode == "CURRENT_MAX" then
-		return currentText .. " / " .. maxText
-	elseif mode == "PERCENT" then
-		return percentText
-	elseif mode == "CURRENT_MAX_PERCENT" then
-		return currentText .. " / " .. maxText .. " (" .. percentText .. ")"
-	end
-
-	return currentText .. " - " .. percentText
+	local currentText = textData.current or "0"
+	local maxText = textData.max or "0"
+	local percentText = textData.percent or "0%"
+	return API.ComposeBarText(mode, currentText, maxText, percentText)
 end
 
 local function UpdateWidgetVisualOptions()
@@ -467,6 +456,7 @@ for _, key in ipairs({
 	"barslot1_frameOpacity",
 	"barslot1_textEnabled",
 	"barslot1_textMode",
+	"barslot1_textNumberStyle",
 	"barslot1_textFont",
 	"barslot1_textSize",
 	"barslot1_textOutline",

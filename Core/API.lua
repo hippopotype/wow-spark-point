@@ -5,6 +5,7 @@ local _, addon = ...
 
 local API = {}
 addon.API = API
+local issecretvalue = _G.issecretvalue
 
 local function SafeNumber(value, fallback)
 	if value == nil then
@@ -22,6 +23,92 @@ local function SafeNumber(value, fallback)
 	end
 
 	return numericValue
+end
+
+function API.SafeReadableNumber(value, fallback)
+	return SafeNumber(value, fallback)
+end
+
+function API.BuildBarTextData(currentValue, maxValue, percentValue)
+	return {
+		current = currentValue,
+		max = maxValue,
+		percent = percentValue,
+	}
+end
+
+local function IsSecretReadableValue(value)
+	return value ~= nil and issecretvalue and issecretvalue(value)
+end
+
+function API.FormatReadableValue(value, style)
+	if value == nil then
+		return "0"
+	end
+
+	if style == "SHORT" and AbbreviateNumbers then
+		local ok, formatted = pcall(AbbreviateNumbers, value)
+		if ok and formatted ~= nil then
+			return tostring(formatted)
+		end
+	end
+
+	if BreakUpLargeNumbers then
+		local ok, formatted = pcall(BreakUpLargeNumbers, value)
+		if ok and formatted ~= nil then
+			return tostring(formatted)
+		end
+	end
+
+	if IsSecretReadableValue(value) then
+		local ok, formatted = pcall(tostring, value)
+		if ok and formatted ~= nil then
+			return formatted
+		end
+		return "0"
+	end
+
+	local numericValue = SafeNumber(value, 0)
+	return tostring(numericValue)
+end
+
+function API.FormatPercentValue(value)
+	if value == nil then
+		return "0%"
+	end
+
+	if IsSecretReadableValue(value) then
+		if C_StringUtil and C_StringUtil.RoundToNearestString then
+			local ok, rounded = pcall(C_StringUtil.RoundToNearestString, value)
+			if ok and rounded ~= nil then
+				return tostring(rounded) .. "%"
+			end
+		end
+
+		local ok, formatted = pcall(tostring, value)
+		if ok and formatted ~= nil then
+			return formatted .. "%"
+		end
+
+		return "0%"
+	end
+
+	local numericValue = SafeNumber(value, 0)
+	return string.format("%d%%", math.floor(numericValue + 0.5))
+end
+
+function API.ComposeBarText(mode, currentText, maxText, percentText)
+	if mode == "CURRENT" then
+		return currentText
+	elseif mode == "CURRENT_MAX" then
+		return currentText .. " / " .. maxText
+	elseif mode == "PERCENT" then
+		return percentText
+	elseif mode == "CURRENT_MAX_PERCENT" then
+		return currentText .. " / " .. maxText .. " (" .. percentText .. ")"
+	end
+
+	return currentText .. " - " .. percentText
 end
 
 function API.GetSpellCooldown(spellID)

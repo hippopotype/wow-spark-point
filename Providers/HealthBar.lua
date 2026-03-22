@@ -1,6 +1,7 @@
 -- SparkPoint Health Bar Provider
 
 local _, addon = ...
+local API = addon.API
 
 local HealthBarProvider = {}
 HealthBarProvider.id = "HEALTH"
@@ -8,37 +9,21 @@ HealthBarProvider.displayName = "Health"
 
 local isEnabled = false
 
-local function FormatDisplayNumber(value)
-	local text = tostring(value or 0)
-	local numeric = tonumber(text)
-	if numeric ~= nil then
-		if AbbreviateNumbers then
-			return AbbreviateNumbers(numeric)
-		end
-		if BreakUpLargeNumbers then
-			return BreakUpLargeNumbers(numeric)
-		end
-	end
-	return text
-end
-
-local function FormatPercentText()
-	local percent
+local function GetHealthPercentValue(current, maxValue)
 	if UnitHealthPercent then
-		percent = UnitHealthPercent("player", true, CurveConstants and CurveConstants.ScaleTo100)
-	end
-
-	if percent == nil then
-		local current = tonumber(tostring(UnitHealth("player") or 0)) or 0
-		local maxValue = tonumber(tostring(UnitHealthMax("player") or 0)) or 0
-		if maxValue > 0 then
-			percent = (current / maxValue) * 100
-		else
-			percent = 0
+		local ok, percent = pcall(UnitHealthPercent, "player", true, CurveConstants and CurveConstants.ScaleTo100)
+		if ok and percent ~= nil then
+			return percent
 		end
 	end
 
-	return string.format("%d%%", math.floor((tonumber(tostring(percent)) or 0) + 0.5))
+	local currentValue = API.SafeReadableNumber(current, 0)
+	local maxReadable = API.SafeReadableNumber(maxValue, 0)
+	if maxReadable > 0 then
+		return (currentValue / maxReadable) * 100
+	end
+
+	return 0
 end
 
 function HealthBarProvider:GetStatus()
@@ -61,21 +46,27 @@ function HealthBarProvider:GetStatus()
 	}
 end
 
-function HealthBarProvider:GetTextParts(result)
+function HealthBarProvider:GetTextDisplayData(result, numberStyle)
 	if not isEnabled then
 		return nil
 	end
 
-	local current = result and result.current or UnitHealth("player")
-	local maxValue = result and result.max or UnitHealthMax("player")
-	if maxValue == nil then
+	local current = result and result.current
+	local maxValue = result and result.max
+	if current == nil or maxValue == nil then
+		current = UnitHealth("player")
+		maxValue = UnitHealthMax("player")
+	end
+
+	local maxReadable = API.SafeReadableNumber(maxValue, 0)
+	if maxReadable <= 0 then
 		return nil
 	end
 
 	return {
-		current = FormatDisplayNumber(current),
-		max = FormatDisplayNumber(maxValue),
-		percent = FormatPercentText(),
+		current = API.FormatReadableValue(current, numberStyle),
+		max = API.FormatReadableValue(maxValue, numberStyle),
+		percent = API.FormatPercentValue(GetHealthPercentValue(current, maxValue)),
 	}
 end
 

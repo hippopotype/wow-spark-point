@@ -121,6 +121,7 @@ addon.DefaultValues = {
 	barslot1_scale = 1,
 	barslot1_textEnabled = false,
 	barslot1_textMode = "CURRENT_PERCENT",
+	barslot1_textNumberStyle = "SHORT",
 	barslot1_textFont = "Fonts\\FRIZQT__.TTF",
 	barslot1_textSize = 12,
 	barslot1_textOutline = "OUTLINE",
