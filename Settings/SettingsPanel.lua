@@ -827,35 +827,6 @@ local function BuildSettingsPanel()
 		{ value = "NON_CHANNEL", label = L["Cast Progress Display Normal"] or "Normal Casts Only" },
 		{ value = "CHANNEL", label = L["Cast Progress Display Channelled"] or "Channelled Spells Only" },
 	}, L["Cast Progress Display Tooltip"] or "Choose which cast types animate the progress fill. This does not change overall SparkPoint visibility.")
-	local castVisibilityCategory = Settings.RegisterVerticalLayoutSubcategory(castCategory, L["Visibility"] or "Visibility")
-	AddDropdown(
-		castVisibilityCategory,
-		"cast_visibilitySource",
-		L["Visibility Source"] or "Visibility Source",
-		visibilitySourceOptions,
-		L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility"
-	)
-	AddVisibilityRuleGroup(castVisibilityCategory, "cast_visibility", nil, L["Cast Ring Visibility Tooltip"] or "When to show the cast ring shell")
-	local castHideCategory = Settings.RegisterVerticalLayoutSubcategory(castVisibilityCategory, L["Hide Overrides"] or "Hide Overrides")
-	AddCheckbox(
-		castHideCategory,
-		"cast_hideOnUIHover",
-		L["Hide While Hovering UI"] or "Hide While Hovering UI",
-		L["Hide While Hovering UI Tooltip"] or "Hide SparkPoint while cursor is over clickable UI frames. Keeps SparkPoint visible primarily for world targeting."
-	)
-	AddCheckbox(
-		castHideCategory,
-		"cast_hideInPetBattle",
-		L["Hide While In Pet Battle"] or "Hide While In Pet Battle",
-		L["Hide While In Pet Battle Tooltip"] or "Hide SparkPoint while you are in a pet battle."
-	)
-	AddCheckbox(
-		castHideCategory,
-		"cast_hideInSpecialActionBarContext",
-		L["Hide While In Special Action Bar Context"] or "Hide While In Special Action Bar Context",
-		L["Hide While In Special Action Bar Context Tooltip"]
-			or "Hide SparkPoint while Blizzard replaces your normal action bar with a special context such as vehicle, override, possess, or temporary shapeshift bars."
-	)
 
 	AddDropdown(castCategory, "cast_fillColorSource", L["Cast Fill Color Source"] or "Cast Fill Color Source", {
 		{ value = "SINGLE", label = L["Cast Fill Color Source Single"] or "Single Color" },
@@ -977,6 +948,36 @@ local function BuildSettingsPanel()
 
 	AddSlider(castCategory, "cast_spellTextOffsetX", L["Cast Spell Text Offset X"] or "Cast Spell Text Offset X", -240, 240, 1)
 	AddSlider(castCategory, "cast_spellTextOffsetY", L["Cast Spell Text Offset Y"] or "Cast Spell Text Offset Y", -240, 240, 1)
+
+	local castVisibilityCategory = Settings.RegisterVerticalLayoutSubcategory(castCategory, L["Visibility"] or "Visibility")
+	AddDropdown(
+		castVisibilityCategory,
+		"cast_visibilitySource",
+		L["Visibility Source"] or "Visibility Source",
+		visibilitySourceOptions,
+		L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility"
+	)
+	AddVisibilityRuleGroup(castVisibilityCategory, "cast_visibility", nil, L["Cast Ring Visibility Tooltip"] or "When to show the cast ring shell")
+	local castHideCategory = Settings.RegisterVerticalLayoutSubcategory(castVisibilityCategory, L["Hide Overrides"] or "Hide Overrides")
+	AddCheckbox(
+		castHideCategory,
+		"cast_hideOnUIHover",
+		L["Hide While Hovering UI"] or "Hide While Hovering UI",
+		L["Hide While Hovering UI Tooltip"] or "Hide SparkPoint while cursor is over clickable UI frames. Keeps SparkPoint visible primarily for world targeting."
+	)
+	AddCheckbox(
+		castHideCategory,
+		"cast_hideInPetBattle",
+		L["Hide While In Pet Battle"] or "Hide While In Pet Battle",
+		L["Hide While In Pet Battle Tooltip"] or "Hide SparkPoint while you are in a pet battle."
+	)
+	AddCheckbox(
+		castHideCategory,
+		"cast_hideInSpecialActionBarContext",
+		L["Hide While In Special Action Bar Context"] or "Hide While In Special Action Bar Context",
+		L["Hide While In Special Action Bar Context Tooltip"]
+			or "Hide SparkPoint while Blizzard replaces your normal action bar with a special context such as vehicle, override, possess, or temporary shapeshift bars."
+	)
 
 	------------------------------------------------------------------------
 	-- Inner Ring Slots Settings Subcategory
@@ -1188,36 +1189,6 @@ local function BuildSettingsPanel()
 		{ value = "PIPS", label = L["Class Resource Mode Pips"] or "Pips" },
 	}, L["Class Resource Mode Tooltip"] or "Switch between text and pips class resource display")
 
-	local classResourceVisibilityCategory = Settings.RegisterVerticalLayoutSubcategory(cpCategory, L["Visibility"] or "Visibility")
-	AddDropdown(
-		classResourceVisibilityCategory,
-		"classresource_visibilitySource",
-		L["Visibility Source"] or "Visibility Source",
-		visibilitySourceOptions,
-		L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility"
-	)
-	AddVisibilityRuleGroup(classResourceVisibilityCategory, "classresource_visibility", nil, L["Class Resource Visibility Tooltip"] or "When to show class resource")
-	local classResourceHideCategory = Settings.RegisterVerticalLayoutSubcategory(classResourceVisibilityCategory, L["Hide Overrides"] or "Hide Overrides")
-	AddCheckbox(
-		classResourceHideCategory,
-		"classresource_hideOnUIHover",
-		L["Hide While Hovering UI"] or "Hide While Hovering UI",
-		L["Hide While Hovering UI Tooltip"] or "Hide SparkPoint while cursor is over clickable UI frames. Keeps SparkPoint visible primarily for world targeting."
-	)
-	AddCheckbox(
-		classResourceHideCategory,
-		"classresource_hideInPetBattle",
-		L["Hide While In Pet Battle"] or "Hide While In Pet Battle",
-		L["Hide While In Pet Battle Tooltip"] or "Hide SparkPoint while you are in a pet battle."
-	)
-	AddCheckbox(
-		classResourceHideCategory,
-		"classresource_hideInSpecialActionBarContext",
-		L["Hide While In Special Action Bar Context"] or "Hide While In Special Action Bar Context",
-		L["Hide While In Special Action Bar Context Tooltip"]
-			or "Hide SparkPoint while Blizzard replaces your normal action bar with a special context such as vehicle, override, possess, or temporary shapeshift bars."
-	)
-
 	local cpTextCategory = Settings.RegisterVerticalLayoutSubcategory(cpCategory, L["Class Resource Text Mode"] or "Text Mode")
 	AddSlider(cpTextCategory, "classresource_fontSize", L["Class Resource Font Size"] or "Class Resource Font Size", 8, 48, 1)
 	AddSlider(cpTextCategory, "classresource_textOffsetX", L["Class Resource Text Horizontal Offset"] or "Class Resource Text Horizontal Offset", -300, 300, 1)
@@ -1285,6 +1256,36 @@ local function BuildSettingsPanel()
 	AddSlider(cpPipsCategory, "classresource_offsetX", L["Class Resource Horizontal Offset"] or "Class Resource Horizontal Offset", -300, 300, 1)
 	AddSlider(cpPipsCategory, "classresource_offsetY", L["Class Resource Vertical Offset"] or "Class Resource Vertical Offset", -300, 300, 1)
 
+	local classResourceVisibilityCategory = Settings.RegisterVerticalLayoutSubcategory(cpCategory, L["Visibility"] or "Visibility")
+	AddDropdown(
+		classResourceVisibilityCategory,
+		"classresource_visibilitySource",
+		L["Visibility Source"] or "Visibility Source",
+		visibilitySourceOptions,
+		L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility"
+	)
+	AddVisibilityRuleGroup(classResourceVisibilityCategory, "classresource_visibility", nil, L["Class Resource Visibility Tooltip"] or "When to show class resource")
+	local classResourceHideCategory = Settings.RegisterVerticalLayoutSubcategory(classResourceVisibilityCategory, L["Hide Overrides"] or "Hide Overrides")
+	AddCheckbox(
+		classResourceHideCategory,
+		"classresource_hideOnUIHover",
+		L["Hide While Hovering UI"] or "Hide While Hovering UI",
+		L["Hide While Hovering UI Tooltip"] or "Hide SparkPoint while cursor is over clickable UI frames. Keeps SparkPoint visible primarily for world targeting."
+	)
+	AddCheckbox(
+		classResourceHideCategory,
+		"classresource_hideInPetBattle",
+		L["Hide While In Pet Battle"] or "Hide While In Pet Battle",
+		L["Hide While In Pet Battle Tooltip"] or "Hide SparkPoint while you are in a pet battle."
+	)
+	AddCheckbox(
+		classResourceHideCategory,
+		"classresource_hideInSpecialActionBarContext",
+		L["Hide While In Special Action Bar Context"] or "Hide While In Special Action Bar Context",
+		L["Hide While In Special Action Bar Context Tooltip"]
+			or "Hide SparkPoint while Blizzard replaces your normal action bar with a special context such as vehicle, override, possess, or temporary shapeshift bars."
+	)
+
 	------------------------------------------------------------------------
 	-- Ring Settings Subcategory
 	------------------------------------------------------------------------
@@ -1298,6 +1299,27 @@ local function BuildSettingsPanel()
 
 	AddSlider(ringCategory, "ring_width", L["Decorative Ring Size"] or "Decorative Ring Size", 20, 200, 1)
 	AddCheckbox(ringCategory, "ring_rotate", L["Decorative Ring Rotate"] or "Decorative Ring Rotate", L["Rotate Tooltip"] or "Enable rotation animation")
+	AddDropdown(ringCategory, "ring_texture", L["Decorative Ring Texture"] or "Decorative Ring Texture", ringTextureOptions)
+	AddColor(ringCategory, "ring_color", L["Decorative Ring Color"] or "Decorative Ring Color")
+	AddCheckbox(
+		ringCategory,
+		"ring_useClassColor",
+		L["Decorative Ring Use Class Color"] or "Decorative Ring Use Class Color",
+		L["Decorative Ring Use Class Color Tooltip"] or "Override ring color with your class color"
+	)
+	AddSlider(
+		ringCategory,
+		"ring_classColorAlpha",
+		L["Decorative Ring Class Color Opacity"] or "Decorative Ring Class Color Opacity",
+		0,
+		1,
+		0.05,
+		L["Decorative Ring Class Color Opacity Tooltip"] or "Opacity for class color override",
+		function(value)
+			return string.format("%.2f", value or 0)
+		end
+	)
+
 	local ringVisibilityCategory = Settings.RegisterVerticalLayoutSubcategory(ringCategory, L["Visibility"] or "Visibility")
 	AddDropdown(
 		ringVisibilityCategory,
@@ -1326,26 +1348,6 @@ local function BuildSettingsPanel()
 		L["Hide While In Special Action Bar Context"] or "Hide While In Special Action Bar Context",
 		L["Hide While In Special Action Bar Context Tooltip"]
 			or "Hide SparkPoint while Blizzard replaces your normal action bar with a special context such as vehicle, override, possess, or temporary shapeshift bars."
-	)
-	AddDropdown(ringCategory, "ring_texture", L["Decorative Ring Texture"] or "Decorative Ring Texture", ringTextureOptions)
-	AddColor(ringCategory, "ring_color", L["Decorative Ring Color"] or "Decorative Ring Color")
-	AddCheckbox(
-		ringCategory,
-		"ring_useClassColor",
-		L["Decorative Ring Use Class Color"] or "Decorative Ring Use Class Color",
-		L["Decorative Ring Use Class Color Tooltip"] or "Override ring color with your class color"
-	)
-	AddSlider(
-		ringCategory,
-		"ring_classColorAlpha",
-		L["Decorative Ring Class Color Opacity"] or "Decorative Ring Class Color Opacity",
-		0,
-		1,
-		0.05,
-		L["Decorative Ring Class Color Opacity Tooltip"] or "Opacity for class color override",
-		function(value)
-			return string.format("%.2f", value or 0)
-		end
 	)
 
 	------------------------------------------------------------------------
@@ -1411,41 +1413,6 @@ local function BuildSettingsPanel()
 			L["Assisted Highlight CVar Disabled"] or "Blizzard Assisted Highlight is currently disabled. Enable it in Blizzard settings to show suggestions."
 		)
 	end
-
-	local assistedVisibilityCategory = Settings.RegisterVerticalLayoutSubcategory(assistedCategory, L["Visibility"] or "Visibility")
-	AddDropdown(
-		assistedVisibilityCategory,
-		"assistedhighlight_visibilitySource",
-		L["Visibility Source"] or "Visibility Source",
-		visibilitySourceOptions,
-		L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility"
-	)
-	AddVisibilityRuleGroup(
-		assistedVisibilityCategory,
-		"assistedhighlight_visibility",
-		nil,
-		L["Assisted Highlight Visibility Tooltip"] or "When to show the assisted highlight icon"
-	)
-	local assistedHideCategory = Settings.RegisterVerticalLayoutSubcategory(assistedVisibilityCategory, L["Hide Overrides"] or "Hide Overrides")
-	AddCheckbox(
-		assistedHideCategory,
-		"assistedhighlight_hideOnUIHover",
-		L["Hide While Hovering UI"] or "Hide While Hovering UI",
-		L["Hide While Hovering UI Tooltip"] or "Hide SparkPoint while cursor is over clickable UI frames. Keeps SparkPoint visible primarily for world targeting."
-	)
-	AddCheckbox(
-		assistedHideCategory,
-		"assistedhighlight_hideInPetBattle",
-		L["Hide While In Pet Battle"] or "Hide While In Pet Battle",
-		L["Hide While In Pet Battle Tooltip"] or "Hide SparkPoint while you are in a pet battle."
-	)
-	AddCheckbox(
-		assistedHideCategory,
-		"assistedhighlight_hideInSpecialActionBarContext",
-		L["Hide While In Special Action Bar Context"] or "Hide While In Special Action Bar Context",
-		L["Hide While In Special Action Bar Context Tooltip"]
-			or "Hide SparkPoint while Blizzard replaces your normal action bar with a special context such as vehicle, override, possess, or temporary shapeshift bars."
-	)
 
 	AddSlider(assistedCategory, "assistedhighlight_size", L["Assisted Highlight Size"] or "Assisted Highlight Size", 16, 64, 1)
 	AddSlider(assistedCategory, "assistedhighlight_offsetX", L["Assisted Highlight Horizontal Offset"] or "Assisted Highlight Horizontal Offset", -100, 100, 1)
@@ -1543,6 +1510,41 @@ local function BuildSettingsPanel()
 		"assistedhighlight_keybindColor",
 		L["Assisted Highlight Keybind Color"] or "Assisted Highlight Keybind Color",
 		L["Assisted Highlight Keybind Color Tooltip"] or "Color and alpha for assisted highlight keybind text"
+	)
+
+	local assistedVisibilityCategory = Settings.RegisterVerticalLayoutSubcategory(assistedCategory, L["Visibility"] or "Visibility")
+	AddDropdown(
+		assistedVisibilityCategory,
+		"assistedhighlight_visibilitySource",
+		L["Visibility Source"] or "Visibility Source",
+		visibilitySourceOptions,
+		L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility"
+	)
+	AddVisibilityRuleGroup(
+		assistedVisibilityCategory,
+		"assistedhighlight_visibility",
+		nil,
+		L["Assisted Highlight Visibility Tooltip"] or "When to show the assisted highlight icon"
+	)
+	local assistedHideCategory = Settings.RegisterVerticalLayoutSubcategory(assistedVisibilityCategory, L["Hide Overrides"] or "Hide Overrides")
+	AddCheckbox(
+		assistedHideCategory,
+		"assistedhighlight_hideOnUIHover",
+		L["Hide While Hovering UI"] or "Hide While Hovering UI",
+		L["Hide While Hovering UI Tooltip"] or "Hide SparkPoint while cursor is over clickable UI frames. Keeps SparkPoint visible primarily for world targeting."
+	)
+	AddCheckbox(
+		assistedHideCategory,
+		"assistedhighlight_hideInPetBattle",
+		L["Hide While In Pet Battle"] or "Hide While In Pet Battle",
+		L["Hide While In Pet Battle Tooltip"] or "Hide SparkPoint while you are in a pet battle."
+	)
+	AddCheckbox(
+		assistedHideCategory,
+		"assistedhighlight_hideInSpecialActionBarContext",
+		L["Hide While In Special Action Bar Context"] or "Hide While In Special Action Bar Context",
+		L["Hide While In Special Action Bar Context Tooltip"]
+			or "Hide SparkPoint while Blizzard replaces your normal action bar with a special context such as vehicle, override, possess, or temporary shapeshift bars."
 	)
 
 	------------------------------------------------------------------------
