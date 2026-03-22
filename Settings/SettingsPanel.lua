@@ -1088,6 +1088,40 @@ local function BuildSettingsPanel()
 	AddSlider(barSlotsCategory, "barslot1_offsetX", L["Bar Slot Horizontal Offset"] or "Horizontal Offset", -240, 240, 1)
 	AddSlider(barSlotsCategory, "barslot1_offsetY", L["Bar Slot Vertical Offset"] or "Vertical Offset", -240, 240, 1)
 
+	local barSlotsTextCategory = Settings.RegisterVerticalLayoutSubcategory(barSlotsCategory, L["Bar Slot Text"] or "Text")
+	AddCheckbox(barSlotsTextCategory, "barslot1_textEnabled", L["Bar Slot Text"] or "Text", L["Bar Slot Text Tooltip"] or "Show text on the top bar slot")
+	AddDropdown(barSlotsTextCategory, "barslot1_textMode", L["Bar Slot Text Mode"] or "Text Mode", {
+		{ value = "CURRENT", label = L["Bar Slot Text Mode Current"] or "Current" },
+		{ value = "CURRENT_MAX", label = L["Bar Slot Text Mode Current Max"] or "Current / Max" },
+		{ value = "PERCENT", label = L["Bar Slot Text Mode Percent"] or "Percent" },
+		{ value = "CURRENT_PERCENT", label = L["Bar Slot Text Mode Current Percent"] or "Current + Percent" },
+		{ value = "CURRENT_MAX_PERCENT", label = L["Bar Slot Text Mode Current Max Percent"] or "Current / Max + Percent" },
+	}, L["Bar Slot Text Mode Tooltip"] or "Choose how the top bar slot text is formatted")
+	AddDropdown(barSlotsTextCategory, "barslot1_textFont", L["Bar Slot Text Font"] or "Font", {
+		{ value = "Fonts\\FRIZQT__.TTF", label = "Friz Quadrata" },
+		{ value = "Fonts\\ARIALN.TTF", label = "Arial Narrow" },
+		{ value = "Fonts\\MORPHEUS.ttf", label = "Morpheus" },
+		{ value = "Fonts\\SKURRI.TTF", label = "Skurri" },
+	}, L["Bar Slot Text Font Tooltip"] or "Choose the font used by top bar slot text")
+	AddDropdown(barSlotsTextCategory, "barslot1_textOutline", L["Bar Slot Text Font Outline"] or "Font Outline", {
+		{ value = "", label = "None" },
+		{ value = "OUTLINE", label = "Outline" },
+		{ value = "THICKOUTLINE", label = "Thick Outline" },
+		{ value = "MONOCHROME", label = "Monochrome" },
+		{ value = "MONOCHROME,OUTLINE", label = "Mono + Outline" },
+		{ value = "MONOCHROME,THICKOUTLINE", label = "Mono + Thick Outline" },
+	}, L["Bar Slot Text Font Outline Tooltip"] or "Choose the outline style used by top bar slot text")
+	AddSlider(barSlotsTextCategory, "barslot1_textSize", L["Bar Slot Text Font Size"] or "Font Size", 8, 48, 1)
+	AddColor(barSlotsTextCategory, "barslot1_textColor", L["Bar Slot Text Color"] or "Text Color")
+	AddCheckbox(
+		barSlotsTextCategory,
+		"barslot1_textUseClassColor",
+		L["Bar Slot Text Use Class Color"] or "Text Uses Class Color",
+		L["Bar Slot Text Use Class Color Tooltip"] or "Use your class color for top bar slot text instead of the custom text color"
+	)
+	AddSlider(barSlotsTextCategory, "barslot1_textOffsetX", L["Bar Slot Text Horizontal Offset"] or "Horizontal Offset", -240, 240, 1)
+	AddSlider(barSlotsTextCategory, "barslot1_textOffsetY", L["Bar Slot Text Vertical Offset"] or "Vertical Offset", -240, 240, 1)
+
 	local barSlotsVisibilityCategory = Settings.RegisterVerticalLayoutSubcategory(barSlotsCategory, L["Visibility"] or "Visibility")
 	AddDropdown(
 		barSlotsVisibilityCategory,

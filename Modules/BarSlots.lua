@@ -10,6 +10,8 @@ local HUDLayers = addon.HUDLayers
 local Visibility = addon.Visibility
 local Transition = addon.Transition
 local BarProviders = addon.BarProviders
+local GetDBBool = addon.GetDBBool
+local GetDBColor = addon.GetDBColor
 local GetDBValue = addon.GetDBValue
 local GetDBColorTable = addon.GetDBColorTable
 
@@ -26,6 +28,7 @@ addon.Modules.BarSlotsObj = BarSlots
 local isEnabled = false
 local moduleFrame
 local widget
+local text
 local assignedProvider
 local assignedProviderID = "NONE"
 
@@ -184,12 +187,94 @@ local function GetConfiguredFrameColor()
 	}
 end
 
+local function NormalizeReadableNumber(value)
+	if value == nil then
+		return nil
+	end
+
+	-- Unit health/power values may be readable secret numbers. Convert through
+	-- tostring first to avoid forbidden numeric coercion on the secret value.
+	local asText = tostring(value)
+	return tonumber(asText)
+end
+
+local function FormatCompactNumber(value)
+	value = NormalizeReadableNumber(value) or 0
+	local absValue = math.abs(value)
+	if absValue >= 1000000000 then
+		return string.format("%.1fb", value / 1000000000):gsub("%.0b$", "b")
+	elseif absValue >= 1000000 then
+		return string.format("%.1fm", value / 1000000):gsub("%.0m$", "m")
+	elseif absValue >= 1000 then
+		return string.format("%.1fk", value / 1000):gsub("%.0k$", "k")
+	end
+	return tostring(math.floor(value + 0.5))
+end
+
+local function FormatPercent(current, maxValue)
+	current = NormalizeReadableNumber(current) or 0
+	maxValue = NormalizeReadableNumber(maxValue) or 0
+	if maxValue <= 0 then
+		return "0%"
+	end
+
+	local percent = (current / maxValue) * 100
+	return string.format("%d%%", math.floor(percent + 0.5))
+end
+
+local function GetFormattedText(result)
+	if not result or result.current == nil or result.max == nil then
+		return nil
+	end
+
+	local mode = tostring(GetDBValue("barslot1_textMode") or "CURRENT_PERCENT")
+	local currentText = FormatCompactNumber(result.current)
+	local maxText = FormatCompactNumber(result.max)
+	local percentText = FormatPercent(result.current, result.max)
+
+	if mode == "CURRENT" then
+		return currentText
+	elseif mode == "CURRENT_MAX" then
+		return currentText .. " / " .. maxText
+	elseif mode == "PERCENT" then
+		return percentText
+	elseif mode == "CURRENT_MAX_PERCENT" then
+		return currentText .. " / " .. maxText .. " (" .. percentText .. ")"
+	end
+
+	return currentText .. " - " .. percentText
+end
+
 local function UpdateWidgetVisualOptions()
 	if not widget then
 		return
 	end
 	widget:SetBackgroundColor(GetConfiguredBackgroundColor())
 	widget:SetFrameColor(GetConfiguredFrameColor())
+end
+
+local function ApplyTextOptions()
+	if not text or not moduleFrame then
+		return
+	end
+
+	local font = GetDBValue("barslot1_textFont") or "Fonts\\FRIZQT__.TTF"
+	local fontSize = tonumber(GetDBValue("barslot1_textSize")) or 12
+	local fontOutline = GetDBValue("barslot1_textOutline") or "OUTLINE"
+	text:SetFont(font, fontSize, fontOutline)
+
+	local r, g, b, a
+	if GetDBBool("barslot1_textUseClassColor") then
+		r, g, b, a = API.GetPlayerClassColor()
+	else
+		r, g, b, a = GetDBColor("barslot1_textColor")
+	end
+	text:SetTextColor(r, g, b, a)
+
+	local offsetX = tonumber(GetDBValue("barslot1_textOffsetX")) or 0
+	local offsetY = tonumber(GetDBValue("barslot1_textOffsetY")) or 0
+	text:ClearAllPoints()
+	text:SetPoint("CENTER", moduleFrame, "CENTER", offsetX, offsetY)
 end
 
 local function ApplyAssignments()
@@ -230,6 +315,7 @@ function BarSlots:ApplyLayout()
 
 	widget:SetSize(width, height)
 	UpdateWidgetVisualOptions()
+	ApplyTextOptions()
 end
 
 local function RefreshBar()
@@ -250,6 +336,15 @@ local function RefreshBar()
 
 	widget:SetBarColor(GetConfiguredBarColor(result))
 	UpdateWidgetVisualOptions()
+
+	if text then
+		if GetDBBool("barslot1_textEnabled") then
+			text:SetText(GetFormattedText(result) or "")
+			text:Show()
+		else
+			text:Hide()
+		end
+	end
 
 	if widget:SetValueRange(result.current, result.max) then
 		ShowModuleFrame()
@@ -286,6 +381,10 @@ function BarSlots:Initialize()
 	})
 	widget:AttachTo(moduleFrame)
 	widget:GetFrame():SetAllPoints(moduleFrame)
+
+	text = moduleFrame:CreateFontString(nil, "OVERLAY")
+	text:Hide()
+
 	ApplyFrameLevel()
 
 	self:ApplyLayout()
@@ -393,8 +492,18 @@ for _, key in ipairs({
 	"barslot1_backgroundOpacity",
 	"barslot1_frameColor",
 	"barslot1_frameOpacity",
+	"barslot1_textEnabled",
+	"barslot1_textMode",
+	"barslot1_textFont",
+	"barslot1_textSize",
+	"barslot1_textOutline",
+	"barslot1_textColor",
+	"barslot1_textUseClassColor",
+	"barslot1_textOffsetX",
+	"barslot1_textOffsetY",
 }) do
 	CallbackRegistry:RegisterSettingCallback(key, function()
+		ApplyTextOptions()
 		UpdateWidgetVisualOptions()
 		RefreshBar()
 	end)
