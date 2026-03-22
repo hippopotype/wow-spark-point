@@ -187,50 +187,23 @@ local function GetConfiguredFrameColor()
 	}
 end
 
-local function NormalizeReadableNumber(value)
-	if value == nil then
-		return nil
-	end
-
-	-- Unit health/power values may be readable secret numbers. Convert through
-	-- tostring first to avoid forbidden numeric coercion on the secret value.
-	local asText = tostring(value)
-	return tonumber(asText)
-end
-
-local function FormatCompactNumber(value)
-	value = NormalizeReadableNumber(value) or 0
-	local absValue = math.abs(value)
-	if absValue >= 1000000000 then
-		return string.format("%.1fb", value / 1000000000):gsub("%.0b$", "b")
-	elseif absValue >= 1000000 then
-		return string.format("%.1fm", value / 1000000):gsub("%.0m$", "m")
-	elseif absValue >= 1000 then
-		return string.format("%.1fk", value / 1000):gsub("%.0k$", "k")
-	end
-	return tostring(math.floor(value + 0.5))
-end
-
-local function FormatPercent(current, maxValue)
-	current = NormalizeReadableNumber(current) or 0
-	maxValue = NormalizeReadableNumber(maxValue) or 0
-	if maxValue <= 0 then
-		return "0%"
-	end
-
-	local percent = (current / maxValue) * 100
-	return string.format("%d%%", math.floor(percent + 0.5))
-end
-
 local function GetFormattedText(result)
 	if not result or result.current == nil or result.max == nil then
 		return nil
 	end
 
+	local parts
+	if assignedProvider and assignedProvider.GetTextParts then
+		parts = assignedProvider:GetTextParts(result)
+	end
+	if not parts then
+		return nil
+	end
+
 	local mode = tostring(GetDBValue("barslot1_textMode") or "CURRENT_PERCENT")
-	local currentText = FormatCompactNumber(result.current)
-	local maxText = FormatCompactNumber(result.max)
-	local percentText = FormatPercent(result.current, result.max)
+	local currentText = parts.current or "0"
+	local maxText = parts.max or "0"
+	local percentText = parts.percent or "0%"
 
 	if mode == "CURRENT" then
 		return currentText
