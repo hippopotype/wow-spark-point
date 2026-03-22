@@ -10,7 +10,7 @@
 
 <p align="center">
   <img alt="WoW Version" src="https://img.shields.io/badge/WoW-12.0%2F12.0.1-blue" />
-  <img alt="Version" src="https://img.shields.io/badge/version-1.3.3-green" />
+  <img alt="Version" src="https://img.shields.io/badge/version-1.4.0-green" />
   <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0-blue" />
   <a href="https://www.curseforge.com/wow/addons/sparkpoint">
     <img alt="CurseForge" src="https://img.shields.io/badge/CurseForge-SparkPoint-orange" />
@@ -27,6 +27,7 @@ It currently includes:
 
 - Cast ring with latency overlay, interrupt feedback, spell text, and click-feedback ring
 - Up to 3 assignable inner ring slots
+- Top bar slot with health and mana providers
 - Class resource display in pip or text mode
 - Decorative rotating ring
 - Spell icon with cast swipe, instant-cast feedback, and cooldown-blocked feedback
@@ -34,11 +35,15 @@ It currently includes:
 - Shared visibility rules, per-module overrides, and optional HUD transitions
 - Cursor-attached mode, fixed anchor mode, minimap button, and profile support
 
-## New In v1.3.3
+## New In v1.4.0
 
-- Added target alive/dead visibility filters
-- Split instant-cast visibility into direct instant casts and triggered instant casts
-- Improved Visibility setting tooltips so each rule explains exactly what it does
+- Added a new top bar slot module with dedicated health and mana providers
+- Added full top bar slot styling controls for fill, background, frame, and provider-based coloring
+- Added top bar slot text with configurable mode, number style, font, outline, opacity, and offsets
+- Added slot-specific visibility settings and hide overrides for the top bar slot
+- Added centralized HUD layer roots with live frame strata updates for cleaner layering across modules
+- Added hide rules for pet battles and Blizzard special action bar contexts
+- Improved top bar texture fidelity, baseline alignment, and fade behavior
 
 ## Previously In v1.3.x
 
@@ -80,6 +85,16 @@ SparkPoint supports up to **3 concentric inner slots** inside the cast ring.
 - Each slot can be assigned independently
 - Current provider: **GCD**
 - Each slot has configurable bar color, background tint, opacity, and optional class-color override
+
+### Top Bar Slot
+
+SparkPoint supports a dedicated **top bar slot** positioned above the main cast ring.
+
+- Current providers: **Health** and **Mana**
+- Configurable fill color source, background tint, frame tint, and independent opacity controls
+- Optional text overlay with current, max, and percent display modes
+- Configurable text font, outline, number style, opacity, and offsets
+- Slot-specific visibility override and hide rules
 
 ### Class Resource
 
@@ -143,11 +158,14 @@ Available rules include:
 - In Combat
 - Out of Combat
 - Has Target
+- Has Alive Target
+- Has Dead Target
 - Has Hostile / Unfriendly Target
 - Has Neutral Target
 - Has Friendly Target
 - While Casting
 - After Instant Cast
+- After Triggered Instant Cast
 - In Party
 - In Raid
 - In Instanced Content
@@ -155,6 +173,8 @@ Available rules include:
 Additional behavior:
 
 - Optional hide while hovering clickable UI
+- Optional hide in pet battles
+- Optional hide in Blizzard vehicle / override / possess / special action bar contexts
 - Optional transition system with fade in/out durations, easing, and hysteresis
 
 ### Quality Of Life
@@ -202,6 +222,7 @@ Open the Blizzard Settings panel via `/sparkpoint`. SparkPoint provides sections
 - Modules
 - Cast Ring
 - Inner Ring Slots
+- Bar Slots
 - Class Resource
 - Decorative Ring
 - Spell Icon

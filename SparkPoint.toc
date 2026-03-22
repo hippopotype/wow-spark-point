@@ -1,8 +1,8 @@
 ## Interface: 120000, 120001
 ## Title: SparkPoint
-## Notes: Cast ring around cursor.
-## Author: Magic (EU-BurningLegion)
-## Version: 1.3.3
+## Notes: Cursor-centered combat HUD with cast ring, bar slots, and resources.
+## Author: Pink (EU-BurningLegion)
+## Version: 1.4.0
 ## X-License: GPL-3.0
 ## SavedVariables: SparkPointDB
 ## IconTexture: Interface\AddOns\SparkPoint\Textures\icon.png

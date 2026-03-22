@@ -97,6 +97,7 @@
     click-feedback ring
   </li>
   <li>Up to 3 assignable inner ring slots</li>
+  <li>Top bar slot with health and mana providers</li>
   <li>Class resource display in pip or text mode</li>
   <li>Decorative rotating ring</li>
   <li>
@@ -111,15 +112,40 @@
     Cursor-attached mode, fixed anchor mode, minimap button, and profile support
   </li>
 </ul>
-<h2><strong>New In v1.3.3</strong></h2>
+<h2><strong>New In v1.4.x</strong></h2>
 <ul>
-  <li>Added target alive/dead visibility filters</li>
-  <li>Split instant-cast visibility into direct and triggered variants</li>
-  <li>Improved Visibility setting tooltips for clearer explanations</li>
+  <li>
+    Added a new top bar slot module with dedicated health and mana providers
+  </li>
+  <li>
+    Added full top bar slot styling controls for fill, background, frame, and
+    provider-based coloring
+  </li>
+  <li>
+    Added top bar slot text with configurable mode, number style, font, outline,
+    opacity, and offsets
+  </li>
+  <li>
+    Added slot-specific visibility settings and hide overrides for the top bar
+    slot
+  </li>
+  <li>
+    Added centralized HUD layer roots with live frame strata updates for cleaner
+    layering across modules
+  </li>
+  <li>
+    Added hide rules for pet battles and Blizzard special action bar contexts
+  </li>
+  <li>
+    Improved top bar texture fidelity, baseline alignment, and fade behavior
+  </li>
 </ul>
 
 <h2><strong>Previously In v1.3.x</strong></h2>
 <ul>
+  <li>Added target alive/dead visibility filters</li>
+  <li>Split instant-cast visibility into direct and triggered variants</li>
+  <li>Improved Visibility setting tooltips for clearer explanations</li>
   <li>
     Added cast progress display modes for all casts, normal casts only, or
     channelled spells only
@@ -195,6 +221,21 @@
     class-color override
   </li>
 </ul>
+<h3>Top Bar Slot</h3>
+<p>
+  SparkPoint supports a dedicated <strong>top bar slot</strong> positioned above
+  the main cast ring.
+</p>
+<ul>
+  <li>Current providers: <strong>Health</strong> and <strong>Mana</strong></li>
+  <li>
+    Configurable fill color source, background tint, frame tint, and independent
+    opacity controls
+  </li>
+  <li>Optional text overlay with current, max, and percent display modes</li>
+  <li>Configurable text font, outline, number style, opacity, and offsets</li>
+  <li>Slot-specific visibility override and hide rules</li>
+</ul>
 <h3>Class Resource</h3>
 <p>
   Displays class-specific resources near your cursor in either
@@ -269,8 +310,14 @@
   <li>In Combat</li>
   <li>Out of Combat</li>
   <li>Has Target</li>
+  <li>Has Alive Target</li>
+  <li>Has Dead Target</li>
+  <li>Has Hostile / Unfriendly Target</li>
+  <li>Has Neutral Target</li>
+  <li>Has Friendly Target</li>
   <li>While Casting</li>
   <li>After Instant Cast</li>
+  <li>After Triggered Instant Cast</li>
   <li>In Party</li>
   <li>In Raid</li>
   <li>In Instanced Content</li>
@@ -278,6 +325,11 @@
 <p>Additional behavior:</p>
 <ul>
   <li>Optional hide while hovering clickable UI</li>
+  <li>Optional hide in pet battles</li>
+  <li>
+    Optional hide in Blizzard vehicle, override, possess, and similar special
+    action bar contexts
+  </li>
   <li>
     Optional transition system with fade in/out durations, easing, and
     hysteresis
@@ -335,6 +387,7 @@
   <li>Modules</li>
   <li>Cast Ring</li>
   <li>Inner Ring Slots</li>
+  <li>Bar Slots</li>
   <li>Class Resource</li>
   <li>Decorative Ring</li>
   <li>Spell Icon</li>
