@@ -108,7 +108,8 @@ addon.DefaultValues = {
 	slot3_backgroundOpacity = 0.5,
 
 	-- Top bar slot settings
-	barslot_top_provider = "NONE",
+	barslot_top_enabled = true,
+	barslot_top_provider = "HEALTH",
 
 	-- Top bar slot layout
 	barslot_top_scale = 1,
@@ -136,11 +137,11 @@ addon.DefaultValues = {
 	barslot_top_textOpacity = 1,
 	barslot_top_textOffsetX = 0,
 	barslot_top_textOffsetY = 0,
-	barslots_visibilitySource = "INHERIT",
-	barslots_visibility = { ALWAYS = true },
-	barslots_hideOnUIHover = false,
-	barslots_hideInPetBattle = true,
-	barslots_hideInSpecialActionBarContext = true,
+	barslot_top_visibilitySource = "INHERIT",
+	barslot_top_visibility = { ALWAYS = true },
+	barslot_top_hideOnUIHover = false,
+	barslot_top_hideInPetBattle = true,
+	barslot_top_hideInSpecialActionBarContext = true,
 
 	-- ClassResource module settings
 	classresource_mode = "PIPS",

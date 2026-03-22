@@ -17,10 +17,11 @@ local GetDBColorTable = addon.GetDBColorTable
 local BAR_TEXTURE_WIDTH = 1024
 local BAR_TEXTURE_HEIGHT = 512
 local BAR_TEXTURE_ASPECT = BAR_TEXTURE_HEIGHT / BAR_TEXTURE_WIDTH
-local MODULE_PREFIX = "barslots"
+local MODULE_PREFIX = "barslot_top"
 local BAR_BASE_OFFSET_Y = -25
 local SLOT_ID = "top"
-local SLOT_KEY_PREFIX = "barslot_" .. SLOT_ID .. "_"
+local SLOT_PREFIX = "barslot_" .. SLOT_ID
+local SLOT_KEY_PREFIX = SLOT_PREFIX .. "_"
 local EL = CreateFrame("Frame")
 
 local BarSlots = {}
@@ -31,7 +32,7 @@ local moduleFrame
 local widget
 local text
 local assignedProvider
-local assignedProviderID = "NONE"
+local assignedProviderID
 
 local function SlotKey(suffix)
 	return SLOT_KEY_PREFIX .. suffix
@@ -129,9 +130,13 @@ local function HideModuleFrame()
 	end
 end
 
-local function NormalizeProviderID(providerID)
+local function GetAssignedProviderID()
+	local providerID = GetSlotValue("provider")
 	if type(providerID) ~= "string" or providerID == "" then
-		return "NONE"
+		return nil
+	end
+	if not BarProviders:Get(providerID) then
+		return nil
 	end
 	return providerID
 end
@@ -281,8 +286,13 @@ local function ApplyAssignments()
 	end
 
 	assignedProvider = nil
-	assignedProviderID = NormalizeProviderID(GetSlotValue("provider"))
-	if assignedProviderID ~= "NONE" then
+	if not GetSlotBool("enabled") then
+		assignedProviderID = nil
+		return
+	end
+
+	assignedProviderID = GetAssignedProviderID()
+	if assignedProviderID then
 		assignedProvider = BarProviders:Get(assignedProviderID)
 	end
 
@@ -321,7 +331,7 @@ local function RefreshBar()
 		return
 	end
 
-	if not isEnabled or not assignedProvider or not IsModuleVisibleByRules() then
+	if not isEnabled or not GetSlotBool("enabled") or not assignedProvider or not IsModuleVisibleByRules() then
 		HideModuleFrame()
 		return
 	end
@@ -515,12 +525,21 @@ CallbackRegistry:RegisterSettingCallback(SlotKey("provider"), function()
 	RefreshBar()
 end)
 
+CallbackRegistry:RegisterSettingCallback(SlotKey("enabled"), function()
+	ApplyAssignments()
+	RefreshBar()
+end)
+
 for _, key in ipairs({
-	"barslots_visibility",
-	"barslots_visibilitySource",
+	SlotKey("visibility"),
+	SlotKey("visibilitySource"),
 	"visibility_mode",
 	"visibility_hideOnUIHover",
-	"barslots_hideOnUIHover",
+	SlotKey("hideOnUIHover"),
+	"visibility_hideInPetBattle",
+	SlotKey("hideInPetBattle"),
+	"visibility_hideInSpecialActionBarContext",
+	SlotKey("hideInSpecialActionBarContext"),
 	"attachToMouse",
 }) do
 	CallbackRegistry:RegisterSettingCallback(key, function()

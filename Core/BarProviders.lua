@@ -45,10 +45,7 @@ end
 -- Build dropdown options for settings UI
 --------------------------------------------------------------------------------
 function BarProviders:GetDropdownOptions()
-	local options = {
-		{ value = "NONE", label = addon.L and addon.L["None"] or "None" },
-	}
-
+	local options = {}
 	local ids = {}
 	for id in pairs(registry) do
 		table.insert(ids, id)
