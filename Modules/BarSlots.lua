@@ -83,12 +83,26 @@ end
 
 local function HideModuleFrame()
 	if not moduleFrame then
+		if widget then
+			widget:Hide()
+		end
 		ReleaseAnchorIfUnused()
 		return
 	end
 	if Transition and Transition.HideFrame then
-		Transition:HideFrame(moduleFrame, { restoreAlpha = 1, onComplete = ReleaseAnchorIfUnused })
+		Transition:HideFrame(moduleFrame, {
+			restoreAlpha = 1,
+			onComplete = function()
+				if widget then
+					widget:Hide()
+				end
+				ReleaseAnchorIfUnused()
+			end,
+		})
 	else
+		if widget then
+			widget:Hide()
+		end
 		moduleFrame:SetAlpha(1)
 		moduleFrame:Hide()
 		ReleaseAnchorIfUnused()
@@ -224,14 +238,12 @@ local function RefreshBar()
 	end
 
 	if not isEnabled or not assignedProvider or not IsModuleVisibleByRules() then
-		widget:Hide()
 		HideModuleFrame()
 		return
 	end
 
 	local result = assignedProvider:GetStatus()
 	if not result or result.show == false or result.current == nil or result.max == nil then
-		widget:Hide()
 		HideModuleFrame()
 		return
 	end
@@ -243,7 +255,6 @@ local function RefreshBar()
 		ShowModuleFrame()
 		widget:Show()
 	else
-		widget:Hide()
 		HideModuleFrame()
 	end
 end
