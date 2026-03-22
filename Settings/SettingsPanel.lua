@@ -19,23 +19,39 @@ local PROFILE_MODE_CONFIRM_POPUP = "SPARKPOINT_CONFIRM_PROFILE_MODE_CHANGE"
 local PROFILE_COPY_CONFIRM_POPUP = "SPARKPOINT_CONFIRM_PROFILE_COPY"
 
 local NEW_SETTINGS = {
-	spellicon_showTriggeredInstantCasts = true,
-	spellicon_failedCastStyle = true,
-	spellicon_showCooldownBlocked = true,
-	spellicon_cooldownBlockedUseClassColor = true,
-	cast_displayMode = true,
-	cast_fillColorSource = true,
-	cast_channelBarColor = true,
-	cast_sparkUseClassColor = true,
-	cast_spellTextUseClassColor = true,
+	hud_frameStrata = true,
+	moduleEnabled_BarSlots = true,
+	barslot_top_enabled = true,
+	barslot_top_provider = true,
+	barslot_top_scale = true,
+	barslot_top_offsetX = true,
+	barslot_top_offsetY = true,
+	barslot_top_fillColorSource = true,
+	barslot_top_barColor = true,
+	barslot_top_fillOpacity = true,
+	barslot_top_backgroundColor = true,
+	barslot_top_backgroundOpacity = true,
+	barslot_top_frameColor = true,
+	barslot_top_frameOpacity = true,
+	barslot_top_textEnabled = true,
+	barslot_top_textMode = true,
+	barslot_top_textNumberStyle = true,
+	barslot_top_textColorSource = true,
+	barslot_top_textFont = true,
+	barslot_top_textOutline = true,
+	barslot_top_textSize = true,
+	barslot_top_textColor = true,
+	barslot_top_textOpacity = true,
+	barslot_top_textOffsetX = true,
+	barslot_top_textOffsetY = true,
+	barslot_top_hideInPetBattle = true,
+	barslot_top_hideInSpecialActionBarContext = true,
 	visibility_hideInPetBattle = true,
 	visibility_hideInSpecialActionBarContext = true,
 	cast_hideInPetBattle = true,
 	cast_hideInSpecialActionBarContext = true,
 	classresource_hideInPetBattle = true,
 	classresource_hideInSpecialActionBarContext = true,
-	barslot_top_hideInPetBattle = true,
-	barslot_top_hideInSpecialActionBarContext = true,
 	ring_hideInPetBattle = true,
 	ring_hideInSpecialActionBarContext = true,
 	assistedhighlight_hideInPetBattle = true,
@@ -159,7 +175,8 @@ local function BuildSettingsPanel()
 				return string.format("%." .. precision .. "f", displayValue or 0)
 			end)
 		end
-		Settings.CreateSlider(cat, setting, options, tooltip)
+		local initializer = Settings.CreateSlider(cat, setting, options, tooltip)
+		ApplyNewFeatureBadge(initializer, NEW_SETTINGS[dbKey] == true)
 		return setting
 	end
 
@@ -215,7 +232,7 @@ local function BuildSettingsPanel()
 				return 1, 1, 1, 1
 			end,
 			hasOpacity = hasOpacity ~= false,
-			isNew = isNew == true,
+			isNew = (isNew == true) or (NEW_SETTINGS[dbKey] == true),
 		})
 		Settings.RegisterInitializer(cat, initializer)
 		return initializer
@@ -258,35 +275,30 @@ local function BuildSettingsPanel()
 			label = L["Visibility Target Alive"] or "Alive",
 			tooltip = L["Visibility Target Alive Tooltip"] or "Only count living targets. Combine with target reaction filters to narrow it further.",
 			indent = 1,
-			isNew = true,
 		},
 		{
 			key = "TARGET_DEAD",
 			label = L["Visibility Target Dead"] or "Dead",
 			tooltip = L["Visibility Target Dead Tooltip"] or "Only count dead or ghost targets. Combine with target reaction filters to narrow it further.",
 			indent = 1,
-			isNew = true,
 		},
 		{
 			key = "TARGET_HOSTILE",
 			label = L["Visibility Target Hostile"] or "Hostile / Unfriendly",
 			tooltip = L["Visibility Target Hostile Tooltip"] or "Only count hostile or otherwise attackable enemy targets.",
 			indent = 1,
-			isNew = true,
 		},
 		{
 			key = "TARGET_NEUTRAL",
 			label = L["Visibility Target Neutral"] or "Neutral",
 			tooltip = L["Visibility Target Neutral Tooltip"] or "Only count neutral targets that are not friendly but are not currently hostile.",
 			indent = 1,
-			isNew = true,
 		},
 		{
 			key = "TARGET_FRIENDLY",
 			label = L["Visibility Target Friendly"] or "Friendly",
 			tooltip = L["Visibility Target Friendly Tooltip"] or "Only count friendly targets.",
 			indent = 1,
-			isNew = true,
 		},
 		{
 			key = "CASTING",
@@ -302,7 +314,6 @@ local function BuildSettingsPanel()
 			key = "AFTER_TRIGGERED_INSTANT_CAST",
 			label = L["Visibility After Triggered Instant Cast"] or "After Triggered Instant Cast",
 			tooltip = L["Visibility After Triggered Instant Cast Tooltip"] or "Show briefly after an instant spell triggered automatically by another action or effect succeeds.",
-			isNew = true,
 		},
 		{ key = "IN_PARTY", label = L["Visibility In Party"] or "In Party", tooltip = L["Visibility In Party Tooltip"] or "Show while you are in a party group but not a raid." },
 		{ key = "IN_RAID", label = L["Visibility In Raid"] or "In Raid", tooltip = L["Visibility In Raid Tooltip"] or "Show while you are in a raid group." },
@@ -696,7 +707,7 @@ local function BuildSettingsPanel()
 		transitionCategory,
 		"transition_enabled",
 		L["Transition Enabled"] or "Enable Transition",
-		L["Transition Enabled Tooltip"] or "Enable subtle HUD fade and micro-interaction transitions."
+		L["Transition Enabled Tooltip"] or "Enable subtle HUD fade transitions."
 	)
 	AddSlider(
 		transitionCategory,
@@ -843,9 +854,7 @@ local function BuildSettingsPanel()
 		castCategory,
 		"cast_channelBarColor",
 		L["Channelled Cast Color"] or "Channelled Cast Color",
-		L["Channelled Cast Color Tooltip"] or "Color used for the cast ring fill while channeling",
-		true,
-		true
+		L["Channelled Cast Color Tooltip"] or "Color used for the cast ring fill while channeling"
 	)
 	AddColor(
 		castCategory,
@@ -1397,9 +1406,7 @@ local function BuildSettingsPanel()
 		iconCategory,
 		"spellicon_cooldownBlockedSwipeColor",
 		L["Readable Cooldown Swipe Color"] or "Readable Cooldown Swipe Color",
-		L["Readable Cooldown Swipe Color Tooltip"] or "Tint color and opacity of the readable cooldown swipe shown after a blocked press",
-		nil,
-		true
+		L["Readable Cooldown Swipe Color Tooltip"] or "Tint color and opacity of the readable cooldown swipe shown after a blocked press"
 	)
 
 	------------------------------------------------------------------------
@@ -1442,7 +1449,7 @@ local function BuildSettingsPanel()
 		assistedCategory,
 		"assistedhighlight_glowTransitionEnabled",
 		L["Assisted Highlight Glow Transition Enabled"] or "Enable Glow Transition",
-		L["Assisted Highlight Glow Transition Enabled Tooltip"] or "Enable glow breathing micro-interaction on assisted highlight."
+		L["Assisted Highlight Glow Transition Enabled Tooltip"] or "Enable glow breathing on assisted highlight."
 	)
 	AddSlider(
 		assistedCategory,
