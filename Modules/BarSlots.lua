@@ -19,6 +19,8 @@ local BAR_TEXTURE_HEIGHT = 512
 local BAR_TEXTURE_ASPECT = BAR_TEXTURE_HEIGHT / BAR_TEXTURE_WIDTH
 local MODULE_PREFIX = "barslots"
 local BAR_BASE_OFFSET_Y = -25
+local SLOT_ID = "top"
+local SLOT_KEY_PREFIX = "barslot_" .. SLOT_ID .. "_"
 local EL = CreateFrame("Frame")
 
 local BarSlots = {}
@@ -30,6 +32,22 @@ local widget
 local text
 local assignedProvider
 local assignedProviderID = "NONE"
+
+local function SlotKey(suffix)
+	return SLOT_KEY_PREFIX .. suffix
+end
+
+local function GetSlotValue(suffix)
+	return GetDBValue(SlotKey(suffix))
+end
+
+local function GetSlotBool(suffix)
+	return GetDBBool(SlotKey(suffix))
+end
+
+local function GetSlotColorTable(suffix)
+	return GetDBColorTable(SlotKey(suffix))
+end
 
 local function RoundToPixel(value)
 	return math.floor((tonumber(value) or 0) + 0.5)
@@ -126,7 +144,7 @@ local function IsModuleVisibleByRules()
 end
 
 local function GetConfiguredBarColor(result)
-	local opacity = tonumber(GetDBValue("barslot1_fillOpacity"))
+	local opacity = tonumber(GetSlotValue("fillOpacity"))
 	if opacity == nil then
 		opacity = 1
 	end
@@ -136,7 +154,7 @@ local function GetConfiguredBarColor(result)
 		opacity = 1
 	end
 
-	local source = tostring(GetDBValue("barslot1_fillColorSource") or "CUSTOM")
+	local source = tostring(GetSlotValue("fillColorSource") or "CUSTOM")
 	if source == "CLASS" then
 		local r, g, b, a = API.GetPlayerClassColor()
 		return { r = r, g = g, b = b, a = opacity }
@@ -149,7 +167,7 @@ local function GetConfiguredBarColor(result)
 			a = opacity,
 		}
 	end
-	local color = GetDBColorTable("barslot1_barColor") or { r = 1, g = 1, b = 1, a = 1 }
+	local color = GetSlotColorTable("barColor") or { r = 1, g = 1, b = 1, a = 1 }
 	return {
 		r = color.r or 1,
 		g = color.g or 1,
@@ -159,8 +177,8 @@ local function GetConfiguredBarColor(result)
 end
 
 local function GetConfiguredBackgroundColor()
-	local color = GetDBColorTable("barslot1_backgroundColor") or { r = 1, g = 1, b = 1, a = 1 }
-	local opacity = tonumber(GetDBValue("barslot1_backgroundOpacity"))
+	local color = GetSlotColorTable("backgroundColor") or { r = 1, g = 1, b = 1, a = 1 }
+	local opacity = tonumber(GetSlotValue("backgroundOpacity"))
 	if opacity == nil then
 		opacity = 0.8
 	end
@@ -173,8 +191,8 @@ local function GetConfiguredBackgroundColor()
 end
 
 local function GetConfiguredFrameColor()
-	local color = GetDBColorTable("barslot1_frameColor") or { r = 1, g = 1, b = 1, a = 1 }
-	local opacity = tonumber(GetDBValue("barslot1_frameOpacity"))
+	local color = GetSlotColorTable("frameColor") or { r = 1, g = 1, b = 1, a = 1 }
+	local opacity = tonumber(GetSlotValue("frameOpacity"))
 	if opacity == nil then
 		opacity = 1
 	end
@@ -193,13 +211,13 @@ local function GetFormattedText(result)
 
 	local textData
 	if assignedProvider and assignedProvider.GetTextDisplayData then
-		textData = assignedProvider:GetTextDisplayData(result, tostring(GetDBValue("barslot1_textNumberStyle") or "SHORT"))
+		textData = assignedProvider:GetTextDisplayData(result, tostring(GetSlotValue("textNumberStyle") or "SHORT"))
 	end
 	if not textData then
 		return nil
 	end
 
-	local mode = tostring(GetDBValue("barslot1_textMode") or "CURRENT_PERCENT")
+	local mode = tostring(GetSlotValue("textMode") or "CURRENT_PERCENT")
 	local currentText = textData.current or "0"
 	local maxText = textData.max or "0"
 	local percentText = textData.percent or "0%"
@@ -215,7 +233,7 @@ local function UpdateWidgetVisualOptions()
 end
 
 local function GetConfiguredTextColor(result)
-	local opacity = tonumber(GetDBValue("barslot1_textOpacity"))
+	local opacity = tonumber(GetSlotValue("textOpacity"))
 	if opacity == nil then
 		opacity = 1
 	end
@@ -225,7 +243,7 @@ local function GetConfiguredTextColor(result)
 		opacity = 1
 	end
 
-	local source = tostring(GetDBValue("barslot1_textColorSource") or "CUSTOM")
+	local source = tostring(GetSlotValue("textColorSource") or "CUSTOM")
 	if source == "CLASS" then
 		local r, g, b = API.GetPlayerClassColor()
 		return r, g, b, opacity
@@ -234,7 +252,7 @@ local function GetConfiguredTextColor(result)
 		return result.barColor.r or 1, result.barColor.g or 1, result.barColor.b or 1, opacity
 	end
 
-	local color = GetDBColorTable("barslot1_textColor") or { r = 1, g = 1, b = 1, a = 1 }
+	local color = GetSlotColorTable("textColor") or { r = 1, g = 1, b = 1, a = 1 }
 	return color.r or 1, color.g or 1, color.b or 1, opacity
 end
 
@@ -243,16 +261,16 @@ local function ApplyTextOptions(result)
 		return
 	end
 
-	local font = GetDBValue("barslot1_textFont") or "Fonts\\FRIZQT__.TTF"
-	local fontSize = tonumber(GetDBValue("barslot1_textSize")) or 12
-	local fontOutline = GetDBValue("barslot1_textOutline") or "OUTLINE"
+	local font = GetSlotValue("textFont") or "Fonts\\FRIZQT__.TTF"
+	local fontSize = tonumber(GetSlotValue("textSize")) or 12
+	local fontOutline = GetSlotValue("textOutline") or "OUTLINE"
 	text:SetFont(font, fontSize, fontOutline)
 
 	local r, g, b, a = GetConfiguredTextColor(result)
 	text:SetTextColor(r, g, b, a)
 
-	local offsetX = tonumber(GetDBValue("barslot1_textOffsetX")) or 0
-	local offsetY = tonumber(GetDBValue("barslot1_textOffsetY")) or 0
+	local offsetX = tonumber(GetSlotValue("textOffsetX")) or 0
+	local offsetY = tonumber(GetSlotValue("textOffsetY")) or 0
 	text:ClearAllPoints()
 	text:SetPoint("CENTER", moduleFrame, "CENTER", offsetX, offsetY)
 end
@@ -263,7 +281,7 @@ local function ApplyAssignments()
 	end
 
 	assignedProvider = nil
-	assignedProviderID = NormalizeProviderID(GetDBValue("barslot1_provider"))
+	assignedProviderID = NormalizeProviderID(GetSlotValue("provider"))
 	if assignedProviderID ~= "NONE" then
 		assignedProvider = BarProviders:Get(assignedProviderID)
 	end
@@ -281,11 +299,11 @@ function BarSlots:ApplyLayout()
 	ApplyFrameLevel()
 
 	local radius = GetDBValue("cast_radius") or 40
-	local scale = GetDBValue("barslot1_scale") or 1
+	local scale = GetSlotValue("scale") or 1
 	local width = math.max(1, RoundToPixel((radius * 2) * scale))
 	local height = math.max(1, RoundToPixel(width * BAR_TEXTURE_ASPECT))
-	local offsetX = RoundToPixel(GetDBValue("barslot1_offsetX") or 0)
-	local offsetY = RoundToPixel(GetDBValue("barslot1_offsetY") or 0)
+	local offsetX = RoundToPixel(GetSlotValue("offsetX") or 0)
+	local offsetY = RoundToPixel(GetSlotValue("offsetY") or 0)
 	local centerY = RoundToPixel(radius + (height * 0.5) + BAR_BASE_OFFSET_Y + offsetY)
 
 	moduleFrame:ClearAllPoints()
@@ -319,7 +337,7 @@ local function RefreshBar()
 	ApplyTextOptions(result)
 
 	if text then
-		if GetDBBool("barslot1_textEnabled") then
+		if GetSlotBool("textEnabled") then
 			text:SetText(GetFormattedText(result) or "")
 			text:Show()
 		else
@@ -356,7 +374,7 @@ function BarSlots:Initialize()
 		backgroundBase = "bar_background",
 		fillBase = "bar_fill_expanded",
 		frameBase = "bar_frame",
-		barColor = GetDBColorTable("barslot1_barColor"),
+		barColor = GetSlotColorTable("barColor"),
 		backgroundColor = GetConfiguredBackgroundColor(),
 		frameColor = GetConfiguredFrameColor(),
 	})
@@ -456,9 +474,9 @@ end
 for _, key in ipairs({
 	"cast_radius",
 	"moduleEnabled_Cast",
-	"barslot1_offsetX",
-	"barslot1_offsetY",
-	"barslot1_scale",
+	SlotKey("offsetX"),
+	SlotKey("offsetY"),
+	SlotKey("scale"),
 }) do
 	CallbackRegistry:RegisterSettingCallback(key, function()
 		BarSlots:ApplyLayout()
@@ -466,24 +484,24 @@ for _, key in ipairs({
 end
 
 for _, key in ipairs({
-	"barslot1_fillColorSource",
-	"barslot1_barColor",
-	"barslot1_fillOpacity",
-	"barslot1_backgroundColor",
-	"barslot1_backgroundOpacity",
-	"barslot1_frameColor",
-	"barslot1_frameOpacity",
-	"barslot1_textEnabled",
-	"barslot1_textMode",
-	"barslot1_textNumberStyle",
-	"barslot1_textColorSource",
-	"barslot1_textFont",
-	"barslot1_textSize",
-	"barslot1_textOutline",
-	"barslot1_textColor",
-	"barslot1_textOpacity",
-	"barslot1_textOffsetX",
-	"barslot1_textOffsetY",
+	SlotKey("fillColorSource"),
+	SlotKey("barColor"),
+	SlotKey("fillOpacity"),
+	SlotKey("backgroundColor"),
+	SlotKey("backgroundOpacity"),
+	SlotKey("frameColor"),
+	SlotKey("frameOpacity"),
+	SlotKey("textEnabled"),
+	SlotKey("textMode"),
+	SlotKey("textNumberStyle"),
+	SlotKey("textColorSource"),
+	SlotKey("textFont"),
+	SlotKey("textSize"),
+	SlotKey("textOutline"),
+	SlotKey("textColor"),
+	SlotKey("textOpacity"),
+	SlotKey("textOffsetX"),
+	SlotKey("textOffsetY"),
 }) do
 	CallbackRegistry:RegisterSettingCallback(key, function()
 		ApplyTextOptions()
@@ -492,7 +510,7 @@ for _, key in ipairs({
 	end)
 end
 
-CallbackRegistry:RegisterSettingCallback("barslot1_provider", function()
+CallbackRegistry:RegisterSettingCallback(SlotKey("provider"), function()
 	ApplyAssignments()
 	RefreshBar()
 end)

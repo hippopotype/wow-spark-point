@@ -1030,22 +1030,38 @@ local function BuildSettingsPanel()
 		barSlotProviderOptions = addon.BarProviders:GetDropdownOptions()
 	end
 
+	local topSlotCategory = Settings.RegisterVerticalLayoutSubcategory(barSlotsCategory, L["Top Slot"] or "Top Slot")
 	AddDropdown(
-		barSlotsCategory,
-		"barslot1_provider",
+		topSlotCategory,
+		"barslot_top_provider",
 		L["Top Bar Slot"] or "Top Bar Slot",
 		barSlotProviderOptions,
 		L["Bar Slot Source Tooltip"] or "Choose what to display in the top bar slot"
 	)
-	AddDropdown(barSlotsCategory, "barslot1_fillColorSource", L["Bar Slot Fill Color Source"] or "Fill Color Source", {
+
+	local topSlotLayoutCategory = Settings.RegisterVerticalLayoutSubcategory(topSlotCategory, L["Layout"] or "Layout")
+	AddSlider(
+		topSlotLayoutCategory,
+		"barslot_top_scale",
+		L["Bar Slot Scale"] or "Scale",
+		0.5,
+		2.0,
+		0.05,
+		L["Bar Slot Scale Tooltip"] or "Scale multiplier for the top bar slot width"
+	)
+	AddSlider(topSlotLayoutCategory, "barslot_top_offsetX", L["Bar Slot Horizontal Offset"] or "Horizontal Offset", -240, 240, 1)
+	AddSlider(topSlotLayoutCategory, "barslot_top_offsetY", L["Bar Slot Vertical Offset"] or "Vertical Offset", -240, 240, 1)
+
+	local topSlotAppearanceCategory = Settings.RegisterVerticalLayoutSubcategory(topSlotCategory, L["Appearance"] or "Appearance")
+	AddDropdown(topSlotAppearanceCategory, "barslot_top_fillColorSource", L["Bar Slot Fill Color Source"] or "Fill Color Source", {
 		{ value = "CUSTOM", label = L["Bar Slot Fill Color Source Custom"] or "Custom Color" },
 		{ value = "CLASS", label = L["Bar Slot Fill Color Source Class"] or "Class Color" },
 		{ value = "PROVIDER", label = L["Bar Slot Fill Color Source Provider"] or "Resource Color" },
 	}, L["Bar Slot Fill Color Source Tooltip"] or "Choose how the top bar slot fill color is selected")
-	AddColor(barSlotsCategory, "barslot1_barColor", (L["Top Bar Slot"] or "Top Bar Slot") .. " " .. (L["Bar Color"] or "Bar Color"), nil, false)
+	AddColor(topSlotAppearanceCategory, "barslot_top_barColor", (L["Top Bar Slot"] or "Top Bar Slot") .. " " .. (L["Bar Color"] or "Bar Color"), nil, false)
 	AddSlider(
-		barSlotsCategory,
-		"barslot1_fillOpacity",
+		topSlotAppearanceCategory,
+		"barslot_top_fillOpacity",
 		L["Bar Slot Fill Opacity"] or "Fill Opacity",
 		0,
 		1,
@@ -1053,22 +1069,22 @@ local function BuildSettingsPanel()
 		L["Bar Slot Fill Opacity Tooltip"] or "Opacity of the top bar slot fill regardless of selected color source"
 	)
 	AddColor(
-		barSlotsCategory,
-		"barslot1_backgroundColor",
+		topSlotAppearanceCategory,
+		"barslot_top_backgroundColor",
 		(L["Top Bar Slot"] or "Top Bar Slot") .. " " .. (L["Background Color"] or "Background Color"),
 		(L["Slot Background Color Tooltip"] or "Tint color for the slot background ring texture."),
 		false
 	)
 	AddColor(
-		barSlotsCategory,
-		"barslot1_frameColor",
+		topSlotAppearanceCategory,
+		"barslot_top_frameColor",
 		(L["Top Bar Slot"] or "Top Bar Slot") .. " " .. (L["Bar Frame Color"] or "Frame Color"),
 		L["Bar Frame Color Tooltip"] or "Tint color for the top bar slot frame texture.",
 		false
 	)
 	AddSlider(
-		barSlotsCategory,
-		"barslot1_backgroundOpacity",
+		topSlotAppearanceCategory,
+		"barslot_top_backgroundOpacity",
 		L["Bar Slot Background Opacity"] or "Background Opacity",
 		0,
 		1,
@@ -1076,43 +1092,39 @@ local function BuildSettingsPanel()
 		L["Bar Slot Background Opacity Tooltip"] or "Opacity of the top bar slot background"
 	)
 	AddSlider(
-		barSlotsCategory,
-		"barslot1_frameOpacity",
+		topSlotAppearanceCategory,
+		"barslot_top_frameOpacity",
 		L["Bar Slot Frame Opacity"] or "Frame Opacity",
 		0,
 		1,
 		0.05,
 		L["Bar Slot Frame Opacity Tooltip"] or "Opacity of the top bar slot frame"
 	)
-	AddSlider(barSlotsCategory, "barslot1_scale", L["Bar Slot Scale"] or "Scale", 0.5, 2.0, 0.05, L["Bar Slot Scale Tooltip"] or "Scale multiplier for the top bar slot width")
-	AddSlider(barSlotsCategory, "barslot1_offsetX", L["Bar Slot Horizontal Offset"] or "Horizontal Offset", -240, 240, 1)
-	AddSlider(barSlotsCategory, "barslot1_offsetY", L["Bar Slot Vertical Offset"] or "Vertical Offset", -240, 240, 1)
-
-	local barSlotsTextCategory = Settings.RegisterVerticalLayoutSubcategory(barSlotsCategory, L["Bar Slot Text"] or "Text")
-	AddCheckbox(barSlotsTextCategory, "barslot1_textEnabled", L["Bar Slot Text"] or "Text", L["Bar Slot Text Tooltip"] or "Show text on the top bar slot")
-	AddDropdown(barSlotsTextCategory, "barslot1_textMode", L["Bar Slot Text Mode"] or "Text Mode", {
+	local topSlotTextCategory = Settings.RegisterVerticalLayoutSubcategory(topSlotCategory, L["Bar Slot Text"] or "Text")
+	AddCheckbox(topSlotTextCategory, "barslot_top_textEnabled", L["Bar Slot Text"] or "Text", L["Bar Slot Text Tooltip"] or "Show text on the top bar slot")
+	AddDropdown(topSlotTextCategory, "barslot_top_textMode", L["Bar Slot Text Mode"] or "Text Mode", {
 		{ value = "CURRENT", label = L["Bar Slot Text Mode Current"] or "Current" },
 		{ value = "CURRENT_MAX", label = L["Bar Slot Text Mode Current Max"] or "Current / Max" },
 		{ value = "PERCENT", label = L["Bar Slot Text Mode Percent"] or "Percent" },
 		{ value = "CURRENT_PERCENT", label = L["Bar Slot Text Mode Current Percent"] or "Current + Percent" },
 		{ value = "CURRENT_MAX_PERCENT", label = L["Bar Slot Text Mode Current Max Percent"] or "Current / Max + Percent" },
 	}, L["Bar Slot Text Mode Tooltip"] or "Choose how the top bar slot text is formatted")
-	AddDropdown(barSlotsTextCategory, "barslot1_textNumberStyle", L["Bar Slot Text Number Style"] or "Number Style", {
+	AddDropdown(topSlotTextCategory, "barslot_top_textNumberStyle", L["Bar Slot Text Number Style"] or "Number Style", {
 		{ value = "SHORT", label = L["Bar Slot Text Number Style Short"] or "Short" },
 		{ value = "FULL", label = L["Bar Slot Text Number Style Full"] or "Full" },
 	}, L["Bar Slot Text Number Style Tooltip"] or "Choose whether current and max values use shortened or full number formatting")
-	AddDropdown(barSlotsTextCategory, "barslot1_textColorSource", L["Bar Slot Text Color Source"] or "Text Color Source", {
+	AddDropdown(topSlotTextCategory, "barslot_top_textColorSource", L["Bar Slot Text Color Source"] or "Text Color Source", {
 		{ value = "CUSTOM", label = L["Bar Slot Text Color Source Custom"] or "Custom Color" },
 		{ value = "CLASS", label = L["Bar Slot Text Color Source Class"] or "Class Color" },
 		{ value = "PROVIDER", label = L["Bar Slot Text Color Source Provider"] or "Resource Color" },
 	}, L["Bar Slot Text Color Source Tooltip"] or "Choose how the top bar slot text color is selected")
-	AddDropdown(barSlotsTextCategory, "barslot1_textFont", L["Bar Slot Text Font"] or "Font", {
+	AddDropdown(topSlotTextCategory, "barslot_top_textFont", L["Bar Slot Text Font"] or "Font", {
 		{ value = "Fonts\\FRIZQT__.TTF", label = "Friz Quadrata" },
 		{ value = "Fonts\\ARIALN.TTF", label = "Arial Narrow" },
 		{ value = "Fonts\\MORPHEUS.ttf", label = "Morpheus" },
 		{ value = "Fonts\\SKURRI.TTF", label = "Skurri" },
 	}, L["Bar Slot Text Font Tooltip"] or "Choose the font used by top bar slot text")
-	AddDropdown(barSlotsTextCategory, "barslot1_textOutline", L["Bar Slot Text Font Outline"] or "Font Outline", {
+	AddDropdown(topSlotTextCategory, "barslot_top_textOutline", L["Bar Slot Text Font Outline"] or "Font Outline", {
 		{ value = "", label = "None" },
 		{ value = "OUTLINE", label = "Outline" },
 		{ value = "THICKOUTLINE", label = "Thick Outline" },
@@ -1120,19 +1132,19 @@ local function BuildSettingsPanel()
 		{ value = "MONOCHROME,OUTLINE", label = "Mono + Outline" },
 		{ value = "MONOCHROME,THICKOUTLINE", label = "Mono + Thick Outline" },
 	}, L["Bar Slot Text Font Outline Tooltip"] or "Choose the outline style used by top bar slot text")
-	AddSlider(barSlotsTextCategory, "barslot1_textSize", L["Bar Slot Text Font Size"] or "Font Size", 8, 48, 1)
-	AddColor(barSlotsTextCategory, "barslot1_textColor", L["Bar Slot Text Color"] or "Text Color", nil, false)
+	AddSlider(topSlotTextCategory, "barslot_top_textSize", L["Bar Slot Text Font Size"] or "Font Size", 8, 48, 1)
+	AddColor(topSlotTextCategory, "barslot_top_textColor", L["Bar Slot Text Color"] or "Text Color", nil, false)
 	AddSlider(
-		barSlotsTextCategory,
-		"barslot1_textOpacity",
+		topSlotTextCategory,
+		"barslot_top_textOpacity",
 		L["Bar Slot Text Opacity"] or "Text Opacity",
 		0,
 		1,
 		0.05,
 		L["Bar Slot Text Opacity Tooltip"] or "Opacity of the top bar slot text regardless of selected color source"
 	)
-	AddSlider(barSlotsTextCategory, "barslot1_textOffsetX", L["Bar Slot Text Horizontal Offset"] or "Horizontal Offset", -240, 240, 1)
-	AddSlider(barSlotsTextCategory, "barslot1_textOffsetY", L["Bar Slot Text Vertical Offset"] or "Vertical Offset", -240, 240, 1)
+	AddSlider(topSlotTextCategory, "barslot_top_textOffsetX", L["Bar Slot Text Horizontal Offset"] or "Horizontal Offset", -240, 240, 1)
+	AddSlider(topSlotTextCategory, "barslot_top_textOffsetY", L["Bar Slot Text Vertical Offset"] or "Vertical Offset", -240, 240, 1)
 
 	local barSlotsVisibilityCategory = Settings.RegisterVerticalLayoutSubcategory(barSlotsCategory, L["Visibility"] or "Visibility")
 	AddDropdown(
