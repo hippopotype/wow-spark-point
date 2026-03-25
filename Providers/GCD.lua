@@ -124,16 +124,10 @@ function GCDProvider:Disable()
 end
 
 --------------------------------------------------------------------------------
--- CooldownActive helper (pcall for secret values)
+-- Cooldown activity helper (normalized cooldown info)
 --------------------------------------------------------------------------------
-local function CooldownActive(start, duration)
-	local ok, result = pcall(function()
-		return start and duration and duration > 0 and start > 0
-	end)
-	if not ok then
-		return true
-	end
-	return result
+local function IsTrackedCooldownActive(cooldownInfo)
+	return API and API.IsCooldownInfoActive and API.IsCooldownInfoActive(cooldownInfo)
 end
 
 local function ResolveGCDSpellID(spellID)
@@ -191,9 +185,9 @@ local function UpdateTrackingFromSpellCooldown(spellID, allowFallback)
 		return
 	end
 
-	local start, duration = API.GetSpellCooldown(id)
-	if CooldownActive(start, duration) and duration <= 1.5 then
-		StartTrackingWindow(start, duration)
+	local cooldownInfo = API and API.GetSpellCooldownInfo and API.GetSpellCooldownInfo(id)
+	if IsTrackedCooldownActive(cooldownInfo) and cooldownInfo.duration <= 1.5 then
+		StartTrackingWindow(cooldownInfo.startTime, cooldownInfo.duration)
 	elseif allowFallback and StartFallbackTracking(spellID) then
 		return
 	elseif HasActiveTrackingWindow() then
@@ -204,9 +198,9 @@ local function UpdateTrackingFromSpellCooldown(spellID, allowFallback)
 end
 
 local function RefreshOrClearTracking()
-	local start, duration = API.GetSpellCooldown(gcdSpellID)
-	if CooldownActive(start, duration) and duration <= 1.5 then
-		StartTrackingWindow(start, duration)
+	local cooldownInfo = API and API.GetSpellCooldownInfo and API.GetSpellCooldownInfo(gcdSpellID)
+	if IsTrackedCooldownActive(cooldownInfo) and cooldownInfo.duration <= 1.5 then
+		StartTrackingWindow(cooldownInfo.startTime, cooldownInfo.duration)
 	else
 		ClearTrackingWindow()
 	end

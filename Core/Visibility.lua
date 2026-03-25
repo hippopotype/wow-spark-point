@@ -177,14 +177,13 @@ local function RefreshInstantVisibilityFromGCD(kind, event)
 	end
 
 	local now = GetTime()
-	local startTime, duration = 0, 0
-	if API and API.GetSpellCooldown then
-		startTime, duration = API.GetSpellCooldown(GCD_SPELL_ID)
-	end
+	local cooldownInfo = API and API.GetSpellCooldownInfo and API.GetSpellCooldownInfo(GCD_SPELL_ID)
+	local startTime = cooldownInfo and cooldownInfo.startTime or 0
+	local duration = cooldownInfo and cooldownInfo.duration or 0
 
 	local shouldBeActive = false
 	local nextExpiry = 0
-	if IsValidGCDCooldown(startTime, duration) then
+	if API and API.IsCooldownInfoActive and API.IsCooldownInfoActive(cooldownInfo) and IsValidGCDCooldown(startTime, duration) then
 		shouldBeActive = true
 		nextExpiry = startTime + duration
 	elseif state.active and type(state.expiry) == "number" and now < state.expiry then

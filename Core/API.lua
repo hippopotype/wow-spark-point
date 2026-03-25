@@ -6,6 +6,8 @@ local _, addon = ...
 local API = {}
 addon.API = API
 local issecretvalue = _G.issecretvalue
+local GetActionCooldown = GetActionCooldown
+local GetActionCharges = GetActionCharges
 
 local function SafeNumber(value, fallback)
 	if value == nil then
@@ -27,6 +29,49 @@ end
 
 function API.SafeReadableNumber(value, fallback)
 	return SafeNumber(value, fallback)
+end
+
+-- Compatibility pattern adapted from .clones/Plumber/Modules/Shared/CooldownUtil.lua.
+local function NormalizeCooldownInfo(rawInfo)
+	if type(rawInfo) ~= "table" then
+		return nil
+	end
+
+	local startTime = SafeNumber(rawInfo.startTime, 0)
+	local duration = SafeNumber(rawInfo.duration, 0)
+	local modRate = SafeNumber(rawInfo.modRate, 1)
+	local isEnabled = (startTime > 0 or duration > 0) and 1 or 0
+	local isActive = isEnabled ~= 0 and startTime > 0 and duration > 0
+
+	return {
+		startTime = startTime,
+		duration = duration,
+		isEnabled = isEnabled,
+		modRate = modRate,
+		isActive = isActive,
+	}
+end
+
+local function NormalizeChargeCooldownInfo(rawInfo)
+	if type(rawInfo) ~= "table" then
+		return nil
+	end
+
+	local currentCharges = SafeNumber(rawInfo.currentCharges, nil)
+	local maxCharges = SafeNumber(rawInfo.maxCharges, 0)
+	local cooldownStartTime = SafeNumber(rawInfo.cooldownStartTime, 0)
+	local cooldownDuration = SafeNumber(rawInfo.cooldownDuration, 0)
+	local chargeModRate = SafeNumber(rawInfo.chargeModRate, 1)
+	local isActive = maxCharges > 1 and currentCharges ~= nil and currentCharges < maxCharges and cooldownStartTime > 0 and cooldownDuration > 0
+
+	return {
+		currentCharges = currentCharges,
+		maxCharges = maxCharges,
+		cooldownStartTime = cooldownStartTime,
+		cooldownDuration = cooldownDuration,
+		chargeModRate = chargeModRate,
+		isActive = isActive,
+	}
 end
 
 local function IsSecretReadableValue(value)
@@ -104,18 +149,81 @@ function API.ComposeBarTextDisplay(mode, currentText, maxText, percentText)
 	return currentText .. " - " .. percentText
 end
 
-function API.GetSpellCooldown(spellID)
+function API.GetSpellCooldownInfo(spellID)
 	if not spellID then
-		return 0, 0, 0
+		return nil
 	end
-	local info = C_Spell.GetSpellCooldown(spellID)
+	if not (C_Spell and C_Spell.GetSpellCooldown) then
+		return nil
+	end
+
+	return NormalizeCooldownInfo(C_Spell.GetSpellCooldown(spellID))
+end
+
+function API.GetActionCooldownInfo(actionSlot)
+	if not actionSlot or not GetActionCooldown then
+		return nil
+	end
+
+	local startTime, duration, _, modRate = GetActionCooldown(actionSlot)
+	if type(startTime) == "table" then
+		return NormalizeCooldownInfo(startTime)
+	end
+
+	return NormalizeCooldownInfo({
+		startTime = startTime,
+		duration = duration,
+		modRate = modRate,
+	})
+end
+
+function API.GetSpellChargeCooldownInfo(spellID)
+	if not spellID or not (C_Spell and C_Spell.GetSpellCharges) then
+		return nil
+	end
+
+	return NormalizeChargeCooldownInfo(C_Spell.GetSpellCharges(spellID))
+end
+
+function API.GetActionChargeCooldownInfo(actionSlot)
+	if not actionSlot or not GetActionCharges then
+		return nil
+	end
+
+	local currentCharges, maxCharges, cooldownStartTime, cooldownDuration, chargeModRate = GetActionCharges(actionSlot)
+
+	return NormalizeChargeCooldownInfo({
+		currentCharges = currentCharges,
+		maxCharges = maxCharges,
+		cooldownStartTime = cooldownStartTime,
+		cooldownDuration = cooldownDuration,
+		chargeModRate = chargeModRate,
+	})
+end
+
+function API.IsCooldownInfoActive(info)
+	if type(info) ~= "table" then
+		return false
+	end
+
+	return info.isEnabled ~= 0 and info.startTime > 0 and info.duration > 0
+end
+
+function API.IsChargeCooldownInfoActive(info)
+	if type(info) ~= "table" then
+		return false
+	end
+
+	return info.maxCharges > 1 and info.currentCharges ~= nil and info.currentCharges < info.maxCharges and info.cooldownStartTime > 0 and info.cooldownDuration > 0
+end
+
+function API.GetSpellCooldown(spellID)
+	local info = API.GetSpellCooldownInfo(spellID)
 	if type(info) ~= "table" then
 		return 0, 0, 0, 1
 	end
-	local startTime = SafeNumber(info.startTime, 0)
-	local duration = SafeNumber(info.duration, 0)
-	local enabled = (startTime > 0 or duration > 0) and 1 or 0
-	return startTime, duration, enabled, SafeNumber(info.modRate, 1)
+
+	return info.startTime, info.duration, info.isEnabled, info.modRate
 end
 
 --------------------------------------------------------------------------------

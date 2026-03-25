@@ -497,6 +497,28 @@ local function IsSameCooldownWindow(firstStart, firstDuration, secondStart, seco
 	return math.abs(firstStart - secondStart) <= 0.05 and math.abs(firstDuration - secondDuration) <= 0.05
 end
 
+local function GetCooldownWindowFromInfo(cooldownInfo)
+	if not (API and API.IsCooldownInfoActive and API.IsCooldownInfoActive(cooldownInfo)) then
+		return nil
+	end
+
+	return cooldownInfo.startTime, cooldownInfo.duration
+end
+
+local function GetChargeCooldownWindowFromInfo(chargeInfo)
+	if not (API and API.IsChargeCooldownInfoActive and API.IsChargeCooldownInfoActive(chargeInfo)) then
+		return nil
+	end
+	if not (chargeInfo and chargeInfo.maxCharges and chargeInfo.maxCharges > 1) then
+		return nil
+	end
+	if not (chargeInfo.currentCharges and chargeInfo.currentCharges <= 0) then
+		return nil
+	end
+
+	return chargeInfo.cooldownStartTime, chargeInfo.cooldownDuration
+end
+
 local function GetBlockedCooldownInfo(spellID, actionSlot)
 	local normalized = NormalizeSpellID(spellID)
 	if not normalized then
@@ -504,41 +526,37 @@ local function GetBlockedCooldownInfo(spellID, actionSlot)
 	end
 
 	local recentActionSlot = tonumber(actionSlot)
-	if recentActionSlot and recentActionSlot > 0 and GetActionCharges then
-		local currentCharges, maxCharges, cooldownStart, cooldownDuration = GetActionCharges(recentActionSlot)
-		currentCharges = ToSafeNumber(currentCharges)
-		maxCharges = ToSafeNumber(maxCharges)
-		cooldownStart = ToSafeNumber(cooldownStart)
-		cooldownDuration = ToSafeNumber(cooldownDuration)
-		if maxCharges and maxCharges > 0 and currentCharges and currentCharges <= 0 and IsCooldownActive(cooldownStart, cooldownDuration) then
+	if recentActionSlot and recentActionSlot > 0 and API and API.GetActionChargeCooldownInfo then
+		local cooldownStart, cooldownDuration = GetChargeCooldownWindowFromInfo(API.GetActionChargeCooldownInfo(recentActionSlot))
+		if cooldownStart and cooldownDuration then
 			return cooldownStart, cooldownDuration
 		end
 	end
 
-	if recentActionSlot and recentActionSlot > 0 and GetActionCooldown then
-		local startTime, duration, enabled = GetActionCooldown(recentActionSlot)
-		startTime = ToSafeNumber(startTime)
-		duration = ToSafeNumber(duration)
-		enabled = ToSafeNumber(enabled)
-		if enabled ~= 0 and IsCooldownActive(startTime, duration) then
-			local gcdStart, gcdDuration = API.GetSpellCooldown(61304)
-			if not IsSameCooldownWindow(startTime, duration, gcdStart, gcdDuration) then
-				return startTime, duration
-			end
+	local gcdStart, gcdDuration = API.GetSpellCooldown(61304)
+
+	if recentActionSlot and recentActionSlot > 0 and API and API.GetActionCooldownInfo then
+		local startTime, duration = GetCooldownWindowFromInfo(API.GetActionCooldownInfo(recentActionSlot))
+		if startTime and duration and not IsSameCooldownWindow(startTime, duration, gcdStart, gcdDuration) then
+			return startTime, duration
 		end
 	end
 
-	if C_Spell and C_Spell.GetSpellCharges then
-		local chargeInfo = C_Spell.GetSpellCharges(normalized)
-		local maxCharges = type(chargeInfo) == "table" and ToSafeNumber(chargeInfo.maxCharges) or nil
-		local currentCharges = type(chargeInfo) == "table" and ToSafeNumber(chargeInfo.currentCharges) or nil
-		local cooldownStart = type(chargeInfo) == "table" and ToSafeNumber(chargeInfo.cooldownStartTime) or nil
-		local cooldownDuration = type(chargeInfo) == "table" and ToSafeNumber(chargeInfo.cooldownDuration) or nil
-		if maxCharges and maxCharges > 0 then
-			if currentCharges and currentCharges <= 0 and IsCooldownActive(cooldownStart, cooldownDuration) then
-				return cooldownStart, cooldownDuration
-			end
+	if API and API.GetSpellChargeCooldownInfo then
+		local chargeInfo = API.GetSpellChargeCooldownInfo(normalized)
+		local cooldownStart, cooldownDuration = GetChargeCooldownWindowFromInfo(chargeInfo)
+		if cooldownStart and cooldownDuration then
+			return cooldownStart, cooldownDuration
+		end
+		if chargeInfo and chargeInfo.maxCharges and chargeInfo.maxCharges > 1 then
 			return nil
+		end
+	end
+
+	if API and API.GetSpellCooldownInfo then
+		local startTime, duration = GetCooldownWindowFromInfo(API.GetSpellCooldownInfo(normalized))
+		if startTime and duration and not IsSameCooldownWindow(startTime, duration, gcdStart, gcdDuration) then
+			return startTime, duration
 		end
 	end
 end
