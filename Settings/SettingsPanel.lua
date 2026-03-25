@@ -703,12 +703,7 @@ local function BuildSettingsPanel()
 	)
 
 	local transitionCategory = Settings.RegisterVerticalLayoutSubcategory(visibilityCategory, L["Transition"] or "Transition")
-	AddCheckbox(
-		transitionCategory,
-		"transition_enabled",
-		L["Transition Enabled"] or "Enable Transition",
-		L["Transition Enabled Tooltip"] or "Enable subtle HUD fade transitions."
-	)
+	AddCheckbox(transitionCategory, "transition_enabled", L["Transition Enabled"] or "Enable Transition", L["Transition Enabled Tooltip"] or "Enable subtle HUD fade transitions.")
 	AddSlider(
 		transitionCategory,
 		"transition_inDurationMs",
@@ -989,45 +984,100 @@ local function BuildSettingsPanel()
 	)
 
 	------------------------------------------------------------------------
-	-- Inner Ring Slots Settings Subcategory
+	-- Ring Slots Settings Subcategory
 	------------------------------------------------------------------------
-	local slotsCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Inner Ring Slots"] or "Inner Ring Slots")
-
+	local slotsCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Inner Ring Slots"] or "Ring Slots")
 	local slotProviderOptions = addon.SlotProviders:GetDropdownOptions()
 
-	for i = 1, 3 do
-		local prefix = "slot" .. i
-		AddDropdown(
-			slotsCategory,
-			prefix .. "_provider",
-			(L["Slot Source"] or "Slot") .. " " .. i .. " " .. (L["Source"] or "Source"),
-			slotProviderOptions,
-			(L["Slot Source Tooltip"] or "Choose what to display in inner ring slot") .. " " .. i
-		)
-		AddColor(slotsCategory, prefix .. "_barColor", (L["Slot"] or "Slot") .. " " .. i .. " " .. (L["Bar Color"] or "Bar Color"))
-		AddCheckbox(
-			slotsCategory,
-			prefix .. "_useClassColor",
-			(L["Slot"] or "Slot") .. " " .. i .. " " .. (L["Use Class Color"] or "Use Class Color"),
-			(L["Slot Use Class Color Tooltip"] or "Override slot bar color with your class color")
-		)
+	for _, slotInfo in ipairs({
+		{ id = "outer", label = L["Outer Slot"] or "Outer Slot" },
+		{ id = "middle", label = L["Middle Slot"] or "Middle Slot" },
+		{ id = "inner", label = L["Inner Slot"] or "Inner Slot" },
+	}) do
+		local prefix = "innerslot_" .. slotInfo.id
+		AddCheckbox(slotsCategory, prefix .. "_enabled", slotInfo.label, L["Slot Enabled Tooltip"] or "Enable this ring slot.")
+
+		local slotCategory = Settings.RegisterVerticalLayoutSubcategory(slotsCategory, slotInfo.label)
+		AddDropdown(slotCategory, prefix .. "_provider", L["Source"] or "Source", slotProviderOptions, L["Slot Source Tooltip"] or "Choose what to display in ring slot")
+
+		local slotAppearanceCategory = Settings.RegisterVerticalLayoutSubcategory(slotCategory, L["Appearance"] or "Appearance")
+		AddDropdown(slotAppearanceCategory, prefix .. "_fillColorSource", L["Bar Slot Fill Color Source"] or "Fill Color Source", {
+			{ value = "CUSTOM", label = L["Bar Slot Fill Color Source Custom"] or "Custom Color" },
+			{ value = "CLASS", label = L["Bar Slot Fill Color Source Class"] or "Class Color" },
+		}, L["Inner Slot Fill Color Source Tooltip"] or "Choose how the ring slot fill color is selected")
+		AddColor(slotAppearanceCategory, prefix .. "_barColor", L["Bar Color"] or "Bar Color", nil, false)
 		AddSlider(
-			slotsCategory,
-			prefix .. "_backgroundOpacity",
-			(L["Slot"] or "Slot") .. " " .. i .. " " .. (L["Background Opacity"] or "Background Opacity"),
+			slotAppearanceCategory,
+			prefix .. "_fillOpacity",
+			L["Bar Slot Fill Opacity"] or "Fill Opacity",
 			0,
 			1,
 			0.05,
-			(L["Slot Background Opacity Tooltip"] or "Opacity of the slot background ring")
+			L["Inner Slot Fill Opacity Tooltip"] or "Opacity of the ring slot fill regardless of selected color source"
 		)
 		AddColor(
-			slotsCategory,
+			slotAppearanceCategory,
 			prefix .. "_backgroundColor",
-			(L["Slot"] or "Slot") .. " " .. i .. " " .. (L["Background Color"] or "Background Color"),
-			(L["Slot Background Color Tooltip"] or "Tint color for the slot background ring texture."),
+			L["Background Color"] or "Background Color",
+			L["Slot Background Color Tooltip"] or "Tint color for the slot background ring texture.",
 			false
 		)
+		AddSlider(
+			slotAppearanceCategory,
+			prefix .. "_backgroundOpacity",
+			L["Background Opacity"] or "Background Opacity",
+			0,
+			1,
+			0.05,
+			L["Slot Background Opacity Tooltip"] or "Opacity of the slot background ring"
+		)
+		AddColor(
+			slotAppearanceCategory,
+			prefix .. "_frameColor",
+			L["Bar Frame Color"] or "Frame Color",
+			L["Inner Slot Frame Color Tooltip"] or "Tint color for the ring slot frame texture.",
+			false
+		)
+		AddSlider(
+			slotAppearanceCategory,
+			prefix .. "_frameOpacity",
+			L["Bar Slot Frame Opacity"] or "Frame Opacity",
+			0,
+			1,
+			0.05,
+			L["Inner Slot Frame Opacity Tooltip"] or "Opacity of the ring slot frame"
+		)
 	end
+
+	local innerSlotsVisibilityCategory = Settings.RegisterVerticalLayoutSubcategory(slotsCategory, L["Visibility"] or "Visibility")
+	AddDropdown(
+		innerSlotsVisibilityCategory,
+		"innerslots_visibilitySource",
+		L["Visibility Source"] or "Visibility Source",
+		visibilitySourceOptions,
+		L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility"
+	)
+	AddVisibilityRuleGroup(innerSlotsVisibilityCategory, "innerslots_visibility", nil, L["Inner Slots Visibility Tooltip"] or "When to show the ring slots")
+	local innerSlotsHideCategory = Settings.RegisterVerticalLayoutSubcategory(innerSlotsVisibilityCategory, L["Hide Overrides"] or "Hide Overrides")
+	AddCheckbox(
+		innerSlotsHideCategory,
+		"innerslots_hideOnUIHover",
+		L["Hide While Hovering UI"] or "Hide While Hovering UI",
+		L["Hide While Hovering UI Tooltip"] or "Hide SparkPoint while cursor is over clickable UI frames. Keeps SparkPoint visible primarily for world targeting."
+	)
+	AddCheckbox(
+		innerSlotsHideCategory,
+		"innerslots_hideInPetBattle",
+		L["Hide While In Pet Battle"] or "Hide While In Pet Battle",
+		L["Hide While In Pet Battle Tooltip"] or "Hide SparkPoint while you are in a pet battle."
+	)
+	AddCheckbox(
+		innerSlotsHideCategory,
+		"innerslots_hideInSpecialActionBarContext",
+		L["Hide While In Special Action Bar Context"] or "Hide While In Special Action Bar Context",
+		L["Hide While In Special Action Bar Context Tooltip"]
+			or "Hide SparkPoint while Blizzard replaces your normal action bar with a special context such as vehicle, override, possess, or temporary shapeshift bars."
+	)
 
 	------------------------------------------------------------------------
 	-- Bar Slots Settings Subcategory

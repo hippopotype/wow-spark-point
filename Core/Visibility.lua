@@ -58,7 +58,7 @@ local FALLBACK_AFTER_INSTANT_CAST_DURATION = 1.0
 local MAX_SYNTHETIC_AFTER_INSTANT_CAST_DURATION = 2.0
 local hoverWatcher
 local lastHoveringInteractiveUI = false
-local UI_HOVER_PREFIXES = { "cast", "barslot_top", "classresource", "ring", "assistedhighlight" }
+local UI_HOVER_PREFIXES = { "cast", "innerslots", "barslot_top", "classresource", "ring", "assistedhighlight" }
 local hysteresisTokenByPrefix = {}
 local stableVisibilityByPrefix = {}
 local pendingVisibilityByPrefix = {}

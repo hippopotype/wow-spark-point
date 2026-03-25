@@ -26,7 +26,7 @@ SparkPoint is a lightweight, event-driven WoW addon that keeps important combat 
 It currently includes:
 
 - Cast ring with latency overlay, interrupt feedback, spell text, and click-feedback ring
-- Up to 3 assignable inner ring slots
+- Up to 3 assignable ring slots
 - Top bar slot with health and mana providers
 - Class resource display in pip or text mode
 - Decorative rotating ring
@@ -78,7 +78,7 @@ The main cast ring renders around your cursor and supports:
 - Configurable bar, spark, glow, frame, and background tint/opacity
 - Click-feedback ring for left and right mouse buttons
 
-### Inner Ring Slots
+### Ring Slots
 
 SparkPoint supports up to **3 concentric inner slots** inside the cast ring.
 
@@ -221,7 +221,7 @@ Open the Blizzard Settings panel via `/sparkpoint`. SparkPoint provides sections
 - Transition
 - Modules
 - Cast Ring
-- Inner Ring Slots
+- Ring Slots
 - Bar Slots
 - Class Resource
 - Decorative Ring

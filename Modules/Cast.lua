@@ -30,6 +30,8 @@ local SPELL_ICON_MASK_BASE_EXPAND = 6
 -- Inner Ring Slot Constants
 --------------------------------------------------------------------------------
 local NUM_SLOTS = 3
+local INNER_SLOTS_PREFIX = "innerslots"
+local SLOT_IDS = { "outer", "middle", "inner" }
 -- Slot textures are authored on a shared 1024x1024 root map with baked sizing.
 -- Use one scale reference (cast_radius) and let each texture encode its own diameter.
 local SLOT_ROOT_SCALE = { 1, 1, 1 }
@@ -185,15 +187,54 @@ local function DisableSlotProviders()
 	end
 end
 
-local function GetSlotBarColor(slotIndex, providerResult)
-	if GetDBBool("slot" .. slotIndex .. "_useClassColor") then
-		local r, g, b, a = API.GetPlayerClassColor()
-		return { r = r, g = g, b = b, a = a }
+local function GetInnerSlotID(slotIndex)
+	return SLOT_IDS[slotIndex]
+end
+
+local function InnerSlotKey(slotIndex, suffix)
+	local slotID = GetInnerSlotID(slotIndex)
+	if not slotID then
+		return nil
 	end
-	if providerResult and providerResult.barColor then
-		return providerResult.barColor
+	return "innerslot_" .. slotID .. "_" .. suffix
+end
+
+local function GetInnerSlotValue(slotIndex, suffix)
+	local key = InnerSlotKey(slotIndex, suffix)
+	if not key then
+		return nil
 	end
-	return GetDBColorTable("slot" .. slotIndex .. "_barColor")
+	return GetDBValue(key)
+end
+
+local function GetInnerSlotBool(slotIndex, suffix)
+	local key = InnerSlotKey(slotIndex, suffix)
+	if not key then
+		return false
+	end
+	return GetDBBool(key)
+end
+
+local function GetInnerSlotColorTable(slotIndex, suffix)
+	local key = InnerSlotKey(slotIndex, suffix)
+	if not key then
+		return { r = 1, g = 1, b = 1, a = 1 }
+	end
+	return GetDBColorTable(key)
+end
+
+local function ClampOpacity(value, fallback)
+	local opacity = tonumber(value)
+	if opacity == nil then
+		opacity = fallback
+	end
+	if opacity < 0 then
+		return 0
+	end
+	if opacity > 1 then
+		return 1
+	end
+	return opacity
 end
 
 local function SetTextureSmooth(texture, texturePath)
@@ -214,6 +255,65 @@ end
 
 local function IsCastVisibilityAllowed()
 	return (not Visibility) or Visibility:ShouldShow("cast")
+end
+
+local function IsInnerSlotsVisibilityAllowed()
+	return (not Visibility) or Visibility:ShouldShow(INNER_SLOTS_PREFIX)
+end
+
+local function AreInnerSlotsShown()
+	return moduleEnabled and IsCastVisibilityAllowed() and IsInnerSlotsVisibilityAllowed()
+end
+
+local function GetConfiguredInnerSlotFillColor(slotIndex, providerResult)
+	local opacity = ClampOpacity(GetInnerSlotValue(slotIndex, "fillOpacity"), 0.18)
+	local source = tostring(GetInnerSlotValue(slotIndex, "fillColorSource") or "CUSTOM")
+	if source == "CLASS" then
+		local r, g, b = API.GetPlayerClassColor()
+		return { r = r, g = g, b = b, a = opacity }
+	end
+
+	local color = GetInnerSlotColorTable(slotIndex, "barColor")
+	return {
+		r = color.r or 1,
+		g = color.g or 1,
+		b = color.b or 1,
+		a = opacity,
+	}
+end
+
+local function GetConfiguredInnerSlotBackgroundColor(slotIndex)
+	local opacity = ClampOpacity(GetInnerSlotValue(slotIndex, "backgroundOpacity"), 0.5)
+	local color = GetInnerSlotColorTable(slotIndex, "backgroundColor")
+	return {
+		r = color.r or 1,
+		g = color.g or 1,
+		b = color.b or 1,
+		a = opacity,
+	}
+end
+
+local function GetConfiguredInnerSlotFrameColor(slotIndex)
+	local opacity = ClampOpacity(GetInnerSlotValue(slotIndex, "frameOpacity"), 1)
+	local color = GetInnerSlotColorTable(slotIndex, "frameColor")
+	return {
+		r = color.r or 1,
+		g = color.g or 1,
+		b = color.b or 1,
+		a = opacity,
+	}
+end
+
+local function UpdateAssignedSlotWidgetVisibility()
+	local shouldShow = AreInnerSlotsShown()
+	for i = 1, NUM_SLOTS do
+		local slot = slots[i]
+		if slot and slot.provider and shouldShow then
+			slot.widget:Show()
+		elseif slot then
+			slot.widget:Hide()
+		end
+	end
 end
 
 local function ShouldShowCurrentCastProgress()
@@ -1333,9 +1433,9 @@ end
 local function UpdateSlotProviderVisuals()
 	for i = 1, NUM_SLOTS do
 		local slot = slots[i]
-		if slot and slot.provider then
+		if slot and slot.provider and AreInnerSlotsShown() then
 			local result = slot.provider:GetProgress()
-			slot.widget:SetBarColor(GetSlotBarColor(i, result))
+			slot.widget:SetBarColor(GetConfiguredInnerSlotFillColor(i, result))
 
 			-- Keep assigned slot backgrounds visible while cast module is active.
 			-- Provider activity controls the progress/spark only.
@@ -1517,12 +1617,7 @@ function Cast:Show()
 	self:UpdateIconCooldown()
 
 	-- Show assigned slot widgets (background/frame visible even when provider idle).
-	for i = 1, NUM_SLOTS do
-		local slot = slots[i]
-		if slot and slot.provider then
-			slot.widget:Show()
-		end
-	end
+	UpdateAssignedSlotWidgetVisibility()
 
 	ShowCastFrame()
 end
@@ -1587,14 +1682,7 @@ function Cast:UpdateShellVisibility()
 		self:UpdateSpellIcon()
 	end
 
-	for i = 1, NUM_SLOTS do
-		local slot = slots[i]
-		if slot and slot.provider then
-			slot.widget:Show()
-		elseif slot then
-			slot.widget:Hide()
-		end
-	end
+	UpdateAssignedSlotWidgetVisibility()
 end
 
 function Cast:Hide()
@@ -2011,12 +2099,14 @@ function Cast:ApplySlotAssignments()
 	for i = 1, NUM_SLOTS do
 		local slot = slots[i]
 		if slot then
-			local providerID = NormalizeProviderID(GetDBValue("slot" .. i .. "_provider"))
-			slot.providerID = providerID
-			if providerID ~= "NONE" then
-				local provider = SlotProviders:Get(providerID)
-				if provider then
-					slot.provider = provider
+			if GetInnerSlotBool(i, "enabled") then
+				local providerID = NormalizeProviderID(GetInnerSlotValue(i, "provider"))
+				slot.providerID = providerID
+				if providerID ~= "NONE" then
+					local provider = SlotProviders:Get(providerID)
+					if provider then
+						slot.provider = provider
+					end
 				end
 			end
 		end
@@ -2024,6 +2114,7 @@ function Cast:ApplySlotAssignments()
 
 	-- Keep providers inactive if module is currently disabled.
 	if not moduleEnabled then
+		UpdateAssignedSlotWidgetVisibility()
 		return
 	end
 
@@ -2036,16 +2127,7 @@ function Cast:ApplySlotAssignments()
 		end
 	end
 
-	-- Enforce slot visibility contract:
-	-- assigned/non-NONE slots stay mounted while cast ring is visible.
-	for i = 1, NUM_SLOTS do
-		local slot = slots[i]
-		if slot and slot.provider and moduleEnabled and IsCastVisibilityAllowed() then
-			slot.widget:Show()
-		elseif slot then
-			slot.widget:Hide()
-		end
-	end
+	UpdateAssignedSlotWidgetVisibility()
 end
 
 function Cast:ApplySlotOptions()
@@ -2058,19 +2140,10 @@ function Cast:ApplySlotOptions()
 	for i = 1, NUM_SLOTS do
 		local slot = slots[i]
 		if slot then
-			local backgroundOpacity = GetDBValue("slot" .. i .. "_backgroundOpacity")
-			if backgroundOpacity == nil then
-				backgroundOpacity = 0.8
-			end
-			local backgroundColor = GetDBColorTable("slot" .. i .. "_backgroundColor") or { r = 1, g = 1, b = 1, a = 1 }
 			slot.widget:SetRadius(radius * SLOT_ROOT_SCALE[i])
-			slot.widget:SetBarColor(GetSlotBarColor(i))
-			slot.widget:SetBackgroundColor({
-				r = backgroundColor.r or 1,
-				g = backgroundColor.g or 1,
-				b = backgroundColor.b or 1,
-				a = backgroundOpacity,
-			})
+			slot.widget:SetBarColor(GetConfiguredInnerSlotFillColor(i))
+			slot.widget:SetBackgroundColor(GetConfiguredInnerSlotBackgroundColor(i))
+			slot.widget:SetFrameColor(GetConfiguredInnerSlotFrameColor(i))
 			slot.widget:SetFrameLevel(baseLevel + (NUM_SLOTS - i + 1))
 		end
 	end
@@ -2337,20 +2410,14 @@ function Cast:Initialize()
 	-- Create inner ring slot widgets
 	local radius = GetDBValue("cast_radius")
 	for i = 1, NUM_SLOTS do
-		local slotBackgroundColor = GetDBColorTable("slot" .. i .. "_backgroundColor") or { r = 1, g = 1, b = 1, a = 1 }
 		local widget = SlotRingWidget:Create({
 			radius = radius * SLOT_ROOT_SCALE[i],
 			fillBase = "slot" .. i .. "_fill",
 			frameBase = "slot" .. i .. "_frame",
 			backgroundBase = "slot" .. i .. "_background",
 			sparkRadiusRatio = SLOT_SPARK_RADIUS_RATIOS[i],
-			barColor = GetDBColorTable("slot" .. i .. "_barColor"),
-			backgroundColor = {
-				r = slotBackgroundColor.r or 1,
-				g = slotBackgroundColor.g or 1,
-				b = slotBackgroundColor.b or 1,
-				a = GetDBValue("slot" .. i .. "_backgroundOpacity") or 0.8,
-			},
+			barColor = GetConfiguredInnerSlotFillColor(i),
+			backgroundColor = GetConfiguredInnerSlotBackgroundColor(i),
 		})
 		widget:AttachTo(castFrame)
 		widget:Hide()
@@ -2472,6 +2539,9 @@ for _, key in ipairs({
 	"cast_visibility",
 	"visibility_hideOnUIHover",
 	"cast_hideOnUIHover",
+	"innerslots_visibilitySource",
+	"innerslots_visibility",
+	"innerslots_hideOnUIHover",
 	"attachToMouse",
 }) do
 	CallbackRegistry:RegisterSettingCallback(key, function()
@@ -2490,17 +2560,23 @@ CallbackRegistry:Register("HUDLayersChanged", function()
 	end
 end, Cast)
 
--- Slot provider assignment callbacks
 for i = 1, NUM_SLOTS do
-	CallbackRegistry:RegisterSettingCallback("slot" .. i .. "_provider", function()
+	CallbackRegistry:RegisterSettingCallback(InnerSlotKey(i, "enabled"), function()
 		Cast:ApplySlotAssignments()
 	end)
-end
-
--- Slot color callbacks
-for i = 1, NUM_SLOTS do
-	for _, suffix in ipairs({ "_barColor", "_backgroundColor", "_backgroundOpacity", "_useClassColor" }) do
-		CallbackRegistry:RegisterSettingCallback("slot" .. i .. suffix, function()
+	CallbackRegistry:RegisterSettingCallback(InnerSlotKey(i, "provider"), function()
+		Cast:ApplySlotAssignments()
+	end)
+	for _, suffix in ipairs({
+		"fillColorSource",
+		"barColor",
+		"fillOpacity",
+		"backgroundColor",
+		"backgroundOpacity",
+		"frameColor",
+		"frameOpacity",
+	}) do
+		CallbackRegistry:RegisterSettingCallback(InnerSlotKey(i, suffix), function()
 			Cast:ApplySlotOptions()
 		end)
 	end
