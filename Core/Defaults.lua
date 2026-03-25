@@ -137,7 +137,7 @@ addon.DefaultValues = {
 	barslot_top_offsetY = 0,
 
 	-- Top bar slot appearance
-	barslot_top_fillColorSource = "PROVIDER",
+	barslot_top_fillColorSource = "CLASS",
 	barslot_top_barColor = { r = 1, g = 1, b = 1, a = 1 },
 	barslot_top_fillOpacity = 1,
 	barslot_top_backgroundColor = { r = 1, g = 1, b = 1, a = 1 },
