@@ -20,8 +20,10 @@ local SlotRingWidget = addon.SlotRingWidget
 local SlotProviders = addon.SlotProviders
 
 local Cast = {}
+local SPELL_ICON_BACKGROUND_PATH = addon.addonFolder .. "\\Textures\\spell_icon_background.png"
 local SPELL_ICON_COOLDOWN_SWIPE_PATH = addon.addonFolder .. "\\Textures\\spell_icon_cooldown_swipe.png"
 local SPELL_ICON_ERROR_PATH = addon.addonFolder .. "\\Textures\\spell_icon_error.png"
+local SPELL_ICON_FRAME_PATH = addon.addonFolder .. "\\Textures\\spell_icon_frame.png"
 local CAST_FEEDBACK_PATH = addon.addonFolder .. "\\Textures\\cast_feedback.png"
 local CAST_BACKGROUND_SHADOW_PATH = addon.addonFolder .. "\\Textures\\cast_background_shadow.png"
 local SPELL_ICON_MASK_BASE_EXPAND = 6
@@ -867,6 +869,19 @@ local function LayoutSpellIconErrorOverlay()
 	IconMask:LayoutToIcon(castFrame.iconFrame.errorIcon, castFrame.iconFrame.icon, SPELL_ICON_MASK_BASE_EXPAND)
 end
 
+local function LayoutSpellIconShell()
+	if not castFrame or not castFrame.iconFrame or not castFrame.iconFrame.icon then
+		return
+	end
+
+	if castFrame.iconFrame.background then
+		IconMask:LayoutToIcon(castFrame.iconFrame.background, castFrame.iconFrame.icon, SPELL_ICON_MASK_BASE_EXPAND)
+	end
+	if castFrame.iconFrame.frame then
+		IconMask:LayoutToIcon(castFrame.iconFrame.frame, castFrame.iconFrame.icon, SPELL_ICON_MASK_BASE_EXPAND)
+	end
+end
+
 local function LayoutSpellIconCooldown()
 	if not castFrame or not castFrame.iconFrame or not castFrame.iconFrame.icon or not castFrame.iconFrame.cooldown then
 		return
@@ -966,6 +981,17 @@ function Cast:ApplyIconOptions()
 	castFrame.iconFrame:SetPoint("CENTER", castFrame, "CENTER", offsetX, offsetY)
 
 	castFrame.iconFrame.icon:SetSize(size, size)
+	LayoutSpellIconShell()
+	if castFrame.iconFrame.background then
+		SetTextureSmooth(castFrame.iconFrame.background, SPELL_ICON_BACKGROUND_PATH)
+		castFrame.iconFrame.background:SetVertexColor(1, 1, 1, 1)
+		castFrame.iconFrame.background:Show()
+	end
+	if castFrame.iconFrame.frame then
+		SetTextureSmooth(castFrame.iconFrame.frame, SPELL_ICON_FRAME_PATH)
+		castFrame.iconFrame.frame:SetVertexColor(1, 1, 1, 1)
+		castFrame.iconFrame.frame:Show()
+	end
 
 	if showCooldown then
 		if not castFrame.iconFrame.cooldown then
@@ -1032,6 +1058,12 @@ function Cast:UpdateSpellIcon()
 		texture = 134400 -- Interface\\Icons\\INV_Misc_QuestionMark
 	end
 	castFrame.iconFrame.icon:SetTexture(texture)
+	if castFrame.iconFrame.icon.SetSnapToPixelGrid then
+		castFrame.iconFrame.icon:SetSnapToPixelGrid(false)
+	end
+	if castFrame.iconFrame.icon.SetTexelSnappingBias then
+		castFrame.iconFrame.icon:SetTexelSnappingBias(0)
+	end
 	castFrame.iconFrame.icon:Show()
 	if instantIconMode == "failed" and castFrame.iconFrame.errorIcon then
 		castFrame.iconFrame.errorIcon:Show()
@@ -2380,7 +2412,13 @@ function Cast:Initialize()
 	castFrame.iconFrame:SetFrameLevel(0)
 	castFrame.iconFrame:Hide()
 
+	castFrame.iconFrame.background = castFrame.iconFrame:CreateTexture(nil, "BACKGROUND")
+	castFrame.iconFrame.background:SetDrawLayer("BACKGROUND", 0)
+	castFrame.iconFrame.background:SetPoint("CENTER", castFrame.iconFrame, "CENTER")
+	castFrame.iconFrame.background:Hide()
+
 	castFrame.iconFrame.icon = castFrame.iconFrame:CreateTexture(nil, "BACKGROUND")
+	castFrame.iconFrame.icon:SetDrawLayer("ARTWORK", 0)
 	castFrame.iconFrame.icon:SetPoint("CENTER")
 	castFrame.iconFrame.icon:SetTexCoord(0, 1, 0, 1)
 
@@ -2389,10 +2427,24 @@ function Cast:Initialize()
 	castFrame.iconFrame.errorIcon:SetBlendMode("BLEND")
 	castFrame.iconFrame.errorIcon:Hide()
 
+	castFrame.iconFrame.frame = castFrame.iconFrame:CreateTexture(nil, "OVERLAY")
+	castFrame.iconFrame.frame:SetDrawLayer("OVERLAY", 1)
+	castFrame.iconFrame.frame:SetBlendMode("BLEND")
+	castFrame.iconFrame.frame:SetPoint("CENTER", castFrame.iconFrame.icon, "CENTER")
+	castFrame.iconFrame.frame:Hide()
+
 	-- Preload assets to avoid first-use stutter (font must be set before text)
+	SetTextureSmooth(castFrame.iconFrame.background, SPELL_ICON_BACKGROUND_PATH)
 	castFrame.iconFrame.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+	if castFrame.iconFrame.icon.SetSnapToPixelGrid then
+		castFrame.iconFrame.icon:SetSnapToPixelGrid(false)
+	end
+	if castFrame.iconFrame.icon.SetTexelSnappingBias then
+		castFrame.iconFrame.icon:SetTexelSnappingBias(0)
+	end
 	castFrame.iconFrame.icon:Hide()
 	SetTextureSmooth(castFrame.iconFrame.errorIcon, SPELL_ICON_ERROR_PATH)
+	SetTextureSmooth(castFrame.iconFrame.frame, SPELL_ICON_FRAME_PATH)
 
 	if not castFrame.iconFrame.cooldown then
 		castFrame.iconFrame.cooldown = CreateFrame("Cooldown", nil, castFrame.iconFrame, "CooldownFrameTemplate")
