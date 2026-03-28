@@ -10,7 +10,7 @@
 
 <p align="center">
   <img alt="WoW Version" src="https://img.shields.io/badge/WoW-12.0%2F12.0.1-blue" />
-  <img alt="Version" src="https://img.shields.io/badge/version-1.4.0-green" />
+  <img alt="Version" src="https://img.shields.io/badge/version-1.4.1-green" />
   <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0-blue" />
   <a href="https://www.curseforge.com/wow/addons/sparkpoint">
     <img alt="CurseForge" src="https://img.shields.io/badge/CurseForge-SparkPoint-orange" />
@@ -27,7 +27,7 @@ It currently includes:
 
 - Cast ring with latency overlay, interrupt feedback, spell text, and click-feedback ring
 - Up to 3 assignable ring slots
-- Top bar slot with health and mana providers
+- Top and bottom bar slots with health and mana providers
 - Class resource display in pip or text mode
 - Decorative rotating ring
 - Spell icon with cast swipe, instant-cast feedback, and cooldown-blocked feedback
@@ -35,7 +35,15 @@ It currently includes:
 - Shared visibility rules, per-module overrides, and optional HUD transitions
 - Cursor-attached mode, fixed anchor mode, minimap button, and profile support
 
-## New In v1.4.0
+## New In v1.4.1
+
+- Added a new bottom bar slot with dedicated fill texture and matching layout, text, and visibility controls
+- Refactored ring slot settings around named outer, middle, and inner slots with per-slot enable, provider, appearance, and shared visibility controls
+- Added a framed shell for the cast spell icon for cleaner HUD presentation
+- Improved cooldown and charge handling APIs used by GCD tracking and readable cooldown-blocked feedback
+- Added a `None` provider option for bar slots and updated defaults
+
+## Previously In v1.4.x
 
 - Added a new top bar slot module with dedicated health and mana providers
 - Added full top bar slot styling controls for fill, background, frame, and provider-based coloring
@@ -86,15 +94,15 @@ SparkPoint supports up to **3 concentric inner slots** inside the cast ring.
 - Current provider: **GCD**
 - Each slot has configurable bar color, background tint, opacity, and optional class-color override
 
-### Top Bar Slot
+### Bar Slots
 
-SparkPoint supports a dedicated **top bar slot** positioned above the main cast ring.
+SparkPoint supports dedicated **top and bottom bar slots** positioned above and below the main cast ring.
 
 - Current providers: **Health** and **Mana**
 - Configurable fill color source, background tint, frame tint, and independent opacity controls
 - Optional text overlay with current, max, and percent display modes
 - Configurable text font, outline, number style, opacity, and offsets
-- Slot-specific visibility override and hide rules
+- Independent top/bottom layout controls plus slot-specific visibility overrides and hide rules
 
 ### Class Resource
 

@@ -96,8 +96,8 @@
     Cast ring with latency overlay, interrupt feedback, spell text, and
     click-feedback ring
   </li>
-  <li>Up to 3 assignable inner ring slots</li>
-  <li>Top bar slot with health and mana providers</li>
+  <li>Up to 3 assignable ring slots</li>
+  <li>Top and bottom bar slots with health and mana providers</li>
   <li>Class resource display in pip or text mode</li>
   <li>Decorative rotating ring</li>
   <li>
@@ -112,7 +112,27 @@
     Cursor-attached mode, fixed anchor mode, minimap button, and profile support
   </li>
 </ul>
-<h2><strong>New In v1.4.x</strong></h2>
+<h2><strong>New In v1.4.1</strong></h2>
+<ul>
+  <li>
+    Added a new bottom bar slot with dedicated fill texture and matching
+    layout, text, and visibility controls
+  </li>
+  <li>
+    Refactored ring slot settings around named outer, middle, and inner slots
+    with per-slot enable, provider, appearance, and shared visibility controls
+  </li>
+  <li>
+    Added a framed shell for the cast spell icon for cleaner HUD presentation
+  </li>
+  <li>
+    Improved cooldown and charge handling APIs used by GCD tracking and
+    readable cooldown-blocked feedback
+  </li>
+  <li>Added a <code>None</code> provider option for bar slots and updated defaults</li>
+</ul>
+
+<h2><strong>Previously In v1.4.x</strong></h2>
 <ul>
   <li>
     Added a new top bar slot module with dedicated health and mana providers
@@ -208,7 +228,7 @@
   <li>Configurable bar, spark, glow, frame, and background tint/opacity</li>
   <li>Click-feedback ring for left and right mouse buttons</li>
 </ul>
-<h3>Inner Ring Slots</h3>
+<h3>Ring Slots</h3>
 <p>
   SparkPoint supports up to <strong>3 concentric inner slots</strong> inside the
   cast ring.
@@ -221,10 +241,10 @@
     class-color override
   </li>
 </ul>
-<h3>Top Bar Slot</h3>
+<h3>Bar Slots</h3>
 <p>
-  SparkPoint supports a dedicated <strong>top bar slot</strong> positioned above
-  the main cast ring.
+  SparkPoint supports dedicated <strong>top and bottom bar slots</strong>
+  positioned above and below the main cast ring.
 </p>
 <ul>
   <li>Current providers: <strong>Health</strong> and <strong>Mana</strong></li>
@@ -234,7 +254,7 @@
   </li>
   <li>Optional text overlay with current, max, and percent display modes</li>
   <li>Configurable text font, outline, number style, opacity, and offsets</li>
-  <li>Slot-specific visibility override and hide rules</li>
+  <li>Independent top/bottom layout controls plus slot-specific visibility overrides and hide rules</li>
 </ul>
 <h3>Class Resource</h3>
 <p>
@@ -386,7 +406,7 @@
   <li>Transition</li>
   <li>Modules</li>
   <li>Cast Ring</li>
-  <li>Inner Ring Slots</li>
+  <li>Ring Slots</li>
   <li>Bar Slots</li>
   <li>Class Resource</li>
   <li>Decorative Ring</li>
