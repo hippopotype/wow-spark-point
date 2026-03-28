@@ -89,10 +89,13 @@ L["Top Bar Slot"] = "Top Bar Slot"
 L["Top Slot"] = "Top Slot"
 L["Top Slot Enabled"] = "Enable Top Slot"
 L["Top Slot Enabled Tooltip"] = "Enable the top bar slot."
+L["Bottom Slot"] = "Bottom Slot"
+L["Bottom Slot Enabled"] = "Enable Bottom Slot"
+L["Bottom Slot Enabled Tooltip"] = "Enable the bottom bar slot."
 L["Content"] = "Content"
 L["Layout"] = "Layout"
 L["Appearance"] = "Appearance"
-L["Bar Slot Source Tooltip"] = "Choose what to display in the top bar slot"
+L["Bar Slot Source Tooltip"] = "Choose what to display in this bar slot"
 L["Bar Slot Fill Color Source"] = "Fill Color Source"
 L["Bar Slot Fill Color Source Tooltip"] = "Choose how the top bar slot fill color is selected"
 L["Bar Slot Fill Color Source Custom"] = "Custom Color"
@@ -351,7 +354,7 @@ L["Spell Text Size"] = "Spell Text Size"
 --------------------------------------------------------------------------------
 L["Class Resource"] = "Class Resource"
 L["Class Resource Description"] = "Displays class resources near the cursor"
-L["Bar Slots Description"] = "Displays curved top bar slots above the cast ring"
+L["Bar Slots Description"] = "Displays curved bar slots above and below the cast ring"
 
 --------------------------------------------------------------------------------
 -- Ring

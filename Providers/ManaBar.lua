@@ -14,7 +14,10 @@ local function GetManaPercentValue(current, maxValue)
 	if UnitPowerPercent then
 		local ok, percent = pcall(UnitPowerPercent, "player", POWER_TYPE_MANA, true, CurveConstants and CurveConstants.ScaleTo100)
 		if ok and percent ~= nil then
-			return percent
+			local readablePercent = API.SafeReadableNumber(percent, nil)
+			if readablePercent ~= nil then
+				return readablePercent
+			end
 		end
 	end
 

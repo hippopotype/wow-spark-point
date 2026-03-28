@@ -1,5 +1,5 @@
 -- SparkPoint BarSlotWidget
--- Curved horizontal status bar widget for top HUD bar slots.
+-- Curved horizontal status bar widget for HUD bar slots.
 
 local _, addon = ...
 
@@ -37,6 +37,13 @@ local function SetTextureSmooth(texture, texturePath)
 	SafeCall(texture, "SetTexelSnappingBias", 0)
 end
 
+local function ApplyTexCoords8(texture, tc)
+	if not texture or not tc then
+		return
+	end
+	texture:SetTexCoord(tc[1], tc[2], tc[3], tc[4], tc[5], tc[6], tc[7], tc[8])
+end
+
 function BarSlotWidget:Create(config)
 	local widget = {}
 
@@ -56,8 +63,8 @@ function BarSlotWidget:Create(config)
 	widget.statusBar:SetAllPoints(widget.fillFrame)
 	widget.statusBar:SetMinMaxValues(0, 1)
 	widget.statusBar:SetValue(0)
-	SafeCall(widget.statusBar, "SetOrientation", "HORIZONTAL")
-	SafeCall(widget.statusBar, "SetReverseFill", false)
+	SafeCall(widget.statusBar, "SetOrientation", config.orientation or "HORIZONTAL")
+	SafeCall(widget.statusBar, "SetReverseFill", config.reverseFill and true or false)
 
 	widget.statusTex = widget.statusBar:CreateTexture(nil, "ARTWORK", nil, 1)
 	widget.statusBar:SetStatusBarTexture(widget.statusTex)
@@ -70,6 +77,8 @@ function BarSlotWidget:Create(config)
 	widget.backgroundBase = config.backgroundBase
 	widget.fillBase = config.fillBase
 	widget.frameBase = config.frameBase
+	widget.flipFillBoundsY = config.flipFillBoundsY and true or false
+	widget.shellTexCoords = config.shellTexCoords
 
 	widget:LoadTextures()
 	widget:SetSize(config.width or 1, config.height or 1)
@@ -91,6 +100,10 @@ function BarSlotWidget:LoadTextures()
 	if self.frameBase then
 		SetTextureSmooth(self.frameTex, addon.addonFolder .. "\\Textures\\" .. self.frameBase .. ".png")
 	end
+	if self.shellTexCoords then
+		ApplyTexCoords8(self.background, self.shellTexCoords)
+		ApplyTexCoords8(self.frameTex, self.shellTexCoords)
+	end
 end
 
 function BarSlotWidget:AttachTo(parent)
@@ -100,14 +113,18 @@ end
 function BarSlotWidget:SetSize(width, height)
 	self.frame:SetSize(width, height)
 	self.fillFrame:ClearAllPoints()
-	self.fillFrame:SetPoint("TOPLEFT", self.frame, "TOPLEFT", width * (FILL_FIT_BOUNDS.left / BAR_TEXTURE_WIDTH), -(height * (FILL_FIT_BOUNDS.top / BAR_TEXTURE_HEIGHT)))
-	self.fillFrame:SetPoint(
-		"BOTTOMRIGHT",
-		self.frame,
-		"BOTTOMRIGHT",
-		-(width * ((BAR_TEXTURE_WIDTH - FILL_FIT_BOUNDS.right) / BAR_TEXTURE_WIDTH)),
-		height * ((BAR_TEXTURE_HEIGHT - FILL_FIT_BOUNDS.bottom) / BAR_TEXTURE_HEIGHT)
-	)
+
+	local insetLeft = width * (FILL_FIT_BOUNDS.left / BAR_TEXTURE_WIDTH)
+	local insetRight = width * ((BAR_TEXTURE_WIDTH - FILL_FIT_BOUNDS.right) / BAR_TEXTURE_WIDTH)
+	local insetTop = height * (FILL_FIT_BOUNDS.top / BAR_TEXTURE_HEIGHT)
+	local insetBottom = height * ((BAR_TEXTURE_HEIGHT - FILL_FIT_BOUNDS.bottom) / BAR_TEXTURE_HEIGHT)
+
+	if self.flipFillBoundsY then
+		insetTop, insetBottom = insetBottom, insetTop
+	end
+
+	self.fillFrame:SetPoint("TOPLEFT", self.frame, "TOPLEFT", insetLeft, -insetTop)
+	self.fillFrame:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -insetRight, insetBottom)
 end
 
 function BarSlotWidget:SetValueRange(value, maxValue)

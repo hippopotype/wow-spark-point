@@ -13,7 +13,10 @@ local function GetHealthPercentValue(current, maxValue)
 	if UnitHealthPercent then
 		local ok, percent = pcall(UnitHealthPercent, "player", true, CurveConstants and CurveConstants.ScaleTo100)
 		if ok and percent ~= nil then
-			return percent
+			local readablePercent = API.SafeReadableNumber(percent, nil)
+			if readablePercent ~= nil then
+				return readablePercent
+			end
 		end
 	end
 

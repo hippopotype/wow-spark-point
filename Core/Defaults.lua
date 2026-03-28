@@ -163,6 +163,42 @@ addon.DefaultValues = {
 	barslot_top_hideInPetBattle = true,
 	barslot_top_hideInSpecialActionBarContext = true,
 
+	-- Bottom bar slot settings
+	barslot_bottom_enabled = false,
+	barslot_bottom_provider = "MANA",
+
+	-- Bottom bar slot layout
+	barslot_bottom_scale = 1,
+	barslot_bottom_offsetX = 0,
+	barslot_bottom_offsetY = 0,
+
+	-- Bottom bar slot appearance
+	barslot_bottom_fillColorSource = "CLASS",
+	barslot_bottom_barColor = { r = 1, g = 1, b = 1, a = 1 },
+	barslot_bottom_fillOpacity = 1,
+	barslot_bottom_backgroundColor = { r = 1, g = 1, b = 1, a = 1 },
+	barslot_bottom_backgroundOpacity = 0.8,
+	barslot_bottom_frameColor = { r = 1, g = 1, b = 1, a = 1 },
+	barslot_bottom_frameOpacity = 0.8,
+
+	-- Bottom bar slot text
+	barslot_bottom_textEnabled = false,
+	barslot_bottom_textMode = "CURRENT",
+	barslot_bottom_textNumberStyle = "SHORT",
+	barslot_bottom_textFont = "Fonts\\FRIZQT__.TTF",
+	barslot_bottom_textSize = 12,
+	barslot_bottom_textOutline = "OUTLINE",
+	barslot_bottom_textColorSource = "PROVIDER",
+	barslot_bottom_textColor = { r = 1, g = 1, b = 1, a = 1 },
+	barslot_bottom_textOpacity = 1,
+	barslot_bottom_textOffsetX = 0,
+	barslot_bottom_textOffsetY = -8,
+	barslot_bottom_visibilitySource = "INHERIT",
+	barslot_bottom_visibility = { ALWAYS = true },
+	barslot_bottom_hideOnUIHover = false,
+	barslot_bottom_hideInPetBattle = true,
+	barslot_bottom_hideInSpecialActionBarContext = true,
+
 	-- ClassResource module settings
 	classresource_mode = "PIPS",
 	classresource_visibilitySource = "INHERIT",
