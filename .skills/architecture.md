@@ -26,15 +26,23 @@ end, owner)
 addon.CallbackRegistry:UnregisterOwner(owner)
 ```
 
-### 2. Database System (Core/Database.lua)
-Centralized defaults with functional getters/setters.
+### 2. Database System (Core/Defaults.lua + Core/Database.lua)
+Settings are split across two files:
+- **Defaults.lua**: `DefaultValues` table (profile-scoped), `RootDefaultValues` (non-profile), `ProfileModes`
+- **Database.lua**: Functional getters/setters, profile management
 
 ```lua
--- DefaultValues table contains all settings with defaults
+-- DefaultValues table contains all profile-scoped settings
 addon.DefaultValues = {
     cast_radius = 22,
     cast_barColor = {r = 1, g = 1, b = 1, a = 0.8},
     moduleEnabled_Cast = true,
+}
+
+-- Root defaults (non-profile-scoped)
+addon.RootDefaultValues = {
+    profileMode = addon.ProfileModes.GLOBAL,
+    profileCopySource = "NONE",
 }
 
 -- Functional access (triggers callbacks on change)
@@ -102,7 +110,49 @@ addon.AnchorFrame:Unlock()  -- enables manual positioning
 addon.AnchorFrame:Lock()    -- saves position
 ```
 
-### 5. DonutWidget (Widgets/DonutWidget.lua)
+### 5. HUDLayers (Core/HUDLayers.lua)
+Centralized z-order layer roots under the shared anchor frame.
+
+```lua
+-- Layer names (ordered back-to-front)
+HUDLayers.Names = {
+    CAST_SHADOW = "CAST_SHADOW",
+    DECORATIVE_RING = "DECORATIVE_RING",
+    CAST_FEEDBACK = "CAST_FEEDBACK",
+    BAR_SLOTS = "BAR_SLOTS",
+    CAST_BASE = "CAST_BASE",
+    CLASS_RESOURCE = "CLASS_RESOURCE",
+    ASSISTED_HIGHLIGHT = "ASSISTED_HIGHLIGHT",
+}
+
+-- Get a layer root frame for parenting
+local layerFrame = addon.HUDLayers:GetLayer(HUDLayers.Names.CAST_BASE)
+myFrame:SetParent(layerFrame)
+```
+
+### 6. Transition (Core/Transition.lua)
+Shared alpha transition service for smooth show/hide.
+
+```lua
+-- Fade a frame in/out
+addon.Transition:FadeTo(frame, targetAlpha, duration, easing)
+```
+
+### 7. IconMask (Core/IconMask.lua)
+Shared helpers for masked circular icon rendering.
+
+```lua
+-- Get the mask texture path
+local maskPath = addon.IconMask:GetMaskPath()
+
+-- Calculate proportional expand for a given icon size
+local expand = addon.IconMask:CalculateExpand(iconSize, baseExpand, baseSize)
+
+-- Layout a region (border, glow, etc.) relative to an icon
+addon.IconMask:LayoutToIcon(region, icon, baseExpand, baseSize)
+```
+
+### 8. DonutWidget (Widgets/DonutWidget.lua)
 Encapsulated ring rendering widget.
 
 ```lua
@@ -136,6 +186,38 @@ if donut:IsShown() then ... end
 local frame = donut:GetFrame()
 ```
 
+### 9. BarSlotWidget (Widgets/BarSlotWidget.lua)
+Curved horizontal bar widget for HUD bar slots.
+
+```lua
+-- Used by the BarSlots module to render health/mana bars
+-- Renders using 1024x512 curved bar textures with fit bounds
+local bar = addon.BarSlotWidget:Create(parent, options)
+```
+
+### 10. Provider Registries
+
+**SlotProviders** (Core/SlotProviders.lua) — Inner ring arc data:
+```lua
+addon.SlotProviders:Register(id, provider)
+addon.SlotProviders:Get(id)
+addon.SlotProviders:GetAll()
+```
+
+**BarProviders** (Core/BarProviders.lua) — Horizontal bar slot data:
+```lua
+-- Provider interface:
+--   provider.id           (string)
+--   provider.displayName  (string)
+--   provider:GetStatus() -> { current, max, active, show, barColor }
+--   provider:Enable()
+--   provider:Disable()
+
+addon.BarProviders:Register(id, provider)
+addon.BarProviders:Get(id)
+addon.BarProviders:GetAll()
+```
+
 ## Module Structure Template
 
 ```lua
@@ -144,6 +226,9 @@ local addonName, addon = ...
 local L = addon.L
 local CallbackRegistry = addon.CallbackRegistry
 local AnchorFrame = addon.AnchorFrame
+local HUDLayers = addon.HUDLayers
+local Visibility = addon.Visibility
+local Transition = addon.Transition
 local GetDBValue = addon.GetDBValue
 local GetDBBool = addon.GetDBBool
 local GetDBColor = addon.GetDBColor
@@ -191,7 +276,10 @@ function Module:Initialize()
     local anchor = AnchorFrame:GetFrame()
     if not anchor then return end
 
-    moduleFrame = CreateFrame("Frame", nil, anchor)
+    -- Get the appropriate HUD layer for z-ordering
+    local layerRoot = HUDLayers:GetLayer(HUDLayers.Names.CAST_BASE)
+
+    moduleFrame = CreateFrame("Frame", nil, layerRoot)
     moduleFrame:SetAllPoints()
     moduleFrame:Hide()
 
@@ -258,22 +346,33 @@ addon.ControlCenter:AddModule({
 
 1. `Core/Initialization.lua` - Creates namespace, CallbackRegistry
 2. `Core/API.lua` - Utility functions
-3. `Core/Database.lua` - DefaultValues, DB access functions
-4. `Core/Visibility.lua` - Shared visibility policy service
-5. `Core/ModuleRegistry.lua` - ControlCenter
-6. `Core/SlotProviders.lua` - Inner ring slot provider registry
-7. `Core/AnchorFrame.lua` - Anchor frame system + slash commands
-8. `Widgets/DonutWidget.lua` - Ring/arc rendering widget
-9. `Widgets/SlotRingWidget.lua` - Inner slot arc widget
-10. `Providers/GCD.lua` - GCD slot provider (registers with SlotProviders)
-11. `Modules/Cast.lua` - Cast ring (owns slots + spell icon)
-12. `Modules/ClassResource.lua` - Class resource pips / text
-13. `Modules/DecorativeRing.lua` - Decorative rotating ring
-14. `Modules/SpellIcon.lua` - Spell icon proxy
-15. `Settings/SettingsTemplates.xml` - Color picker XML mixin
-16. `Settings/ColorOverrides.lua` - Color override widget logic
-17. `Settings/SettingsPanel.lua` - Blizzard Settings Panel integration
-18. `Localization/enUS.lua` - Strings
+3. `Core/IconMask.lua` - Shared masked icon rendering helpers
+4. `Core/Defaults.lua` - DefaultValues, RootDefaultValues, ProfileModes
+5. `Core/Database.lua` - DB access functions, profile management
+6. `Core/Transition.lua` - Shared alpha transition service
+7. `Core/Visibility.lua` - Shared visibility policy service
+8. `Core/ModuleRegistry.lua` - ControlCenter
+9. `Core/SlotProviders.lua` - Inner ring slot provider registry
+10. `Core/BarProviders.lua` - Horizontal bar slot data provider registry
+11. `Core/AnchorFrame.lua` - Anchor frame system + slash commands
+12. `Core/HUDLayers.lua` - Centralized z-order layer roots
+13. `Core/MinimapButton.lua` - Native minimap button
+14. `Widgets/DonutWidget.lua` - Ring/arc rendering widget
+15. `Widgets/SlotRingWidget.lua` - Inner slot arc widget
+16. `Widgets/BarSlotWidget.lua` - Curved horizontal bar widget
+17. `Providers/GCD.lua` - GCD slot provider
+18. `Providers/HealthBar.lua` - Health bar provider
+19. `Providers/ManaBar.lua` - Mana bar provider
+20. `Modules/Cast.lua` - Cast ring (owns slots + spell icon)
+21. `Modules/BarSlots.lua` - Curved bar slots above/below cast ring
+22. `Modules/ClassResource.lua` - Class resource pips / text
+23. `Modules/DecorativeRing.lua` - Decorative rotating ring
+24. `Modules/SpellIcon.lua` - Spell icon proxy
+25. `Modules/AssistedHighlight.lua` - Blizzard assisted highlight
+26. `Settings/SettingsTemplates.xml` - Color picker XML mixin
+27. `Settings/ColorOverrides.lua` - Color override widget logic
+28. `Settings/SettingsPanel.lua` - Blizzard Settings Panel integration
+29. `Localization/enUS.lua` - Strings
 
 ## Event Flow
 
@@ -282,6 +381,8 @@ ADDON_LOADED
     └─> addon:LoadDatabase()
     └─> CallbackRegistry:Trigger("ADDON_LOADED")
         └─> AnchorFrame initializes
+        └─> HUDLayers initializes layer roots
+        └─> MinimapButton initializes
         └─> SettingsPanel builds (after 0.1s delay)
 
 PLAYER_ENTERING_WORLD

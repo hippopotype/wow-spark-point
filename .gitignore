@@ -21,7 +21,14 @@ SparkPoint_Dev.toc
 
 # Agents
 .agents/
-.claude/
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/publishing/
+!.claude/skills/sparkpoint-architecture/
+!.claude/skills/texture-guide/
+!.claude/skills/wow-api/
+!.claude/skills/wow-dev-tooling/
 
 # Windows
 Thumbs.db

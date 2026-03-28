@@ -126,60 +126,9 @@ Power type enums:
 - `Enum.PowerType.Essence` (Evoker)
 - `Enum.PowerType.Maelstrom` (Elemental/Enhancement Shaman)
 
-## Module Pattern (SparkPoint Custom Framework)
+## Module Pattern
 
-```lua
-local addonName, addon = ...
-local CallbackRegistry = addon.CallbackRegistry
-local AnchorFrame = addon.AnchorFrame
-local GetDBValue = addon.GetDBValue
-
-local Module = {}
-addon.Modules.ModuleNameObj = Module
-
-local EL = CreateFrame("Frame")
-
-function Module:Initialize()
-    -- Create frames, set up visuals
-end
-
-function Module:ApplyOptions()
-    -- Update visuals from settings
-end
-
-local function EnableModule(enabled)
-    if enabled then
-        if not initialized then Module:Initialize() end
-        EL:RegisterUnitEvent("UNIT_SPELLCAST_START", "player")
-        -- ...
-    else
-        EL:UnregisterAllEvents()
-        -- cleanup
-    end
-end
-
--- Event dispatcher
-EL:SetScript("OnEvent", function(self, event, ...)
-    if Module[event] then
-        Module[event](Module, event, ...)
-    end
-end)
-
--- Register setting callbacks
-CallbackRegistry:RegisterSettingCallback("module_setting", function()
-    Module:ApplyOptions()
-end)
-
--- Register module
-addon.ControlCenter:AddModule({
-    name = "Module Name",
-    dbKey = "moduleEnabled_ModuleName",
-    description = "What it does",
-    toggleFunc = EnableModule,
-    categoryID = 1,
-    uiOrder = 1,
-})
-```
+See `.skills/architecture.md` for the full module structure template, load order, and core system APIs.
 
 ## Events vs Polling
 Prefer events; use throttled `OnUpdate` when events are missing.

@@ -16,21 +16,32 @@ SparkPoint/
 ├── Core/                    # Core infrastructure
 │   ├── Initialization.lua   # Namespace, CallbackRegistry, event loading
 │   ├── API.lua              # Utility functions (new WoW APIs)
-│   ├── Database.lua         # DefaultValues, GetDBValue/SetDBValue
+│   ├── IconMask.lua         # Shared masked icon rendering helpers
+│   ├── Defaults.lua         # DefaultValues, RootDefaultValues, ProfileModes
+│   ├── Database.lua         # GetDBValue/SetDBValue, profile management
+│   ├── Transition.lua       # Shared alpha transitions for HUD elements
 │   ├── Visibility.lua       # Shared visibility policy (ALWAYS/IN_COMBAT/etc.)
 │   ├── ModuleRegistry.lua   # ControlCenter module registration
 │   ├── SlotProviders.lua    # Inner ring slot provider registry
-│   └── AnchorFrame.lua      # Cursor-following anchor frame
+│   ├── BarProviders.lua     # Horizontal bar slot data provider registry
+│   ├── AnchorFrame.lua      # Cursor-following anchor frame + slash commands
+│   ├── HUDLayers.lua        # Centralized z-order layer roots
+│   └── MinimapButton.lua    # Native minimap button (no LibDBIcon)
 ├── Widgets/
 │   ├── DonutWidget.lua      # Ring/arc rendering widget
-│   └── SlotRingWidget.lua   # Inner slot arc widget
+│   ├── SlotRingWidget.lua   # Inner slot arc widget
+│   └── BarSlotWidget.lua    # Curved horizontal bar widget
 ├── Providers/
-│   └── GCD.lua              # Global cooldown slot provider
+│   ├── GCD.lua              # Global cooldown slot provider
+│   ├── HealthBar.lua        # Health bar provider
+│   └── ManaBar.lua          # Mana bar provider
 ├── Modules/                 # Feature modules
 │   ├── Cast.lua             # Cast ring with latency + inner slots + spell icon
+│   ├── BarSlots.lua         # Curved bar slots above/below cast ring
 │   ├── ClassResource.lua    # Class resource pips / text display
 │   ├── DecorativeRing.lua   # Decorative rotating ring
-│   └── SpellIcon.lua        # Spell icon proxy (delegates to Cast)
+│   ├── SpellIcon.lua        # Spell icon proxy (delegates to Cast)
+│   └── AssistedHighlight.lua # Blizzard assisted highlight next spell
 ├── Settings/
 │   ├── SettingsTemplates.xml  # Color picker XML mixin
 │   ├── ColorOverrides.lua     # Color override widget logic
@@ -78,7 +89,7 @@ stylua .          # Apply formatting
 - Use clear, imperative commit messages (e.g., "Add cast ring smoothing").
 - PRs should include a short summary, verification steps, and screenshots/clips for UI changes.
 - Call out any saved variable schema changes (`SparkPointDB`).
-- If adding new settings, update `Core/Database.lua` DefaultValues.
+- If adding new settings, update `Core/Defaults.lua` DefaultValues.
 - If using a new WoW API global, add it to both `.luacheckrc` globals and `.luarc.json` diagnostics.globals.
 
 ## Configuration Tips
@@ -86,16 +97,22 @@ stylua .          # Apply formatting
 - When adding modules:
   1. Create `Modules/ModuleName.lua`
   2. Add to `SparkPoint.toc` load order
-  3. Add default values to `Core/Database.lua` DefaultValues table
+  3. Add default values to `Core/Defaults.lua` DefaultValues table
   4. Add localization strings to `Localization/enUS.lua`
   5. Register module with `addon.ControlCenter:AddModule()`
+- When adding providers:
+  - **Slot providers** (inner ring arcs): implement SlotProviders interface in `Core/SlotProviders.lua`
+  - **Bar providers** (curved bar slots): implement BarProviders interface (`GetStatus`, `Enable`, `Disable`) in `Core/BarProviders.lua`
 
 ## Architecture Patterns
 - **CallbackRegistry**: Plumber-style event system for decoupled communication
 - **Module Registration**: Each module registers with ControlCenter for enable/disable
 - **Database Access**: Functional getters/setters that trigger setting change callbacks
 - **DonutWidget**: Encapsulated ring rendering with clean API
+- **BarSlotWidget**: Curved horizontal bar widget for HUD bar slots
 - **AnchorFrame**: Shared cursor-following frame that all modules parent to
+- **HUDLayers**: Centralized z-order layer roots under the anchor frame
+- **Transition**: Shared alpha transition service for smooth show/hide
 
 ## Secret Value Handling Policy (Non-Negotiable)
 - If an API value is secret/protected and cannot be safely read/compared, stop implementation and report it immediately.

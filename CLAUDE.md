@@ -5,15 +5,15 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 ## Project Overview
 
-SparkPoint is a World of Warcraft addon that displays cast rings and class power indicators around the player's cursor. Built with a custom lightweight framework.
+SparkPoint is a World of Warcraft addon that displays cast rings, bar slots, and class power indicators around the player's cursor. Built with a custom lightweight framework (no Ace3).
 
-## Agent Startup & Skill Loading
-- Load all files in `.skills/` for WoW addon development guidance.
-- Include `.skills/textures.md` for texture quality, format, and rendering guidance.
-- Include `.skills/tooling.md` for luacheck, stylua, and lua-language-server usage.
-- Include `.skills/wow-api.md` for WoW API usage guidance.
-- Include `.skills/architecture.md` for architecture guidance.
-- Include `.skills/.private/` load every file in the `.private/` folder for guidance.
+## Skills
+
+Domain-specific guidance lives in `.claude/skills/`. Key skills:
+- `/sparkpoint-architecture` — Core systems, module lifecycle, load order, templates
+- `/wow-api` — WoW API patterns, secret values, events, power types
+- `/texture-guide` — Texture quality, format, and rendering guidance
+- `/wow-dev-tooling` — luacheck, stylua, and lua-language-server usage
 
 ## Development Commands
 
@@ -48,7 +48,7 @@ stylua .
 ```
 
 Config files: `.luacheckrc`, `.luarc.json`, `.stylua.toml`
-Full usage guide: `.skills/tooling.md`
+Full usage guide: `/wow-dev-tooling` skill
 
 ## Architecture
 
@@ -58,21 +58,32 @@ SparkPoint/
 ├── Core/
 │   ├── Initialization.lua   # Namespace, CallbackRegistry, event loading
 │   ├── API.lua              # Utility functions (new WoW APIs)
-│   ├── Database.lua         # DefaultValues, GetDBValue/SetDBValue
+│   ├── IconMask.lua         # Shared masked icon rendering helpers
+│   ├── Defaults.lua         # DefaultValues, RootDefaultValues, ProfileModes
+│   ├── Database.lua         # GetDBValue/SetDBValue, profile management
+│   ├── Transition.lua       # Shared alpha transitions for HUD elements
 │   ├── Visibility.lua       # Shared visibility policy (ALWAYS/IN_COMBAT/etc.)
 │   ├── ModuleRegistry.lua   # ControlCenter module registration
 │   ├── SlotProviders.lua    # Inner ring slot provider registry
-│   └── AnchorFrame.lua      # Cursor-following anchor frame
+│   ├── BarProviders.lua     # Horizontal bar slot data provider registry
+│   ├── AnchorFrame.lua      # Cursor-following anchor frame + slash commands
+│   ├── HUDLayers.lua        # Centralized z-order layer roots
+│   └── MinimapButton.lua    # Native minimap button (no LibDBIcon)
 ├── Widgets/
 │   ├── DonutWidget.lua      # Ring/arc rendering widget
-│   └── SlotRingWidget.lua   # Inner slot arc widget
+│   ├── SlotRingWidget.lua   # Inner slot arc widget
+│   └── BarSlotWidget.lua    # Curved horizontal bar widget
 ├── Providers/
-│   └── GCD.lua              # Global cooldown slot provider
+│   ├── GCD.lua              # Global cooldown slot provider
+│   ├── HealthBar.lua        # Health bar provider
+│   └── ManaBar.lua          # Mana bar provider
 ├── Modules/
 │   ├── Cast.lua             # Cast ring with latency + inner slots + spell icon
+│   ├── BarSlots.lua         # Curved bar slots above/below cast ring
 │   ├── ClassResource.lua    # Class resource pips / text display
 │   ├── DecorativeRing.lua   # Decorative rotating ring
-│   └── SpellIcon.lua        # Spell icon proxy (delegates to Cast)
+│   ├── SpellIcon.lua        # Spell icon proxy (delegates to Cast)
+│   └── AssistedHighlight.lua # Blizzard assisted highlight next spell
 ├── Settings/
 │   ├── SettingsTemplates.xml  # Color picker XML mixin
 │   ├── ColorOverrides.lua     # Color override widget logic
@@ -142,10 +153,14 @@ end)
 
 1. Create `Modules/ModuleName.lua` following existing patterns
 2. Add to `SparkPoint.toc` load order
-3. Add default values to `Core/Database.lua` in `DefaultValues`
+3. Add default values to `Core/Defaults.lua` in `DefaultValues`
 4. Add localization strings to `Localization/enUS.lua`
 5. Register module with `addon.ControlCenter:AddModule()`
 
+## Adding New Providers
+
+- **Slot providers** (inner ring arcs): implement SlotProviders interface, register in `Core/SlotProviders.lua`
+- **Bar providers** (curved bar slots): implement BarProviders interface (`GetStatus`, `Enable`, `Disable`), register in `Core/BarProviders.lua`
 
 ## WoW API Notes
 
