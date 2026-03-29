@@ -165,7 +165,7 @@ addon.DefaultValues = {
 
 	-- Bottom bar slot settings
 	barslot_bottom_enabled = false,
-	barslot_bottom_provider = "MANA",
+	barslot_bottom_provider = "CLASS_POWER",
 
 	-- Bottom bar slot layout
 	barslot_bottom_scale = 1,
@@ -200,19 +200,11 @@ addon.DefaultValues = {
 	barslot_bottom_hideInSpecialActionBarContext = true,
 
 	-- ClassResource module settings
-	classresource_mode = "PIPS",
 	classresource_visibilitySource = "INHERIT",
 	classresource_visibility = { ALWAYS = true },
 	classresource_hideOnUIHover = false,
 	classresource_hideInPetBattle = true,
 	classresource_hideInSpecialActionBarContext = true,
-	classresource_font = "Fonts\\FRIZQT__.TTF",
-	classresource_fontSize = 16,
-	classresource_fontOutline = "",
-	classresource_fontColor = { r = 1, g = 1, b = 1, a = 1 },
-	classresource_useClassColor = false,
-	classresource_textOffsetX = 0,
-	classresource_textOffsetY = 0,
 	classresource_scale = 1,
 	classresource_opacity = 1,
 	classresource_fillUseClassColor = true,

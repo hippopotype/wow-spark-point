@@ -1310,38 +1310,7 @@ local function BuildSettingsPanel()
 	------------------------------------------------------------------------
 	local cpCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Class Resource"] or "Class Resource")
 
-	AddDropdown(cpCategory, "classresource_mode", L["Class Resource Mode"] or "Class Resource Mode", {
-		{ value = "TEXT", label = L["Class Resource Mode Text"] or "Text" },
-		{ value = "PIPS", label = L["Class Resource Mode Pips"] or "Pips" },
-	}, L["Class Resource Mode Tooltip"] or "Switch between text and pips class resource display")
-
-	local cpTextCategory = Settings.RegisterVerticalLayoutSubcategory(cpCategory, L["Class Resource Text Mode"] or "Text Mode")
-	AddSlider(cpTextCategory, "classresource_fontSize", L["Class Resource Font Size"] or "Class Resource Font Size", 8, 48, 1)
-	AddSlider(cpTextCategory, "classresource_textOffsetX", L["Class Resource Text Horizontal Offset"] or "Class Resource Text Horizontal Offset", -300, 300, 1)
-	AddSlider(cpTextCategory, "classresource_textOffsetY", L["Class Resource Text Vertical Offset"] or "Class Resource Text Vertical Offset", -300, 300, 1)
-	AddDropdown(cpTextCategory, "classresource_font", L["Class Resource Font"] or "Class Resource Font", {
-		{ value = "Fonts\\FRIZQT__.TTF", label = "Friz Quadrata" },
-		{ value = "Fonts\\ARIALN.TTF", label = "Arial Narrow" },
-		{ value = "Fonts\\MORPHEUS.ttf", label = "Morpheus" },
-		{ value = "Fonts\\SKURRI.TTF", label = "Skurri" },
-	})
-	AddDropdown(cpTextCategory, "classresource_fontOutline", L["Class Resource Font Outline"] or "Class Resource Font Outline", {
-		{ value = "", label = "None" },
-		{ value = "OUTLINE", label = "Outline" },
-		{ value = "THICKOUTLINE", label = "Thick Outline" },
-		{ value = "MONOCHROME", label = "Monochrome" },
-		{ value = "MONOCHROME,OUTLINE", label = "Mono + Outline" },
-		{ value = "MONOCHROME,THICKOUTLINE", label = "Mono + Thick Outline" },
-	})
-	AddColor(cpTextCategory, "classresource_fontColor", L["Class Resource Font Color"] or "Class Resource Font Color")
-	AddCheckbox(
-		cpTextCategory,
-		"classresource_useClassColor",
-		L["Class Resource Use Class Color"] or "Class Resource Use Class Color",
-		L["Class Resource Use Class Color Tooltip"] or "Override class resource text color with your class color"
-	)
-
-	local cpPipsCategory = Settings.RegisterVerticalLayoutSubcategory(cpCategory, L["Class Resource Pips Mode"] or "Pips Mode")
+	local cpPipsCategory = Settings.RegisterVerticalLayoutSubcategory(cpCategory, L["Appearance"] or "Appearance")
 	AddSlider(
 		cpPipsCategory,
 		"classresource_scale",

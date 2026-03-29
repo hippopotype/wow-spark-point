@@ -31,6 +31,7 @@ Widgets\BarSlotWidget.lua
 Providers\GCD.lua
 Providers\HealthBar.lua
 Providers\ManaBar.lua
+Providers\ClassPower.lua
 
 # Modules
 Modules\Cast.lua

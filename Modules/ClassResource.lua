@@ -1,5 +1,5 @@
 -- SparkPoint ClassResource Module
--- Displays class resources in either PIPS or TEXT mode near the cursor.
+-- Displays discrete class resources (pips) near the cursor.
 
 local _, addon = ...
 local L = addon.L
@@ -106,30 +106,6 @@ local CLASS_CONFIG = {
 	},
 }
 
-local TEXT_POWER_CONFIG = {
-	ROGUE = { default = PT.COMBO_POINTS },
-	DRUID = {
-		[2] = PT.COMBO_POINTS,
-		[4] = PT.COMBO_POINTS,
-		[1] = Enum.PowerType.LunarPower,
-	},
-	PALADIN = { default = PT.HOLY_POWER },
-	MONK = { [3] = PT.CHI },
-	DEATHKNIGHT = { default = PT.RUNES },
-	WARLOCK = { default = PT.SOUL_SHARDS },
-	MAGE = { [1] = PT.ARCANE_CHARGES },
-	DEMONHUNTER = {
-		[1] = PT.FURY,
-		[2] = PT.PAIN,
-	},
-	EVOKER = { default = PT.ESSENCE },
-	PRIEST = { [3] = PT.INSANITY },
-	SHAMAN = {
-		[1] = PT.MAELSTROM,
-		[2] = PT.MAELSTROM,
-	},
-}
-
 -- Visual dimensions (pixels at scale 1)
 local PIP_SIZE = 18
 local PIP_SPACING = 4
@@ -142,78 +118,53 @@ local EL = CreateFrame("Frame")
 local ClassResource = {}
 addon.Modules.ClassResourceObj = ClassResource
 
-local MODE_TEXT = "TEXT"
-local MODE_PIPS = "PIPS"
-
 local isEnabled = false
 local container = nil
 local pips = {}
 local pipMax = 0
 local activeCfg = nil
 
-local textFrame = nil
-local currentTextSource = nil
-local currentTextPowerType = nil
-local lastTextValue = nil
-
 local function ReleaseAnchorIfUnused()
-	local containerShown = container and container:IsShown()
-	local textShown = textFrame and textFrame:IsShown()
-	if not containerShown and not textShown then
+	if not container or not container:IsShown() then
 		AnchorFrame:Hide("classresource")
 	end
 end
 
-local function ShowResourceFrame(frame)
-	if not frame then
+local function ShowContainer()
+	if not container then
 		return
 	end
 	AnchorFrame:Show("classresource")
 	local targetAlpha = 1
-	if frame == container then
-		local opacity = GetDBValue("classresource_opacity")
-		if type(opacity) == "number" then
-			targetAlpha = math.max(0, math.min(1, opacity))
-		end
+	local opacity = GetDBValue("classresource_opacity")
+	if type(opacity) == "number" then
+		targetAlpha = math.max(0, math.min(1, opacity))
 	end
 	if Transition and Transition.ShowFrame then
-		Transition:ShowFrame(frame, { toAlpha = targetAlpha })
+		Transition:ShowFrame(container, { toAlpha = targetAlpha })
 	else
-		frame:SetAlpha(targetAlpha)
-		frame:Show()
+		container:SetAlpha(targetAlpha)
+		container:Show()
 	end
 end
 
-local function HideResourceFrame(frame)
-	if not frame then
+local function HideContainer()
+	if not container then
 		ReleaseAnchorIfUnused()
 		return
 	end
 	local restoreAlpha = 1
-	if frame == container then
-		local opacity = GetDBValue("classresource_opacity")
-		if type(opacity) == "number" then
-			restoreAlpha = math.max(0, math.min(1, opacity))
-		end
+	local opacity = GetDBValue("classresource_opacity")
+	if type(opacity) == "number" then
+		restoreAlpha = math.max(0, math.min(1, opacity))
 	end
 	if Transition and Transition.HideFrame then
-		Transition:HideFrame(frame, { restoreAlpha = restoreAlpha, onComplete = ReleaseAnchorIfUnused })
+		Transition:HideFrame(container, { restoreAlpha = restoreAlpha, onComplete = ReleaseAnchorIfUnused })
 	else
-		frame:SetAlpha(restoreAlpha)
-		frame:Hide()
+		container:SetAlpha(restoreAlpha)
+		container:Hide()
 		ReleaseAnchorIfUnused()
 	end
-end
-
---------------------------------------------------------------------------------
--- Visibility
---------------------------------------------------------------------------------
-local function GetCurrentMode()
-	local mode = GetDBValue("classresource_mode")
-	if mode == MODE_TEXT then
-		return MODE_TEXT
-	end
-	return MODE_PIPS
 end
 
 --------------------------------------------------------------------------------
@@ -237,127 +188,8 @@ local function NormalizePowerValue(value)
 	return tonumber(token) or 0
 end
 
-local function IsPowerTypeUsable(powerType)
-	if powerType == nil then
-		return false
-	end
-	local maxPower = NormalizePowerValue(UnitPowerMax("player", powerType))
-	return maxPower > 0
-end
-
 --------------------------------------------------------------------------------
--- Text Mode
---------------------------------------------------------------------------------
-local function EnsureTextFrame()
-	if textFrame then
-		return
-	end
-
-	local anchor = AnchorFrame:GetFrame()
-	if not anchor then
-		return
-	end
-
-	local layerRoot = (HUDLayers and HUDLayers:GetLayerFrame(HUDLayers.Names.CLASS_RESOURCE)) or anchor
-	textFrame = CreateFrame("Frame", nil, layerRoot)
-	textFrame:SetFrameLevel(layerRoot:GetFrameLevel() or 0)
-	textFrame:SetSize(1, 1)
-	textFrame:Hide()
-
-	textFrame.powerText = textFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-	textFrame.powerText:SetPoint("CENTER", textFrame, "CENTER", 0, 0)
-	textFrame.powerText:SetText("0")
-end
-
-function ClassResource:DetectTextPowerType()
-	local _, classTag = UnitClass("player")
-	local spec = GetSpecialization() or 0
-
-	local classConfig = TEXT_POWER_CONFIG[classTag]
-	if not classConfig then
-		currentTextSource = nil
-		currentTextPowerType = nil
-		return
-	end
-
-	local powerType = classConfig[spec] or classConfig.default
-
-	-- Enhancement Shaman uses Maelstrom Weapon aura stacks (not UnitPower-based).
-	if classTag == "SHAMAN" and spec == 2 then
-		currentTextSource = "MAELSTROM_WEAPON"
-		currentTextPowerType = nil
-		return
-	end
-
-	if IsPowerTypeUsable(powerType) then
-		currentTextSource = "POWER"
-		currentTextPowerType = powerType
-	else
-		currentTextSource = nil
-		currentTextPowerType = nil
-	end
-end
-
-function ClassResource:ApplyTextOptions()
-	if not textFrame then
-		return
-	end
-
-	local font = GetDBValue("classresource_font") or "Fonts\\FRIZQT__.TTF"
-	local fontSize = GetDBValue("classresource_fontSize") or 16
-	local fontOutline = GetDBValue("classresource_fontOutline") or ""
-	textFrame.powerText:SetFont(font, fontSize, fontOutline)
-
-	local r, g, b, a
-	if GetDBBool("classresource_useClassColor") then
-		r, g, b, a = API.GetPlayerClassColor()
-	else
-		r, g, b, a = GetDBColor("classresource_fontColor")
-	end
-	textFrame.powerText:SetTextColor(r, g, b, a)
-end
-
-function ClassResource:UpdateTextMode()
-	if not isEnabled then
-		return
-	end
-	if not textFrame then
-		return
-	end
-
-	if not Visibility:ShouldShow("classresource") then
-		HideResourceFrame(textFrame)
-		return
-	end
-
-	if not currentTextSource then
-		self:DetectTextPowerType()
-	end
-
-	if not currentTextSource then
-		HideResourceFrame(textFrame)
-		return
-	end
-
-	local powerValue = 0
-	if currentTextSource == "POWER" and currentTextPowerType then
-		powerValue = NormalizePowerValue(UnitPower("player", currentTextPowerType))
-	elseif currentTextSource == "MAELSTROM_WEAPON" then
-		local aura = C_UnitAuras.GetPlayerAuraBySpellID(MAELSTROM_WEAPON_SPELL_ID)
-		powerValue = aura and (aura.applications or 0) or 0
-	end
-
-	local powerString = tostring(powerValue)
-	if powerString ~= lastTextValue then
-		lastTextValue = powerString
-		textFrame.powerText:SetText(powerString)
-	end
-
-	ShowResourceFrame(textFrame)
-end
-
---------------------------------------------------------------------------------
--- PIPS Mode (current implementation)
+-- PIPS Mode
 --------------------------------------------------------------------------------
 local function GetRunePower()
 	local ready = 0
@@ -653,57 +485,23 @@ function ClassResource:ApplyLayout()
 			container:SetFrameLevel(container:GetParent():GetFrameLevel() or 0)
 		end
 	end
-
-	if textFrame then
-		local textOffsetX = GetDBValue("classresource_textOffsetX") or 0
-		local textOffsetY = GetDBValue("classresource_textOffsetY") or 0
-		textFrame:ClearAllPoints()
-		textFrame:SetPoint("CENTER", anchor, "CENTER", textOffsetX, textOffsetY)
-		textFrame:SetScale(1)
-		textFrame:SetAlpha(1)
-		if textFrame:GetParent() then
-			textFrame:SetFrameLevel(textFrame:GetParent():GetFrameLevel() or 0)
-		end
-	end
 end
 
 function ClassResource:UpdateVisibility()
-	if not isEnabled then
-		HideResourceFrame(container)
-		HideResourceFrame(textFrame)
-		return
-	end
-
-	if GetCurrentMode() == MODE_TEXT then
-		HideResourceFrame(container)
-		HidePips()
-		self:UpdateTextMode()
-		return
-	end
-
-	if textFrame then
-		HideResourceFrame(textFrame)
-	end
-
-	if not activeCfg then
-		HideResourceFrame(container)
+	if not isEnabled or not activeCfg then
+		HideContainer()
 		return
 	end
 
 	if not Visibility:ShouldShow("classresource") then
-		HideResourceFrame(container)
+		HideContainer()
 		return
 	end
 
-	if container then
-		ShowResourceFrame(container)
-	end
+	ShowContainer()
 end
 
 function ClassResource:SyncPower()
-	if GetCurrentMode() ~= MODE_PIPS then
-		return
-	end
 	if not isEnabled or not activeCfg then
 		return
 	end
@@ -737,7 +535,6 @@ end
 
 function ClassResource:Refresh()
 	EnsureContainer()
-	EnsureTextFrame()
 
 	local _, cfg = DetectActiveClass()
 	activeCfg = cfg
@@ -752,19 +549,9 @@ function ClassResource:Refresh()
 		HidePips()
 	end
 
-	currentTextPowerType = nil
-	currentTextSource = nil
-	lastTextValue = nil
-
-	self:ApplyTextOptions()
 	self:ApplyLayout()
 	self:UpdateVisibility()
-
-	if GetCurrentMode() == MODE_PIPS then
-		self:SyncPower()
-	else
-		self:UpdateTextMode()
-	end
+	self:SyncPower()
 end
 
 --------------------------------------------------------------------------------
@@ -786,22 +573,14 @@ function ClassResource:UNIT_POWER_UPDATE(event, unit)
 	if unit ~= "player" then
 		return
 	end
-	if GetCurrentMode() == MODE_TEXT then
-		self:UpdateTextMode()
-	else
-		self:SyncPower()
-	end
+	self:SyncPower()
 end
 
 function ClassResource:UNIT_MAXPOWER(event, unit)
 	if unit ~= "player" then
 		return
 	end
-	if GetCurrentMode() == MODE_TEXT then
-		self:Refresh()
-	else
-		self:SyncPower()
-	end
+	self:SyncPower()
 end
 
 function ClassResource:UNIT_DISPLAYPOWER(event, unit)
@@ -813,10 +592,6 @@ end
 
 function ClassResource:UNIT_AURA(event, unit)
 	if unit ~= "player" then
-		return
-	end
-	if GetCurrentMode() == MODE_TEXT then
-		self:UpdateTextMode()
 		return
 	end
 	if activeCfg and activeCfg.isMaelstrom then
@@ -842,11 +617,8 @@ local function EnableModule(enabled)
 		ClassResource:Refresh()
 	else
 		EL:UnregisterAllEvents()
-		HideResourceFrame(container)
-		HideResourceFrame(textFrame)
+		HideContainer()
 		activeCfg = nil
-		currentTextSource = nil
-		currentTextPowerType = nil
 		HidePips()
 	end
 end
@@ -871,31 +643,6 @@ for _, key in ipairs({
 	end)
 end
 
-for _, key in ipairs({ "classresource_textOffsetX", "classresource_textOffsetY" }) do
-	CallbackRegistry:RegisterSettingCallback(key, function()
-		ClassResource:ApplyLayout()
-	end)
-end
-
-for _, key in ipairs({
-	"classresource_font",
-	"classresource_fontSize",
-	"classresource_fontOutline",
-	"classresource_fontColor",
-	"classresource_useClassColor",
-}) do
-	CallbackRegistry:RegisterSettingCallback(key, function()
-		ClassResource:ApplyTextOptions()
-		if GetCurrentMode() == MODE_TEXT then
-			ClassResource:UpdateTextMode()
-		end
-	end)
-end
-
-CallbackRegistry:RegisterSettingCallback("classresource_mode", function()
-	ClassResource:Refresh()
-end)
-
 CallbackRegistry:RegisterSettingCallback("classresource_visibility", function()
 	ClassResource:UpdateVisibility()
 end)
@@ -918,9 +665,7 @@ end)
 for _, key in ipairs({ "classresource_fillColor", "classresource_fillUseClassColor", "classresource_backgroundColor" }) do
 	CallbackRegistry:RegisterSettingCallback(key, function()
 		ClassResource:ApplyPipVisualOptions()
-		if GetCurrentMode() == MODE_PIPS then
-			ClassResource:SyncPower()
-		end
+		ClassResource:SyncPower()
 	end)
 end
 

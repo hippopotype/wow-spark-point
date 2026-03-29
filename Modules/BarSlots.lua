@@ -576,6 +576,7 @@ local function EnableModule(enabled)
 		EL:RegisterUnitEvent("UNIT_HEALTH", "player")
 		EL:RegisterUnitEvent("UNIT_MAXHEALTH", "player")
 		EL:RegisterUnitEvent("UNIT_POWER_UPDATE", "player")
+		EL:RegisterUnitEvent("UNIT_POWER_FREQUENT", "player")
 		EL:RegisterUnitEvent("UNIT_MAXPOWER", "player")
 		RefreshAllSlots()
 	else
@@ -591,15 +592,26 @@ end
 -- Event handlers
 --------------------------------------------------------------------------------
 
+local function RefreshProviderDetection()
+	for _, provider in pairs(activeProviders) do
+		if provider.RefreshDetection then
+			provider:RefreshDetection()
+		end
+	end
+end
+
 function BarSlots:PLAYER_ENTERING_WORLD()
+	RefreshProviderDetection()
 	RefreshAllSlots()
 end
 
 function BarSlots:PLAYER_SPECIALIZATION_CHANGED()
+	RefreshProviderDetection()
 	RefreshAllSlots()
 end
 
 function BarSlots:UPDATE_SHAPESHIFT_FORM()
+	RefreshProviderDetection()
 	RefreshAllSlots()
 end
 
@@ -607,6 +619,7 @@ function BarSlots:UNIT_DISPLAYPOWER(event, unit)
 	if unit ~= "player" then
 		return
 	end
+	RefreshProviderDetection()
 	RefreshAllSlots()
 end
 
@@ -640,11 +653,13 @@ function BarSlots:UNIT_POWER_UPDATE(event, unit)
 	end
 	for _, def in ipairs(SLOT_DEFS) do
 		local state = slots[def.id]
-		if state.providerID == "MANA" then
+		if state.providerID and state.providerID ~= "HEALTH" then
 			RefreshBar(def, state)
 		end
 	end
 end
+
+BarSlots.UNIT_POWER_FREQUENT = BarSlots.UNIT_POWER_UPDATE
 
 function BarSlots:UNIT_MAXPOWER(event, unit)
 	if unit ~= "player" then
@@ -652,7 +667,7 @@ function BarSlots:UNIT_MAXPOWER(event, unit)
 	end
 	for _, def in ipairs(SLOT_DEFS) do
 		local state = slots[def.id]
-		if state.providerID == "MANA" then
+		if state.providerID and state.providerID ~= "HEALTH" then
 			RefreshBar(def, state)
 		end
 	end
