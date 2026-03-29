@@ -93,6 +93,7 @@ globals = {
 	"UnitPower",
 	"UnitPowerMax",
 	"UnitPowerPercent",
+	"UnitPowerType",
 	"AbbreviateNumbers",
 	"BreakUpLargeNumbers",
 	"PowerBarColor",

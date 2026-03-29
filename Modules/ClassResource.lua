@@ -4,6 +4,7 @@
 local _, addon = ...
 local L = addon.L
 local API = addon.API
+local ResourceModel = addon.ResourceModel
 local CallbackRegistry = addon.CallbackRegistry
 local AnchorFrame = addon.AnchorFrame
 local HUDLayers = addon.HUDLayers
@@ -13,31 +14,9 @@ local GetDBValue = addon.GetDBValue
 local GetDBBool = addon.GetDBBool
 local GetDBColor = addon.GetDBColor
 
-local UnitClass = UnitClass
 local UnitPower = UnitPower
 local UnitPowerMax = UnitPowerMax
 local GetRuneCooldown = GetRuneCooldown
-local GetSpecialization = GetSpecialization
-
---------------------------------------------------------------------------------
--- Power Type Enums
---------------------------------------------------------------------------------
-local PT = {
-	COMBO_POINTS = Enum.PowerType.ComboPoints,
-	RUNES = Enum.PowerType.Runes,
-	SOUL_SHARDS = Enum.PowerType.SoulShards,
-	HOLY_POWER = Enum.PowerType.HolyPower,
-	MAELSTROM = Enum.PowerType.Maelstrom,
-	CHI = Enum.PowerType.Chi,
-	INSANITY = Enum.PowerType.Insanity,
-	ARCANE_CHARGES = Enum.PowerType.ArcaneCharges,
-	FURY = Enum.PowerType.Fury,
-	PAIN = Enum.PowerType.Pain,
-	ESSENCE = Enum.PowerType.Essence,
-}
-
--- Maelstrom Weapon aura spell ID (Enhancement Shaman)
-local MAELSTROM_WEAPON_SPELL_ID = 344179
 
 -- Unified pip texture.
 -- Place your custom art at these paths (or change constants below).
@@ -47,66 +26,8 @@ local PIP_TEXTURE_FILL_PATH = "Interface\\AddOns\\SparkPoint\\Textures\\class_re
 local PIP_TEXTURE_FALLBACK = "Interface\\Buttons\\WHITE8x8"
 
 --------------------------------------------------------------------------------
--- Per-class pip configuration
+-- PIP rendering
 --------------------------------------------------------------------------------
-local CLASS_CONFIG = {
-	PALADIN = {
-		powerEnum = PT.HOLY_POWER,
-		maxCount = 5,
-		fillColor = { r = 0.95, g = 0.89, b = 0.59, a = 1.00 },
-		emptyColor = { r = 0.30, g = 0.28, b = 0.18, a = 0.40 },
-	},
-	DEATHKNIGHT = {
-		isRune = true,
-		maxCount = 6,
-		fillColor = { r = 0.77, g = 0.12, b = 0.23, a = 1.00 },
-		emptyColor = { r = 0.30, g = 0.06, b = 0.06, a = 0.40 },
-	},
-	ROGUE = {
-		powerEnum = PT.COMBO_POINTS,
-		maxCount = 5,
-		fillColor = { r = 1.00, g = 0.96, b = 0.00, a = 1.00 },
-		emptyColor = { r = 0.40, g = 0.38, b = 0.00, a = 0.40 },
-	},
-	DRUID = {
-		powerEnum = PT.COMBO_POINTS,
-		maxCount = 5,
-		fillColor = { r = 1.00, g = 0.49, b = 0.04, a = 1.00 },
-		emptyColor = { r = 0.40, g = 0.20, b = 0.02, a = 0.40 },
-	},
-	MAGE = {
-		powerEnum = PT.ARCANE_CHARGES,
-		maxCount = 4,
-		fillColor = { r = 0.41, g = 0.80, b = 0.94, a = 1.00 },
-		emptyColor = { r = 0.16, g = 0.32, b = 0.38, a = 0.40 },
-	},
-	MONK = {
-		powerEnum = PT.CHI,
-		maxCount = 5,
-		fillColor = { r = 0.00, g = 1.00, b = 0.59, a = 1.00 },
-		emptyColor = { r = 0.00, g = 0.40, b = 0.24, a = 0.40 },
-	},
-	WARLOCK = {
-		powerEnum = PT.SOUL_SHARDS,
-		maxCount = 5,
-		fillColor = { r = 0.58, g = 0.51, b = 0.79, a = 1.00 },
-		emptyColor = { r = 0.23, g = 0.20, b = 0.32, a = 0.40 },
-	},
-	EVOKER = {
-		powerEnum = PT.ESSENCE,
-		maxCount = 6,
-		fillColor = { r = 0.20, g = 0.58, b = 0.50, a = 1.00 },
-		emptyColor = { r = 0.08, g = 0.23, b = 0.20, a = 0.40 },
-	},
-	SHAMAN = {
-		isMaelstrom = true,
-		maxCount = 5,
-		fillColor = { r = 0.00, g = 0.44, b = 0.87, a = 1.00 },
-		emptyColor = { r = 0.00, g = 0.18, b = 0.35, a = 0.40 },
-	},
-}
-
--- Visual dimensions (pixels at scale 1)
 local PIP_SIZE = 18
 local PIP_SPACING = 4
 
@@ -122,7 +43,7 @@ local isEnabled = false
 local container = nil
 local pips = {}
 local pipMax = 0
-local activeCfg = nil
+local activeResource = nil
 
 local function ReleaseAnchorIfUnused()
 	if not container or not container:IsShown() then
@@ -202,28 +123,32 @@ local function GetRunePower()
 	return ready, 6
 end
 
-local function GetMaelstromWeaponPower()
-	local aura = C_UnitAuras.GetPlayerAuraBySpellID(MAELSTROM_WEAPON_SPELL_ID)
-	if not aura then
-		return 0, 5
-	end
-	return (aura.applications or 0), 5
-end
-
-local function ReadPower()
-	if not activeCfg then
+local function GetAuraStackPower(resource)
+	if not resource or not resource.auraSpellID then
 		return 0, 0
 	end
 
-	if activeCfg.isRune then
+	local aura = C_UnitAuras.GetPlayerAuraBySpellID(resource.auraSpellID)
+	if not aura then
+		return 0, resource.maxCount or 0
+	end
+	return aura.applications or 0, resource.maxCount or 0
+end
+
+local function ReadPower()
+	if not activeResource then
+		return 0, 0
+	end
+
+	if activeResource.sourceType == ResourceModel.SourceTypes.RUNES then
 		return GetRunePower()
 	end
 
-	if activeCfg.isMaelstrom then
-		return GetMaelstromWeaponPower()
+	if activeResource.sourceType == ResourceModel.SourceTypes.AURA_STACKS then
+		return GetAuraStackPower(activeResource)
 	end
 
-	local pEnum = activeCfg.powerEnum
+	local pEnum = activeResource.powerEnum
 	if not pEnum then
 		return 0, 0
 	end
@@ -350,13 +275,13 @@ local function ConfigurePipTextures(p, cfg)
 end
 
 function ClassResource:ApplyPipVisualOptions()
-	if not activeCfg then
+	if not activeResource then
 		return
 	end
 	for i = 1, #pips do
 		local p = pips[i]
 		if p then
-			ConfigurePipTextures(p, activeCfg)
+			ConfigurePipTextures(p, activeResource)
 		end
 	end
 end
@@ -417,14 +342,14 @@ local function HidePips()
 end
 
 local function ApplyPipState(current, max)
-	if not container or not activeCfg then
+	if not container or not activeResource then
 		HidePips()
 		return
 	end
 
 	if max ~= pipMax then
 		if max > 0 then
-			LayoutPips(activeCfg, max)
+			LayoutPips(activeResource, max)
 		else
 			HidePips()
 			return
@@ -488,7 +413,7 @@ function ClassResource:ApplyLayout()
 end
 
 function ClassResource:UpdateVisibility()
-	if not isEnabled or not activeCfg then
+	if not isEnabled or not activeResource then
 		HideContainer()
 		return
 	end
@@ -502,7 +427,7 @@ function ClassResource:UpdateVisibility()
 end
 
 function ClassResource:SyncPower()
-	if not isEnabled or not activeCfg then
+	if not isEnabled or not activeResource then
 		return
 	end
 	local current, max = ReadPower()
@@ -512,39 +437,22 @@ end
 --------------------------------------------------------------------------------
 -- Class Detection
 --------------------------------------------------------------------------------
-local function DetectActiveClass()
-	local _, classTag = UnitClass("player")
-	if not classTag then
-		return nil, nil
-	end
-
-	local cfg = CLASS_CONFIG[classTag]
-	if not cfg then
-		return nil, nil
-	end
-
-	if classTag == "SHAMAN" then
-		local spec = GetSpecialization() or 0
-		if spec ~= 2 then
-			return nil, nil
-		end
-	end
-
-	return classTag, cfg
+local function DetectActiveResource()
+	local resource = ResourceModel:GetCurrentClassResource("player")
+	return resource
 end
 
 function ClassResource:Refresh()
 	EnsureContainer()
 
-	local _, cfg = DetectActiveClass()
-	activeCfg = cfg
+	activeResource = DetectActiveResource()
 	pipMax = 0
 	for i = 1, #pips do
 		pips[i].styleReady = false
 	end
 
-	if activeCfg then
-		LayoutPips(activeCfg, activeCfg.maxCount)
+	if activeResource then
+		LayoutPips(activeResource, activeResource.maxCount or 0)
 	else
 		HidePips()
 	end
@@ -583,6 +491,12 @@ function ClassResource:UNIT_MAXPOWER(event, unit)
 	self:SyncPower()
 end
 
+function ClassResource:RUNE_POWER_UPDATE()
+	if activeResource and activeResource.sourceType == ResourceModel.SourceTypes.RUNES then
+		self:SyncPower()
+	end
+end
+
 function ClassResource:UNIT_DISPLAYPOWER(event, unit)
 	if unit ~= "player" then
 		return
@@ -594,7 +508,7 @@ function ClassResource:UNIT_AURA(event, unit)
 	if unit ~= "player" then
 		return
 	end
-	if activeCfg and activeCfg.isMaelstrom then
+	if activeResource and activeResource.needsUnitAura then
 		self:SyncPower()
 	end
 end
@@ -609,6 +523,7 @@ local function EnableModule(enabled)
 		EL:RegisterEvent("PLAYER_ENTERING_WORLD")
 		EL:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
 		EL:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
+		EL:RegisterEvent("RUNE_POWER_UPDATE")
 		EL:RegisterUnitEvent("UNIT_DISPLAYPOWER", "player")
 		EL:RegisterUnitEvent("UNIT_POWER_UPDATE", "player")
 		EL:RegisterUnitEvent("UNIT_MAXPOWER", "player")
@@ -618,7 +533,7 @@ local function EnableModule(enabled)
 	else
 		EL:UnregisterAllEvents()
 		HideContainer()
-		activeCfg = nil
+		activeResource = nil
 		HidePips()
 	end
 end

@@ -10,6 +10,7 @@
 # Core (load order matters)
 Core\Initialization.lua
 Core\API.lua
+Core\ResourceModel.lua
 Core\IconMask.lua
 Core\Defaults.lua
 Core\Database.lua

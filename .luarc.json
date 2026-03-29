@@ -92,6 +92,7 @@
     "UnitPower",
     "UnitPowerMax",
     "UnitPowerPercent",
+    "UnitPowerType",
     "UnitReaction",
     "WorldFrame"
   ],
