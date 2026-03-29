@@ -24,41 +24,11 @@ if C_Spell.DoesSpellExist(spellID) then
 end
 ```
 
-## Secret Values (Must Convert to Strings)
-Some API calls return "secret values" that cannot be compared or stored directly.
+## Secret Values
 
-```lua
--- Bad: comparing secret values
-local power = UnitPower("player", powerType)
-if power ~= lastPower then
-    -- ERROR: attempt to compare secret value
-end
+See `.skills/secret-values.md` for the complete reference — affected APIs, forbidden/allowed operations, 11.x vs 12.0 differences, SparkPoint migration guide, and replacement APIs.
 
--- Good: convert immediately
-local power = UnitPower("player", powerType)
-local powerString = tostring(power or 0)
-if powerString ~= lastPowerString then
-    -- safe
-end
-```
-
-### Secret Value Ruleset (Required)
-- Treat secret/protected API data as a hard boundary.
-- If a feature depends on a secret value that cannot be safely consumed, stop and escalate immediately.
-- Do not ship workaround-heavy behavior when blocked by secret values.
-
-Allowed:
-- Convert readable secret numeric-like values with `tostring(value)` then `tonumber(...)`.
-- Use non-secret fields/events to drive behavior when available.
-
-Forbidden:
-- Direct boolean tests on potentially secret boolean fields (example: `if info.isEnabled then ... end`).
-- Deep fallback chains that guess state when core API fields are unavailable/secret.
-
-Escalation protocol:
-1. Log/report the exact API, field, and failing callsite.
-2. Propose supported alternatives (different event/API or narrower UX).
-3. If no stable API path exists, disable/drop that feature.
+Key rules: never boolean-test, compare, or do arithmetic on potentially secret fields. `tostring`/`tonumber` do not work on secrets (12.0+ is current retail) — use widget APIs, Curves, or Blizzard formatting functions instead.
 
 ## Event Registration
 

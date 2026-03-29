@@ -5,8 +5,10 @@
 - Include `.skills/textures.md` for texture quality, format, and rendering guidance.
 - Include `.skills/tooling.md` for luacheck, stylua, and lua-language-server usage.
 - Include `.skills/wow-api.md` for WoW API usage guidance.
+- Include `.skills/secret-values.md` for secret value handling (12.0+).
 - Include `.skills/architecture.md` for architecture guidance.
 - Include `.skills/.private/` load every file in the `.private/` folder for guidance.
+- Reference `.clones/wow-ui-source/` for Blizzard's official UI source (12.0.1) — authoritative API docs, secret value annotations, and reference implementations.
 
 ## Project Structure & Module Organization
 
@@ -115,12 +117,12 @@ stylua .          # Apply formatting
 - **Transition**: Shared alpha transition service for smooth show/hide
 
 ## Secret Value Handling Policy (Non-Negotiable)
-- If an API value is secret/protected and cannot be safely read/compared, stop implementation and report it immediately.
-- Do not ship workaround-heavy logic for secret values (no speculative polling trees, no fragile inference chains).
-- Allowed handling:
-  - Convert readable secret numeric values via `tostring` -> `tonumber` when Blizzard allows it.
-  - Avoid direct boolean tests on secret booleans (example: `if info.isEnabled then ... end` is forbidden when tainted).
-- Required process when blocked by secret values:
-  1. Notify maintainer which API field is secret and where it failed.
-  2. Propose supported alternatives (different event, different API, or reduced scope).
-  3. If no stable path exists, disable/drop the feature rather than shipping unstable behavior.
+
+Full reference: `.skills/secret-values.md` (affected APIs, forbidden/allowed operations, 12.0 migration guide).
+
+Key rules:
+- Secret values are **live in current retail** (12.0+ / Midnight).
+- Never directly boolean-test, compare, or perform arithmetic on potentially secret fields.
+- `tostring`/`tonumber` **do not work** on secret values — use widget APIs that accept secrets (`StatusBar:SetValue()`), Curve objects, or Blizzard formatting functions (`AbbreviateNumbers()`).
+- If no stable API path exists, disable/drop the feature rather than shipping unstable behavior.
+- When blocked: report the exact API field and call site, propose alternatives, escalate if no stable path exists.

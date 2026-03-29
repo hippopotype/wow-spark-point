@@ -11,7 +11,8 @@ SparkPoint is a World of Warcraft addon that displays cast rings, bar slots, and
 
 Domain-specific guidance lives in `.claude/skills/`. Key skills:
 - `/sparkpoint-architecture` — Core systems, module lifecycle, load order, templates
-- `/wow-api` — WoW API patterns, secret values, events, power types
+- `/wow-api` — WoW API patterns, events, power types, Blizzard Settings API
+- `/secret-values` — Secret value handling, 11.x vs 12.0 differences, migration guide
 - `/texture-guide` — Texture quality, format, and rendering guidance
 - `/wow-dev-tooling` — luacheck, stylua, and lua-language-server usage
 
@@ -171,15 +172,13 @@ This addon uses new WoW APIs (C_Spell.*, etc.) without polyfills:
 
 ## Secret Value Handling Policy (Non-Negotiable)
 
-- If required API data is secret/protected and cannot be safely consumed, stop and report it.
-- Do not implement brittle workaround chains for secret values.
-- Safe handling only:
-  - Convert readable secret numerics via `tostring` then `tonumber` when allowed.
-  - Never directly boolean-test secret fields (for example `if info.isEnabled then`).
-- Escalation flow:
-  1. Identify and report the exact API field and call site.
-  2. Offer supported alternatives (different API/event or narrower feature scope).
-  3. If no stable path exists, drop/disable the feature.
+See `/secret-values` skill for the complete reference (affected APIs, forbidden/allowed operations, 12.0 migration guide).
+
+Key rules:
+- Secret values are **live in current retail** (12.0+ / Midnight).
+- Never directly boolean-test, compare, or perform arithmetic on potentially secret fields.
+- `tostring`/`tonumber` **do not work** on secret values — use widget APIs that accept secrets (`StatusBar:SetValue()`), Curve objects, or Blizzard formatting functions (`AbbreviateNumbers()`).
+- If no stable API path exists, drop/disable the feature rather than shipping unstable behavior.
 
 ## Coding Style
 
