@@ -1310,9 +1310,8 @@ local function BuildSettingsPanel()
 	------------------------------------------------------------------------
 	local cpCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Class Resource"] or "Class Resource")
 
-	local cpPipsCategory = Settings.RegisterVerticalLayoutSubcategory(cpCategory, L["Appearance"] or "Appearance")
 	AddSlider(
-		cpPipsCategory,
+		cpCategory,
 		"classresource_scale",
 		L["Class Resource Scale"] or "Class Resource Scale",
 		0.5,
@@ -1321,7 +1320,7 @@ local function BuildSettingsPanel()
 		L["Class Resource Scale Tooltip"] or "Scale for the Blizzard class-resource frame"
 	)
 	AddSlider(
-		cpPipsCategory,
+		cpCategory,
 		"classresource_opacity",
 		L["Class Resource Opacity"] or "Class Resource Opacity",
 		0,
@@ -1330,26 +1329,26 @@ local function BuildSettingsPanel()
 		L["Class Resource Opacity Tooltip"] or "Opacity for the class-resource copy frame"
 	)
 	AddColor(
-		cpPipsCategory,
+		cpCategory,
 		"classresource_fillColor",
 		L["Class Resource Fill Color"] or "Class Resource Fill Color",
 		L["Class Resource Fill Color Tooltip"] or "Color for active class resource pips"
 	)
 	AddColor(
-		cpPipsCategory,
+		cpCategory,
 		"classresource_backgroundColor",
 		L["Background Color"] or "Background Color",
 		L["Class Resource Background Color Tooltip"] or "Tint multiplier for the class resource pip background texture.",
 		false
 	)
 	AddCheckbox(
-		cpPipsCategory,
+		cpCategory,
 		"classresource_fillUseClassColor",
 		L["Class Resource Use Class Color"] or "Class Resource Use Class Color",
 		L["Class Resource Use Class Color Tooltip"] or "Override class resource pip fill color with your class color"
 	)
-	AddSlider(cpPipsCategory, "classresource_offsetX", L["Class Resource Horizontal Offset"] or "Class Resource Horizontal Offset", -300, 300, 1)
-	AddSlider(cpPipsCategory, "classresource_offsetY", L["Class Resource Vertical Offset"] or "Class Resource Vertical Offset", -300, 300, 1)
+	AddSlider(cpCategory, "classresource_offsetX", L["Class Resource Horizontal Offset"] or "Class Resource Horizontal Offset", -300, 300, 1)
+	AddSlider(cpCategory, "classresource_offsetY", L["Class Resource Vertical Offset"] or "Class Resource Vertical Offset", -300, 300, 1)
 
 	local classResourceVisibilityCategory = Settings.RegisterVerticalLayoutSubcategory(cpCategory, L["Visibility"] or "Visibility")
 	AddDropdown(
