@@ -11,6 +11,7 @@
 Core\Initialization.lua
 Core\API.lua
 Core\ResourceModel.lua
+Core\ClassResourceSystems.lua
 Core\IconMask.lua
 Core\Defaults.lua
 Core\Database.lua
@@ -37,6 +38,8 @@ Providers\ClassPower.lua
 # Modules
 Modules\Cast.lua
 Modules\BarSlots.lua
+Modules\ClassResourceSystems\GenericPips.lua
+Modules\ClassResourceSystems\DeathKnightRunes.lua
 Modules\ClassResource.lua
 Modules\DecorativeRing.lua
 Modules\SpellIcon.lua

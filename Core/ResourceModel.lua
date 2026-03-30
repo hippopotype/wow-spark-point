@@ -26,6 +26,11 @@ ResourceModel.SourceTypes = {
 	SPECIAL = "SPECIAL",
 }
 
+ResourceModel.SystemIDs = {
+	GENERIC_PIPS = "GENERIC_PIPS",
+	DEATH_KNIGHT_RUNES = "DEATH_KNIGHT_RUNES",
+}
+
 ResourceModel.Roles = {
 	MAIN = "MAIN",
 	SECONDARY = "SECONDARY",
@@ -37,6 +42,7 @@ ResourceModel.Roles = {
 local OWNERS = ResourceModel.Owners
 local SOURCES = ResourceModel.SourceTypes
 local ROLES = ResourceModel.Roles
+local SYSTEMS = ResourceModel.SystemIDs
 
 local function ResourceRef(key, role)
 	return {
@@ -139,8 +145,10 @@ local RESOURCE_DEFS = {
 	ROGUE_COMBO_POINTS = {
 		key = "ROGUE_COMBO_POINTS",
 		owner = OWNERS.CLASS_RESOURCE,
+		systemID = SYSTEMS.GENERIC_PIPS,
 		sourceType = SOURCES.POWER,
 		powerEnum = Enum.PowerType.ComboPoints,
+		powerToken = "COMBO_POINTS",
 		maxCount = 5,
 		needsFrequent = false,
 		fillColor = { r = 1.00, g = 0.96, b = 0.00, a = 1.00 },
@@ -149,8 +157,10 @@ local RESOURCE_DEFS = {
 	DRUID_COMBO_POINTS = {
 		key = "DRUID_COMBO_POINTS",
 		owner = OWNERS.CLASS_RESOURCE,
+		systemID = SYSTEMS.GENERIC_PIPS,
 		sourceType = SOURCES.POWER,
 		powerEnum = Enum.PowerType.ComboPoints,
+		powerToken = "COMBO_POINTS",
 		maxCount = 5,
 		needsFrequent = false,
 		fillColor = { r = 1.00, g = 0.49, b = 0.04, a = 1.00 },
@@ -159,6 +169,7 @@ local RESOURCE_DEFS = {
 	RUNES = {
 		key = "RUNES",
 		owner = OWNERS.CLASS_RESOURCE,
+		systemID = SYSTEMS.DEATH_KNIGHT_RUNES,
 		sourceType = SOURCES.RUNES,
 		maxCount = 6,
 		needsFrequent = false,
@@ -168,8 +179,10 @@ local RESOURCE_DEFS = {
 	SOUL_SHARDS = {
 		key = "SOUL_SHARDS",
 		owner = OWNERS.CLASS_RESOURCE,
+		systemID = SYSTEMS.GENERIC_PIPS,
 		sourceType = SOURCES.POWER,
 		powerEnum = Enum.PowerType.SoulShards,
+		powerToken = "SOUL_SHARDS",
 		maxCount = 5,
 		needsFrequent = false,
 		fillColor = { r = 0.58, g = 0.51, b = 0.79, a = 1.00 },
@@ -178,8 +191,10 @@ local RESOURCE_DEFS = {
 	HOLY_POWER = {
 		key = "HOLY_POWER",
 		owner = OWNERS.CLASS_RESOURCE,
+		systemID = SYSTEMS.GENERIC_PIPS,
 		sourceType = SOURCES.POWER,
 		powerEnum = Enum.PowerType.HolyPower,
+		powerToken = "HOLY_POWER",
 		maxCount = 5,
 		needsFrequent = false,
 		fillColor = { r = 0.95, g = 0.89, b = 0.59, a = 1.00 },
@@ -188,8 +203,10 @@ local RESOURCE_DEFS = {
 	CHI = {
 		key = "CHI",
 		owner = OWNERS.CLASS_RESOURCE,
+		systemID = SYSTEMS.GENERIC_PIPS,
 		sourceType = SOURCES.POWER,
 		powerEnum = Enum.PowerType.Chi,
+		powerToken = "CHI",
 		maxCount = 5,
 		needsFrequent = false,
 		fillColor = { r = 0.00, g = 1.00, b = 0.59, a = 1.00 },
@@ -198,8 +215,10 @@ local RESOURCE_DEFS = {
 	ARCANE_CHARGES = {
 		key = "ARCANE_CHARGES",
 		owner = OWNERS.CLASS_RESOURCE,
+		systemID = SYSTEMS.GENERIC_PIPS,
 		sourceType = SOURCES.POWER,
 		powerEnum = Enum.PowerType.ArcaneCharges,
+		powerToken = "ARCANE_CHARGES",
 		maxCount = 4,
 		needsFrequent = false,
 		fillColor = { r = 0.41, g = 0.80, b = 0.94, a = 1.00 },
@@ -208,16 +227,20 @@ local RESOURCE_DEFS = {
 	ESSENCE = {
 		key = "ESSENCE",
 		owner = OWNERS.CLASS_RESOURCE,
+		systemID = SYSTEMS.GENERIC_PIPS,
 		sourceType = SOURCES.POWER,
 		powerEnum = Enum.PowerType.Essence,
+		powerToken = "ESSENCE",
 		maxCount = 6,
 		needsFrequent = false,
+		needsPointCharge = true,
 		fillColor = { r = 0.20, g = 0.58, b = 0.50, a = 1.00 },
 		emptyColor = { r = 0.08, g = 0.23, b = 0.20, a = 0.40 },
 	},
 	MAELSTROM_WEAPON = {
 		key = "MAELSTROM_WEAPON",
 		owner = OWNERS.CLASS_RESOURCE,
+		systemID = SYSTEMS.GENERIC_PIPS,
 		sourceType = SOURCES.AURA_STACKS,
 		auraSpellID = 344179,
 		maxCount = 5,
