@@ -229,6 +229,7 @@ addon.DefaultValues = {
 	classresource_scale = 1,
 	classresource_opacity = 1,
 	classresource_rendererMode = "SIMPLE",
+	classresource_simpleAnimations = true,
 	classresource_fillColorSource = "CLASS",
 	classresource_backgroundColor = { r = 1, g = 1, b = 1, a = 1 },
 	classresource_offsetX = 0,

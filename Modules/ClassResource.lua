@@ -348,7 +348,7 @@ CallbackRegistry:RegisterSettingCallback("attachToMouse", function()
 	ClassResource:UpdateVisibility()
 end)
 
-for _, key in ipairs({ "classresource_fillColor", "classresource_fillColorSource", "classresource_backgroundColor", "resourceColorOverrides" }) do
+for _, key in ipairs({ "classresource_simpleAnimations", "classresource_fillColor", "classresource_fillColorSource", "classresource_backgroundColor", "resourceColorOverrides" }) do
 	CallbackRegistry:RegisterSettingCallback(key, function()
 		ClassResource:ApplyVisualOptions()
 		ClassResource:Sync()

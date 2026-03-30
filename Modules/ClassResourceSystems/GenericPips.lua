@@ -21,6 +21,9 @@ local PIP_TEXTURE_FALLBACK = "Interface\\Buttons\\WHITE8x8"
 local PIP_SIZE = 18
 local PIP_SPACING = 4
 
+local STATE_EMPTY = 1
+local STATE_FILLED = 2
+
 local function NormalizePowerValue(value)
 	if value == nil then
 		return 0
@@ -52,6 +55,82 @@ local function SetTextureSmooth(tex, path)
 	end
 end
 
+local function Clamp01(value)
+	if value == nil then
+		return 0
+	end
+	if value < 0 then
+		return 0
+	end
+	if value > 1 then
+		return 1
+	end
+	return value
+end
+
+local function CreateAnimationGroup(parent, toFinalAlpha)
+	local group = parent:CreateAnimationGroup()
+	if toFinalAlpha ~= nil then
+		group:SetToFinalAlpha(toFinalAlpha)
+	end
+	return group
+end
+
+local function AddAlpha(group, target, order, duration, fromAlpha, toAlpha, startDelay)
+	local anim = group:CreateAnimation("Alpha")
+	anim:SetTarget(target)
+	anim:SetOrder(order or 1)
+	anim:SetDuration(duration)
+	anim:SetFromAlpha(fromAlpha)
+	anim:SetToAlpha(toAlpha)
+	if startDelay and startDelay > 0 then
+		anim:SetStartDelay(startDelay)
+	end
+	return anim
+end
+
+local function AddScale(group, target, order, duration, scaleX, scaleY, startDelay)
+	local anim = group:CreateAnimation("Scale")
+	anim:SetTarget(target)
+	anim:SetOrder(order or 1)
+	anim:SetDuration(duration)
+	anim:SetScale(scaleX or 1, scaleY or scaleX or 1)
+	anim:SetOrigin("CENTER", 0, 0)
+	if startDelay and startDelay > 0 then
+		anim:SetStartDelay(startDelay)
+	end
+	return anim
+end
+
+local function RestartGroup(group)
+	if not group then
+		return
+	end
+
+	if group.Restart then
+		group:Restart()
+	else
+		group:Play()
+	end
+end
+
+local function StopGroup(group)
+	if group and group:IsPlaying() then
+		group:Stop()
+	end
+end
+
+local function SetAlpha(region, alpha)
+	if region then
+		region:SetAlpha(alpha or 0)
+	end
+end
+
+local function MixToWhite(r, g, b, amount)
+	amount = Clamp01(amount or 0)
+	return r + (1 - r) * amount, g + (1 - g) * amount, b + (1 - b) * amount
+end
+
 local GenericPips = {}
 GenericPips.__index = GenericPips
 
@@ -72,6 +151,7 @@ function GenericPips:Shutdown()
 	self.activeResource = nil
 	self.resolved = nil
 	self.pipMax = 0
+	self.suppressTransitions = true
 
 	if self.root then
 		self.root:Hide()
@@ -82,6 +162,7 @@ function GenericPips:SetResource(resourceDef, resolved)
 	self.activeResource = resourceDef
 	self.resolved = resolved
 	self.pipMax = 0
+	self.suppressTransitions = true
 
 	for i = 1, #self.pips do
 		self.pips[i].styleReady = false
@@ -101,12 +182,30 @@ function GenericPips:GetPip(index)
 		frame = self.root:CreateTexture(nil, "ARTWORK", nil, 2),
 		bg = self.root:CreateTexture(nil, "ARTWORK", nil, 0),
 		fill = self.root:CreateTexture(nil, "ARTWORK", nil, 1),
+		chargedPulse = self.root:CreateTexture(nil, "OVERLAY", nil, 1),
+		spendPulse = self.root:CreateTexture(nil, "OVERLAY", nil, 2),
 		styleReady = false,
+		state = STATE_EMPTY,
 	}
 
 	pip.frame:Hide()
 	pip.bg:Hide()
 	pip.fill:Hide()
+	pip.chargedPulse:Hide()
+	pip.spendPulse:Hide()
+
+	pip.gainAnim = CreateAnimationGroup(self.root, true)
+	AddAlpha(pip.gainAnim, pip.fill, 1, 0.10, 0, 1)
+	AddAlpha(pip.gainAnim, pip.chargedPulse, 1, 0.08, 0, 1)
+	AddAlpha(pip.gainAnim, pip.chargedPulse, 1, 0.22, 1, 0, 0.08)
+	AddScale(pip.gainAnim, pip.chargedPulse, 1, 0.30, 1.24, 1.24)
+
+	pip.spendAnim = CreateAnimationGroup(self.root, true)
+	AddAlpha(pip.spendAnim, pip.spendPulse, 1, 0.08, 0, 0.85)
+	AddAlpha(pip.spendAnim, pip.spendPulse, 1, 0.18, 0.85, 0, 0.08)
+	AddScale(pip.spendAnim, pip.spendPulse, 1, 0.26, 1.24, 1.24)
+	AddAlpha(pip.spendAnim, pip.fill, 1, 0.14, 1, 0)
+
 	self.pips[index] = pip
 	return pip
 end
@@ -119,10 +218,14 @@ function GenericPips:ConfigurePipTextures(pip, resource)
 	pip.frame:SetTexCoord(0, 1, 0, 1)
 	pip.bg:SetTexCoord(0, 1, 0, 1)
 	pip.fill:SetTexCoord(0, 1, 0, 1)
+	pip.chargedPulse:SetTexCoord(0, 1, 0, 1)
+	pip.spendPulse:SetTexCoord(0, 1, 0, 1)
 
 	SetTextureSmooth(pip.frame, PIP_TEXTURE_FRAME_PATH)
 	SetTextureSmooth(pip.bg, PIP_TEXTURE_BG_PATH)
 	SetTextureSmooth(pip.fill, PIP_TEXTURE_FILL_PATH)
+	SetTextureSmooth(pip.chargedPulse, PIP_TEXTURE_FILL_PATH)
+	SetTextureSmooth(pip.spendPulse, PIP_TEXTURE_FILL_PATH)
 
 	if not pip.frame:GetTexture() then
 		pip.frame:SetTexture(PIP_TEXTURE_FALLBACK)
@@ -132,6 +235,12 @@ function GenericPips:ConfigurePipTextures(pip, resource)
 	end
 	if not pip.fill:GetTexture() then
 		pip.fill:SetTexture(PIP_TEXTURE_FALLBACK)
+	end
+	if not pip.chargedPulse:GetTexture() then
+		pip.chargedPulse:SetTexture(PIP_TEXTURE_FALLBACK)
+	end
+	if not pip.spendPulse:GetTexture() then
+		pip.spendPulse:SetTexture(PIP_TEXTURE_FALLBACK)
 	end
 
 	local function GetPipFillColor()
@@ -181,16 +290,89 @@ function GenericPips:ConfigurePipTextures(pip, resource)
 		pip.bg:SetVertexColor(br, bg, bb, emptyColor.a * ba)
 	end
 	pip.fill:SetVertexColor(fr, fg, fb, fa)
+	local pulseR, pulseG, pulseB = MixToWhite(fr, fg, fb, 0.4)
+	pip.chargedPulse:SetVertexColor(pulseR, pulseG, pulseB, fa)
+	pip.spendPulse:SetVertexColor(pulseR, pulseG, pulseB, fa)
+	pip.chargedPulse:SetBlendMode("ADD")
+	pip.spendPulse:SetBlendMode("ADD")
 	pip.styleReady = true
+end
+
+function GenericPips:StopPipAnimations(pip)
+	StopGroup(pip.gainAnim)
+	StopGroup(pip.spendAnim)
+	SetAlpha(pip.chargedPulse, 0)
+	SetAlpha(pip.spendPulse, 0)
+	pip.chargedPulse:SetScale(1)
+	pip.spendPulse:SetScale(1)
+end
+
+function GenericPips:ApplySteadyState(pip, state)
+	if not pip then
+		return
+	end
+
+	self:StopPipAnimations(pip)
+	pip.frame:Show()
+	pip.bg:Show()
+	pip.chargedPulse:Show()
+	pip.spendPulse:Show()
+	SetAlpha(pip.chargedPulse, 0)
+	SetAlpha(pip.spendPulse, 0)
+
+	if state == STATE_FILLED then
+		pip.fill:Show()
+		SetAlpha(pip.fill, 1)
+	else
+		pip.fill:Hide()
+		SetAlpha(pip.fill, 0)
+	end
+
+	pip.state = state
+end
+
+function GenericPips:PlayTransition(pip, previousState, nextState)
+	if previousState == nextState then
+		if pip.gainAnim:IsPlaying() or pip.spendAnim:IsPlaying() then
+			return
+		end
+		self:ApplySteadyState(pip, nextState)
+		return
+	end
+
+	self:StopPipAnimations(pip)
+	pip.frame:Show()
+	pip.bg:Show()
+	pip.chargedPulse:Show()
+	pip.spendPulse:Show()
+
+	if previousState == STATE_EMPTY and nextState == STATE_FILLED then
+		pip.fill:Show()
+		SetAlpha(pip.fill, 0)
+		RestartGroup(pip.gainAnim)
+	elseif previousState == STATE_FILLED and nextState == STATE_EMPTY then
+		pip.fill:Show()
+		SetAlpha(pip.fill, 1)
+		RestartGroup(pip.spendAnim)
+	else
+		self:ApplySteadyState(pip, nextState)
+		return
+	end
+
+	pip.state = nextState
 end
 
 function GenericPips:HideAllPips()
 	for i = 1, #self.pips do
 		local pip = self.pips[i]
 		if pip then
+			self:StopPipAnimations(pip)
 			pip.frame:Hide()
 			pip.bg:Hide()
 			pip.fill:Hide()
+			pip.chargedPulse:Hide()
+			pip.spendPulse:Hide()
+			pip.state = STATE_EMPTY
 		end
 	end
 end
@@ -224,6 +406,14 @@ function GenericPips:LayoutPips(count)
 			pip.fill:ClearAllPoints()
 			pip.fill:SetPoint("CENTER", self.root, "CENTER", x, 0)
 
+			pip.chargedPulse:SetSize(PIP_SIZE + 4, PIP_SIZE + 4)
+			pip.chargedPulse:ClearAllPoints()
+			pip.chargedPulse:SetPoint("CENTER", self.root, "CENTER", x, 0)
+
+			pip.spendPulse:SetSize(PIP_SIZE + 8, PIP_SIZE + 8)
+			pip.spendPulse:ClearAllPoints()
+			pip.spendPulse:SetPoint("CENTER", self.root, "CENTER", x, 0)
+
 			if not pip.styleReady then
 				self:ConfigurePipTextures(pip, self.activeResource)
 			end
@@ -233,9 +423,12 @@ function GenericPips:LayoutPips(count)
 	for i = count + 1, #self.pips do
 		local pip = self.pips[i]
 		if pip then
+			self:StopPipAnimations(pip)
 			pip.frame:Hide()
 			pip.bg:Hide()
 			pip.fill:Hide()
+			pip.chargedPulse:Hide()
+			pip.spendPulse:Hide()
 		end
 	end
 
@@ -339,6 +532,7 @@ function GenericPips:ApplyPipState(current, maxValue)
 	if maxValue ~= self.pipMax then
 		if maxValue > 0 then
 			self:LayoutPips(maxValue)
+			self.suppressTransitions = true
 		else
 			self:HideAllPips()
 			return
@@ -350,15 +544,17 @@ function GenericPips:ApplyPipState(current, maxValue)
 		return
 	end
 
+	local animationsEnabled = GetDBValue("classresource_simpleAnimations") ~= false
+	local shouldAnimate = animationsEnabled and not self.suppressTransitions
+
 	for i = 1, maxValue do
 		local pip = self.pips[i]
 		if pip then
-			pip.frame:Show()
-			pip.bg:Show()
-			if i <= current then
-				pip.fill:Show()
+			local targetState = i <= current and STATE_FILLED or STATE_EMPTY
+			if shouldAnimate then
+				self:PlayTransition(pip, pip.state or STATE_EMPTY, targetState)
 			else
-				pip.fill:Hide()
+				self:ApplySteadyState(pip, targetState)
 			end
 		end
 	end
@@ -366,11 +562,16 @@ function GenericPips:ApplyPipState(current, maxValue)
 	for i = maxValue + 1, #self.pips do
 		local pip = self.pips[i]
 		if pip then
+			self:StopPipAnimations(pip)
 			pip.frame:Hide()
 			pip.bg:Hide()
 			pip.fill:Hide()
+			pip.chargedPulse:Hide()
+			pip.spendPulse:Hide()
+			pip.state = STATE_EMPTY
 		end
 	end
+	self.suppressTransitions = false
 end
 
 function GenericPips:Sync()
@@ -451,6 +652,7 @@ local function CreateGenericPips()
 		parentFrame = nil,
 		pips = {},
 		pipMax = 0,
+		suppressTransitions = true,
 		activeResource = nil,
 	}, GenericPips)
 end

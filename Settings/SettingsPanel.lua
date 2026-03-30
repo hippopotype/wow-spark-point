@@ -79,6 +79,7 @@ local NEW_SETTINGS = {
 	classresource_hideInPetBattle = true,
 	classresource_hideInSpecialActionBarContext = true,
 	classresource_rendererMode = true,
+	classresource_simpleAnimations = true,
 	ring_hideInPetBattle = true,
 	ring_hideInSpecialActionBarContext = true,
 	assistedhighlight_hideInPetBattle = true,
@@ -1402,6 +1403,12 @@ local function BuildSettingsPanel()
 		classResourceRendererModeOptions,
 		L["Class Resource Visual Style Tooltip"]
 			or "Choose between class-specific visuals and the simpler shared flat style. Some resources are only partially supported in simple style."
+	)
+	AddCheckbox(
+		cpCategory,
+		"classresource_simpleAnimations",
+		L["Class Resource Simple Animations"] or "Simple Animations",
+		L["Class Resource Simple Animations Tooltip"] or "Enable gain and spend animations for Simple visual style resources."
 	)
 
 	AddSlider(

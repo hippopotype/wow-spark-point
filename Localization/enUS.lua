@@ -222,6 +222,8 @@ L["Class Resource Visual Style"] = "Visual Style"
 L["Class Resource Visual Style Tooltip"] = "Choose between class-specific visuals and the simpler shared flat style. Some resources are only partially supported in simple style."
 L["Class Resource Visual Style Classic"] = "Classic"
 L["Class Resource Visual Style Simple"] = "Simple"
+L["Class Resource Simple Animations"] = "Simple Animations"
+L["Class Resource Simple Animations Tooltip"] = "Enable gain and spend animations for Simple visual style resources."
 L["Class Resource Fill Color Source"] = "Fill Color Source"
 L["Class Resource Fill Color Source Tooltip"] =
 	"Choose how the class resource fill color is selected. This option is mainly used by Simple visual style resources and supported resource systems."
