@@ -103,6 +103,7 @@ globals = {
 	"CANCEL",
 	"Enum",
 	"C_PetBattles",
+	"C_Texture",
 	-- WoW font objects
 	"GameFontNormalSmall",
 	"GameFontDisableSmall",

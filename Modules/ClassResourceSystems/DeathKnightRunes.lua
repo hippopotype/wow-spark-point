@@ -5,6 +5,7 @@ local _, addon = ...
 local ResourceModel = addon.ResourceModel
 local ClassResourceSystems = addon.ClassResourceSystems
 
+local C_Texture = C_Texture
 local GetRuneCooldown = GetRuneCooldown
 local GetSpecialization = GetSpecialization
 local GetTime = GetTime
@@ -23,6 +24,10 @@ local ART_TYPE_BY_SPEC = {
 	[3] = "Unholy",
 }
 
+local RUNE_ART_SET = {
+	cooldownSwipe = "UF-DKRunes-%s-LevelBar",
+}
+
 local VisualState = {
 	EMPTY = 1,
 	ON_COOLDOWN = 2,
@@ -36,6 +41,34 @@ DeathKnightRunes.__index = DeathKnightRunes
 local function SetAlpha(region, alpha)
 	if region then
 		region:SetAlpha(alpha)
+	end
+end
+
+local function ApplyCooldownSwipeArt(cooldown, artType)
+	if not cooldown or not C_Texture or not C_Texture.GetAtlasInfo then
+		return
+	end
+
+	local atlasInfo = C_Texture.GetAtlasInfo(RUNE_ART_SET.cooldownSwipe:format(artType))
+	if not atlasInfo then
+		return
+	end
+
+	local file = atlasInfo.file or atlasInfo.filename
+	if file then
+		cooldown:SetSwipeTexture(file)
+	end
+
+	if cooldown.SetTexCoordRange then
+		local lowTexCoords = {
+			x = atlasInfo.leftTexCoord or 0,
+			y = atlasInfo.topTexCoord or 0,
+		}
+		local highTexCoords = {
+			x = atlasInfo.rightTexCoord or 1,
+			y = atlasInfo.bottomTexCoord or 1,
+		}
+		cooldown:SetTexCoordRange(lowTexCoords, highTexCoords)
 	end
 end
 
@@ -94,10 +127,11 @@ function DeathKnightRunes:CreateRune(runeIndex)
 	rune.Cooldown:SetReverse(true)
 	rune.Cooldown:SetHideCountdownNumbers(true)
 	rune.Cooldown:SetDrawBling(false)
+	rune.Cooldown:SetDrawSwipe(true)
 	rune.Cooldown:SetDrawEdge(true)
 	rune.Cooldown:SetUseCircularEdge(true)
 	rune.Cooldown:SetEdgeTexture(RUNE_COOLDOWN_EDGE_TEXTURE, 1, 1, 1, 1)
-	rune.Cooldown:SetSwipeColor(1, 1, 1, 0.9)
+	rune.Cooldown:SetSwipeColor(1, 1, 1, 1)
 
 	return rune
 end
@@ -105,6 +139,7 @@ end
 function DeathKnightRunes:ApplyRuneArt(rune, specIndex)
 	local artType = ART_TYPE_BY_SPEC[specIndex] or DEFAULT_ART_TYPE
 
+	ApplyCooldownSwipeArt(rune.Cooldown, artType)
 	rune.Rune_Grad:SetAtlas(("UF-DKRunes-%s-SkullGrad"):format(artType), true)
 	rune.Rune_Lines:SetAtlas(("UF-DKRunes-%s-SkullLines"):format(artType), true)
 	rune.Rune_Active:SetAtlas(("UF-DKRunes-%s-SkullActive"):format(artType), true)
