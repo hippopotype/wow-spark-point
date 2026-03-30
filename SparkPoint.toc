@@ -45,6 +45,8 @@ Modules\ClassResourceSystems\RogueComboPoints.lua
 Modules\ClassResourceSystems\DruidComboPoints.lua
 Modules\ClassResourceSystems\PaladinHolyPower.lua
 Modules\ClassResourceSystems\MonkChi.lua
+Modules\ClassResourceSystems\MageArcaneCharges.lua
+Modules\ClassResourceSystems\WarlockSoulShards.lua
 Modules\ClassResource.lua
 Modules\DecorativeRing.lua
 Modules\SpellIcon.lua

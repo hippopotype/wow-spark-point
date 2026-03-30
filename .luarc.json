@@ -92,6 +92,7 @@
     "BreakUpLargeNumbers",
     "C_Texture",
     "UnitPower",
+    "UnitPowerDisplayMod",
     "UnitPartialPower",
     "UnitPowerMax",
     "UnitPowerPercent",

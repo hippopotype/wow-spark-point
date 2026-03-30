@@ -34,6 +34,8 @@ ResourceModel.SystemIDs = {
 	DRUID_COMBO_POINTS = "DRUID_COMBO_POINTS",
 	PALADIN_HOLY_POWER = "PALADIN_HOLY_POWER",
 	MONK_CHI = "MONK_CHI",
+	MAGE_ARCANE_CHARGES = "MAGE_ARCANE_CHARGES",
+	WARLOCK_SOUL_SHARDS = "WARLOCK_SOUL_SHARDS",
 }
 
 ResourceModel.Roles = {
@@ -184,7 +186,7 @@ local RESOURCE_DEFS = {
 	SOUL_SHARDS = {
 		key = "SOUL_SHARDS",
 		owner = OWNERS.CLASS_RESOURCE,
-		systemID = SYSTEMS.GENERIC_PIPS,
+		systemID = SYSTEMS.WARLOCK_SOUL_SHARDS,
 		sourceType = SOURCES.POWER,
 		powerEnum = Enum.PowerType.SoulShards,
 		powerToken = "SOUL_SHARDS",
@@ -220,7 +222,7 @@ local RESOURCE_DEFS = {
 	ARCANE_CHARGES = {
 		key = "ARCANE_CHARGES",
 		owner = OWNERS.CLASS_RESOURCE,
-		systemID = SYSTEMS.GENERIC_PIPS,
+		systemID = SYSTEMS.MAGE_ARCANE_CHARGES,
 		sourceType = SOURCES.POWER,
 		powerEnum = Enum.PowerType.ArcaneCharges,
 		powerToken = "ARCANE_CHARGES",
