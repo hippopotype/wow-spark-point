@@ -96,6 +96,7 @@
     "UnitPowerMax",
     "UnitPowerPercent",
     "UnitPowerType",
+    "GetUnitChargedPowerPoints",
     "UnitReaction",
     "WorldFrame"
   ],

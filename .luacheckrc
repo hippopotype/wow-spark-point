@@ -96,6 +96,7 @@ globals = {
 	"UnitPowerMax",
 	"UnitPowerPercent",
 	"UnitPowerType",
+	"GetUnitChargedPowerPoints",
 	"AbbreviateNumbers",
 	"BreakUpLargeNumbers",
 	"PowerBarColor",

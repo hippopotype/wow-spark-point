@@ -30,6 +30,8 @@ ResourceModel.SystemIDs = {
 	GENERIC_PIPS = "GENERIC_PIPS",
 	DEATH_KNIGHT_RUNES = "DEATH_KNIGHT_RUNES",
 	EVOKER_ESSENCE = "EVOKER_ESSENCE",
+	ROGUE_COMBO_POINTS = "ROGUE_COMBO_POINTS",
+	DRUID_COMBO_POINTS = "DRUID_COMBO_POINTS",
 }
 
 ResourceModel.Roles = {
@@ -146,7 +148,7 @@ local RESOURCE_DEFS = {
 	ROGUE_COMBO_POINTS = {
 		key = "ROGUE_COMBO_POINTS",
 		owner = OWNERS.CLASS_RESOURCE,
-		systemID = SYSTEMS.GENERIC_PIPS,
+		systemID = SYSTEMS.ROGUE_COMBO_POINTS,
 		sourceType = SOURCES.POWER,
 		powerEnum = Enum.PowerType.ComboPoints,
 		powerToken = "COMBO_POINTS",
@@ -158,7 +160,7 @@ local RESOURCE_DEFS = {
 	DRUID_COMBO_POINTS = {
 		key = "DRUID_COMBO_POINTS",
 		owner = OWNERS.CLASS_RESOURCE,
-		systemID = SYSTEMS.GENERIC_PIPS,
+		systemID = SYSTEMS.DRUID_COMBO_POINTS,
 		sourceType = SOURCES.POWER,
 		powerEnum = Enum.PowerType.ComboPoints,
 		powerToken = "COMBO_POINTS",
