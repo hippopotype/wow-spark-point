@@ -40,6 +40,7 @@ Modules\Cast.lua
 Modules\BarSlots.lua
 Modules\ClassResourceSystems\GenericPips.lua
 Modules\ClassResourceSystems\DeathKnightRunes.lua
+Modules\ClassResourceSystems\EvokerEssence.lua
 Modules\ClassResource.lua
 Modules\DecorativeRing.lua
 Modules\SpellIcon.lua

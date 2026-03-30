@@ -29,6 +29,7 @@ ResourceModel.SourceTypes = {
 ResourceModel.SystemIDs = {
 	GENERIC_PIPS = "GENERIC_PIPS",
 	DEATH_KNIGHT_RUNES = "DEATH_KNIGHT_RUNES",
+	EVOKER_ESSENCE = "EVOKER_ESSENCE",
 }
 
 ResourceModel.Roles = {
@@ -227,7 +228,7 @@ local RESOURCE_DEFS = {
 	ESSENCE = {
 		key = "ESSENCE",
 		owner = OWNERS.CLASS_RESOURCE,
-		systemID = SYSTEMS.GENERIC_PIPS,
+		systemID = SYSTEMS.EVOKER_ESSENCE,
 		sourceType = SOURCES.POWER,
 		powerEnum = Enum.PowerType.Essence,
 		powerToken = "ESSENCE",

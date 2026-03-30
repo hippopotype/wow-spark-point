@@ -91,6 +91,7 @@ globals = {
 	"UseAction",
 	"hooksecurefunc",
 	"UnitPower",
+	"UnitPartialPower",
 	"UnitPowerMax",
 	"UnitPowerPercent",
 	"UnitPowerType",
