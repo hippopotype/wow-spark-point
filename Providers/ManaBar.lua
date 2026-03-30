@@ -2,6 +2,7 @@
 
 local _, addon = ...
 local API = addon.API
+local ResourceColors = addon.ResourceColors
 
 local ManaBarProvider = {}
 ManaBarProvider.id = "MANA"
@@ -31,17 +32,8 @@ local function GetManaPercentValue(current, maxValue)
 end
 
 local function GetManaColor()
-	local color
-	if PowerBarColor then
-		color = PowerBarColor.MANA or PowerBarColor[POWER_TYPE_MANA]
-	end
-	if color then
-		return {
-			r = color.r or 0,
-			g = color.g or 0.55,
-			b = color.b or 1,
-			a = 1,
-		}
+	if ResourceColors and ResourceColors.GetColor then
+		return ResourceColors:GetColor("MANA")
 	end
 	return { r = 0, g = 0.55, b = 1, a = 1 }
 end

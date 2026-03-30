@@ -4,6 +4,7 @@
 local _, addon = ...
 local API = addon.API
 local ResourceModel = addon.ResourceModel
+local ResourceColors = addon.ResourceColors
 local ClassResourceSystems = addon.ClassResourceSystems
 local GetDBColor = addon.GetDBColor
 local GetDBValue = addon.GetDBValue
@@ -121,6 +122,11 @@ local function GetChargedColor(resource)
 	local fillSource = tostring(GetDBValue("classresource_fillColorSource") or "CLASS")
 	if fillSource == "CLASS" and API and API.GetPlayerClassColor then
 		return API.GetPlayerClassColor()
+	end
+
+	if fillSource == "RESOURCE" and ResourceColors and ResourceColors.GetColor then
+		local color = ResourceColors:GetColor(resource)
+		return color.r, color.g, color.b, color.a
 	end
 
 	if GetDBValue("classresource_fillColor") then

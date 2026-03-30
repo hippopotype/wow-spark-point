@@ -2,12 +2,21 @@
 
 local _, addon = ...
 local API = addon.API
+local ResourceColors = addon.ResourceColors
 
 local HealthBarProvider = {}
 HealthBarProvider.id = "HEALTH"
 HealthBarProvider.displayName = "Health"
 
 local isEnabled = false
+
+local function GetHealthColor()
+	if ResourceColors and ResourceColors.GetColor then
+		return ResourceColors:GetColor("HEALTH")
+	end
+
+	return { r = 0.12, g = 0.86, b = 0.20, a = 1 }
+end
 
 local function GetHealthPercentValue(current, maxValue)
 	if UnitHealthPercent then
@@ -45,7 +54,7 @@ function HealthBarProvider:GetStatus()
 		max = maxValue,
 		active = true,
 		show = true,
-		barColor = { r = 0.12, g = 0.86, b = 0.20, a = 1 },
+		barColor = GetHealthColor(),
 	}
 end
 

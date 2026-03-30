@@ -815,6 +815,10 @@ CallbackRegistry:Register("VisibilityContextChanged", function()
 	BarSlots:UpdateVisibility()
 end, BarSlots)
 
+CallbackRegistry:RegisterSettingCallback("resourceColorOverrides", function()
+	RefreshAllSlots()
+end)
+
 CallbackRegistry:Register("HUDLayersChanged", function()
 	for _, def in ipairs(SLOT_DEFS) do
 		ApplyFrameLevel(slots[def.id])

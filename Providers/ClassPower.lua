@@ -4,6 +4,7 @@
 local _, addon = ...
 local API = addon.API
 local ResourceModel = addon.ResourceModel
+local ResourceColors = addon.ResourceColors
 
 local ClassPowerProvider = {}
 ClassPowerProvider.id = "CLASS_POWER"
@@ -30,16 +31,8 @@ end
 -- Color
 --------------------------------------------------------------------------------
 local function GetPowerColor()
-	if activePower and activePower.powerToken and PowerBarColor then
-		local color = PowerBarColor[activePower.powerToken]
-		if color then
-			return {
-				r = color.r or 1,
-				g = color.g or 1,
-				b = color.b or 1,
-				a = 1,
-			}
-		end
+	if ResourceColors and ResourceColors.GetColor and activePower then
+		return ResourceColors:GetColor(activePower)
 	end
 	return { r = 1, g = 1, b = 1, a = 1 }
 end

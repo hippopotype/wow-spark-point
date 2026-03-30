@@ -15,6 +15,7 @@ Core\ClassResourceSystems.lua
 Core\IconMask.lua
 Core\Defaults.lua
 Core\Database.lua
+Core\ResourceColors.lua
 Core\Transition.lua
 Core\Visibility.lua
 Core\ModuleRegistry.lua

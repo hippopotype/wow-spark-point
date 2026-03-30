@@ -10,6 +10,7 @@ local GetDBBool = addon.GetDBBool
 local GetDBColor = addon.GetDBColor
 local GetProfileMode = addon.GetProfileMode
 local GetActiveProfileMode = addon.GetActiveProfileMode
+local ResourceColors = addon.ResourceColors
 
 --------------------------------------------------------------------------------
 -- Settings Panel Setup
@@ -239,8 +240,31 @@ local function BuildSettingsPanel()
 	------------------------------------------------------------------------
 	-- Helper function to create a color picker (ColorOverride row)
 	------------------------------------------------------------------------
+	local function CreateColorOverridesInitializer(cat, data)
+		local initializer = Settings.CreateElementInitializer("SparkPointColorOverridesPanelNoHead", data)
+		initializer.GetExtent = function()
+			if data.height then
+				return data.height
+			end
+
+			local count = #(data.entries or {})
+			local rowHeight = data.rowHeight or 20
+			local spacing = data.spacing or 10
+			local padding = data.basePadding or 5
+			local height = padding * 2
+			if count > 0 then
+				height = height + (count * rowHeight) + math.max(0, count - 1) * spacing
+			end
+			if data.minHeight then
+				height = math.max(height, data.minHeight)
+			end
+			return height
+		end
+		return initializer
+	end
+
 	local function AddColor(cat, dbKey, displayName, tooltip, hasOpacity, isNew)
-		local initializer = Settings.CreateElementInitializer("SparkPointColorOverridesPanelNoHead", {
+		local initializer = CreateColorOverridesInitializer(cat, {
 			categoryID = cat:GetID(),
 			entries = { { key = dbKey, label = displayName, tooltip = tooltip } },
 			getColor = function(key)
@@ -266,6 +290,9 @@ local function BuildSettingsPanel()
 
 	local function AddInfoText(cat, text)
 		local initializer = Settings.CreateElementInitializer("SparkPointSettingsListSectionHintTemplate", { name = text })
+		initializer.GetExtent = function()
+			return 44
+		end
 		Settings.RegisterInitializer(cat, initializer)
 		return initializer
 	end
@@ -360,6 +387,7 @@ local function BuildSettingsPanel()
 	local classResourceFillColorSourceOptions = {
 		{ value = "CUSTOM", label = L["Class Resource Fill Color Source Custom"] or "Custom Color" },
 		{ value = "CLASS", label = L["Class Resource Fill Color Source Class"] or "Class Color" },
+		{ value = "RESOURCE", label = L["Class Resource Fill Color Source Resource"] or "Resource Color" },
 	}
 	local visibilityRuleProxy = {}
 
@@ -1331,6 +1359,36 @@ local function BuildSettingsPanel()
 
 	RegisterBarSlotSettings(barSlotsCategory, "top", "Top Slot")
 	RegisterBarSlotSettings(barSlotsCategory, "bottom", "Bottom Slot")
+
+	------------------------------------------------------------------------
+	-- Resource Colors Settings Subcategory
+	------------------------------------------------------------------------
+	local resourceColorsCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Resource Colors"] or "Resource Colors")
+	AddInfoText(
+		resourceColorsCategory,
+		L["Resource Colors Tooltip"] or "Override default resource colors addon-wide. These affect provider-based resource colors and supported class resource displays."
+	)
+	if ResourceColors and ResourceColors.GetSettingEntries then
+		local initializer = CreateColorOverridesInitializer(resourceColorsCategory, {
+			categoryID = resourceColorsCategory:GetID(),
+			entries = ResourceColors:GetSettingEntries(),
+			getColor = function(key)
+				local color = ResourceColors:GetColor(key)
+				return color.r, color.g, color.b, color.a
+			end,
+			setColor = function(key, r, g, b, a)
+				ResourceColors:SetOverrideColor(key, r, g, b, a)
+			end,
+			getDefaultColor = function(key)
+				local color = ResourceColors:GetDefaultColor(key)
+				return color.r, color.g, color.b, color.a
+			end,
+			hasOpacity = true,
+			colorizeLabel = true,
+			isNew = true,
+		})
+		Settings.RegisterInitializer(resourceColorsCategory, initializer)
+	end
 
 	------------------------------------------------------------------------
 	-- Class Resource Settings Subcategory
