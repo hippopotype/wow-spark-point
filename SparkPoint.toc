@@ -47,6 +47,7 @@ Modules\ClassResourceSystems\PaladinHolyPower.lua
 Modules\ClassResourceSystems\MonkChi.lua
 Modules\ClassResourceSystems\MageArcaneCharges.lua
 Modules\ClassResourceSystems\WarlockSoulShards.lua
+Modules\ClassResourceSystems\ShamanMaelstromWeapon.lua
 Modules\ClassResource.lua
 Modules\DecorativeRing.lua
 Modules\SpellIcon.lua

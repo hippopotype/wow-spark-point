@@ -36,6 +36,7 @@ ResourceModel.SystemIDs = {
 	MONK_CHI = "MONK_CHI",
 	MAGE_ARCANE_CHARGES = "MAGE_ARCANE_CHARGES",
 	WARLOCK_SOUL_SHARDS = "WARLOCK_SOUL_SHARDS",
+	SHAMAN_MAELSTROM_WEAPON = "SHAMAN_MAELSTROM_WEAPON",
 }
 
 ResourceModel.Roles = {
@@ -247,14 +248,17 @@ local RESOURCE_DEFS = {
 	MAELSTROM_WEAPON = {
 		key = "MAELSTROM_WEAPON",
 		owner = OWNERS.CLASS_RESOURCE,
-		systemID = SYSTEMS.GENERIC_PIPS,
+		systemID = SYSTEMS.SHAMAN_MAELSTROM_WEAPON,
 		sourceType = SOURCES.AURA_STACKS,
 		auraSpellID = 344179,
 		maxCount = 5,
+		logicalMax = 10,
+		empowerThreshold = 5,
 		needsFrequent = false,
 		needsUnitAura = true,
 		fillColor = { r = 0.00, g = 0.44, b = 0.87, a = 1.00 },
 		emptyColor = { r = 0.00, g = 0.18, b = 0.35, a = 0.40 },
+		empowerColor = { r = 0.10, g = 0.85, b = 0.55, a = 1.00 },
 	},
 	STAGGER = {
 		key = "STAGGER",
