@@ -149,8 +149,8 @@ local function ResolveRendererSystemID(resource)
 	end
 
 	local rendererMode = GetDBValue("classresource_rendererMode") or "CLASSIC"
-	if rendererMode == "SIMPLE" and resource.universalSupported and resource.universalSystemID then
-		return resource.universalSystemID
+	if rendererMode == "SIMPLE" and resource.simpleSupport ~= ResourceModel.SimpleSupport.NONE and resource.simpleSystemID then
+		return resource.simpleSystemID
 	end
 
 	return resource.systemID

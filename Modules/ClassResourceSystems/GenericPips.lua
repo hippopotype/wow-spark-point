@@ -10,6 +10,7 @@ local GetDBColor = addon.GetDBColor
 
 local UnitPower = UnitPower
 local UnitPowerMax = UnitPowerMax
+local GetRuneCooldown = GetRuneCooldown
 
 local PIP_TEXTURE_FRAME_PATH = "Interface\\AddOns\\SparkPoint\\Textures\\class_resource_frame.png"
 local PIP_TEXTURE_BG_PATH = "Interface\\AddOns\\SparkPoint\\Textures\\class_resource_background.png"
@@ -300,6 +301,20 @@ function GenericPips:ReadPower()
 		return self:ReadAuraStackPower()
 	end
 
+	if resource.sourceType == ResourceModel.SourceTypes.RUNES then
+		local readyRunes = 0
+		local maxRunes = resource.maxCount or 0
+
+		for runeIndex = 1, maxRunes do
+			local _, _, runeReady = GetRuneCooldown(runeIndex)
+			if runeReady then
+				readyRunes = readyRunes + 1
+			end
+		end
+
+		return readyRunes, maxRunes
+	end
+
 	if resource.sourceType ~= ResourceModel.SourceTypes.POWER or not resource.powerEnum then
 		return 0, 0
 	end
@@ -367,6 +382,10 @@ function GenericPips:WantsEvent(event)
 		return false
 	end
 
+	if self.activeResource.sourceType == ResourceModel.SourceTypes.RUNES then
+		return event == "RUNE_POWER_UPDATE"
+	end
+
 	if self.activeResource.sourceType == ResourceModel.SourceTypes.AURA_STACKS then
 		return event == "UNIT_AURA"
 	end
@@ -388,6 +407,13 @@ end
 
 function GenericPips:HandleEvent(event, unit, powerToken)
 	if not self.activeResource then
+		return
+	end
+
+	if self.activeResource.sourceType == ResourceModel.SourceTypes.RUNES then
+		if event == "RUNE_POWER_UPDATE" then
+			self:Sync()
+		end
 		return
 	end
 
