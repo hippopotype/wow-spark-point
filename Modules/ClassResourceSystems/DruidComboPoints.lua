@@ -305,7 +305,12 @@ function DruidComboPoints:ApplyPointState(point, isActive)
 		RestartGroup(point.activateAnim)
 	else
 		self:StopPointAnimations(point)
-		self:ApplyActiveBase(point)
+		SetAlpha(point.BG_Active, 1)
+		SetAlpha(point.BG_Inactive, 0)
+		SetAlpha(point.Point_Icon, 1)
+		SetAlpha(point.Point_Deplete, 1)
+		SetAlpha(point.FX_RingGlow, 1)
+		SetAlpha(point.Smoke, 1)
 		RestartGroup(point.deactivateAnim)
 	end
 

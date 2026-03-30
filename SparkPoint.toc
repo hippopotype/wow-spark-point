@@ -43,6 +43,8 @@ Modules\ClassResourceSystems\DeathKnightRunes.lua
 Modules\ClassResourceSystems\EvokerEssence.lua
 Modules\ClassResourceSystems\RogueComboPoints.lua
 Modules\ClassResourceSystems\DruidComboPoints.lua
+Modules\ClassResourceSystems\PaladinHolyPower.lua
+Modules\ClassResourceSystems\MonkChi.lua
 Modules\ClassResource.lua
 Modules\DecorativeRing.lua
 Modules\SpellIcon.lua

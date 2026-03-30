@@ -32,6 +32,8 @@ ResourceModel.SystemIDs = {
 	EVOKER_ESSENCE = "EVOKER_ESSENCE",
 	ROGUE_COMBO_POINTS = "ROGUE_COMBO_POINTS",
 	DRUID_COMBO_POINTS = "DRUID_COMBO_POINTS",
+	PALADIN_HOLY_POWER = "PALADIN_HOLY_POWER",
+	MONK_CHI = "MONK_CHI",
 }
 
 ResourceModel.Roles = {
@@ -194,7 +196,7 @@ local RESOURCE_DEFS = {
 	HOLY_POWER = {
 		key = "HOLY_POWER",
 		owner = OWNERS.CLASS_RESOURCE,
-		systemID = SYSTEMS.GENERIC_PIPS,
+		systemID = SYSTEMS.PALADIN_HOLY_POWER,
 		sourceType = SOURCES.POWER,
 		powerEnum = Enum.PowerType.HolyPower,
 		powerToken = "HOLY_POWER",
@@ -206,7 +208,7 @@ local RESOURCE_DEFS = {
 	CHI = {
 		key = "CHI",
 		owner = OWNERS.CLASS_RESOURCE,
-		systemID = SYSTEMS.GENERIC_PIPS,
+		systemID = SYSTEMS.MONK_CHI,
 		sourceType = SOURCES.POWER,
 		powerEnum = Enum.PowerType.Chi,
 		powerToken = "CHI",
