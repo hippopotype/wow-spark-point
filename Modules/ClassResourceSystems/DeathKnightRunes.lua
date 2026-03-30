@@ -1,5 +1,5 @@
 -- SparkPoint Death Knight Runes Class Resource System
--- Dedicated DK implementation with independent rune widgets and state-based ordering.
+-- Dedicated DK implementation using Blizzard-style animation groups and slot-based deplete visuals.
 
 local _, addon = ...
 local ResourceModel = addon.ResourceModel
@@ -9,17 +9,15 @@ local C_Texture = C_Texture
 local GetRuneCooldown = GetRuneCooldown
 local GetSpecialization = GetSpecialization
 local GetTime = GetTime
+local math_abs = math.abs
 local math_floor = math.floor
 
 local RUNE_SIZE = 24
 local RUNE_SPACING = -1
 local RUNE_COOLDOWN_SIZE = 27
 local RUNE_COOLDOWN_EDGE_TEXTURE = "Interface\\PlayerFrame\\DK-BloodUnholy-Rune-CDSpark"
-local RUNE_UPDATE_INTERVAL = 0.05
+local COOLDOWN_FILL_ANIM_BASIS_SECONDS = 8
 local COOLDOWN_ENDING_OFFSET_SECONDS = 0.67
-local EMPTY_TRANSITION_DURATION = 0.10
-local DEPLETE_VISUAL_DURATION = 1.0
-local DEPLETE_VISUAL_FADE_START = 0.83
 
 local DEFAULT_ART_TYPE = "Default"
 local ART_TYPE_BY_SPEC = {
@@ -43,9 +41,77 @@ local VisualState = {
 local DeathKnightRunes = {}
 DeathKnightRunes.__index = DeathKnightRunes
 
+local function ApproximatelyEqual(a, b, epsilon)
+	return math_abs((a or 0) - (b or 0)) <= (epsilon or 0.01)
+end
+
 local function SetAlpha(region, alpha)
 	if region then
-		region:SetAlpha(alpha)
+		region:SetAlpha(alpha or 0)
+	end
+end
+
+local function CreateAnimationGroup(parent, toFinalAlpha)
+	local group = parent:CreateAnimationGroup()
+	if toFinalAlpha ~= nil then
+		group:SetToFinalAlpha(toFinalAlpha)
+	end
+	return group
+end
+
+local function AddAlpha(group, target, order, duration, fromAlpha, toAlpha, startDelay)
+	local anim = group:CreateAnimation("Alpha")
+	anim:SetTarget(target)
+	anim:SetOrder(order or 1)
+	anim:SetDuration(duration)
+	anim:SetFromAlpha(fromAlpha)
+	anim:SetToAlpha(toAlpha)
+	if startDelay and startDelay > 0 then
+		anim:SetStartDelay(startDelay)
+	end
+	return anim
+end
+
+local function AddTranslation(group, target, order, duration, offsetX, offsetY, startDelay)
+	local anim = group:CreateAnimation("Translation")
+	anim:SetTarget(target)
+	anim:SetOrder(order or 1)
+	anim:SetDuration(duration)
+	anim:SetOffset(offsetX or 0, offsetY or 0)
+	if startDelay and startDelay > 0 then
+		anim:SetStartDelay(startDelay)
+	end
+	return anim
+end
+
+local function AddFlipBook(group, target, order, duration, rows, columns, frames)
+	local anim = group:CreateAnimation("FlipBook")
+	anim:SetTarget(target)
+	anim:SetOrder(order or 1)
+	anim:SetDuration(duration)
+	anim:SetFlipBookRows(rows)
+	anim:SetFlipBookColumns(columns)
+	anim:SetFlipBookFrames(frames)
+	anim:SetFlipBookFrameWidth(0)
+	anim:SetFlipBookFrameHeight(0)
+	return anim
+end
+
+local function RestartAnimationGroup(group, startOffset)
+	if not group then
+		return
+	end
+
+	if group.Restart then
+		group:Restart(false, startOffset or 0)
+	else
+		group:Play(false, startOffset or 0)
+	end
+end
+
+local function StopAnimationGroup(group)
+	if group and group:IsPlaying() then
+		group:Stop()
 	end
 end
 
@@ -78,40 +144,105 @@ local function ApplyCooldownSwipeArt(cooldown, artType)
 end
 
 local function ApplyDepleteFlipbookArt(texture, artType)
-	if not texture or not C_Texture or not C_Texture.GetAtlasInfo then
+	if not texture then
 		return
 	end
 
-	local atlasInfo = C_Texture.GetAtlasInfo(RUNE_ART_SET.depleteFlipbook:format(artType))
-	if not atlasInfo then
-		return
-	end
-
-	local file = atlasInfo.file or atlasInfo.filename
-	if not file then
-		return
-	end
-
-	texture:SetTexture(file)
-	texture.flipbookAtlasInfo = atlasInfo
+	texture:SetAtlas(RUNE_ART_SET.depleteFlipbook:format(artType), false)
+	texture:SetTexCoord(0, 1, 0, 1)
 end
 
-local function SetFlipbookFrame(texture, frameIndex, totalFrames, columns, rows)
-	local atlasInfo = texture and texture.flipbookAtlasInfo
-	if not atlasInfo then
-		return
-	end
+local function ResetDepleteVisualState(slot)
+	SetAlpha(slot.Rune_Inactive, 0)
+	SetAlpha(slot.Rune_Lines, 0)
+	SetAlpha(slot.FB_RuneDeplete, 0)
+	SetAlpha(slot.Glow2, 0)
+end
 
-	local clampedIndex = math.max(0, math.min(totalFrames - 1, frameIndex))
-	local column = clampedIndex % columns
-	local row = math_floor(clampedIndex / columns)
-	local uWidth = ((atlasInfo.rightTexCoord or 1) - (atlasInfo.leftTexCoord or 0)) / columns
-	local vHeight = ((atlasInfo.bottomTexCoord or 1) - (atlasInfo.topTexCoord or 0)) / rows
-	local u1 = (atlasInfo.leftTexCoord or 0) + (column * uWidth)
-	local u2 = u1 + uWidth
-	local v1 = (atlasInfo.topTexCoord or 0) + (row * vHeight)
-	local v2 = v1 + vHeight
-	texture:SetTexCoord(u1, u2, v1, v2)
+local function PrimeDepleteVisualState(slot)
+	SetAlpha(slot.Rune_Inactive, 1)
+	SetAlpha(slot.Rune_Lines, 1)
+	SetAlpha(slot.FB_RuneDeplete, 0)
+	SetAlpha(slot.Glow2, 1)
+end
+
+function DeathKnightRunes:ApplyEmptyBaseState(rune)
+	SetAlpha(rune.BG_Active, 0)
+	SetAlpha(rune.BG_Inactive, 1)
+	SetAlpha(rune.Rune_Active, 0)
+	SetAlpha(rune.Rune_Inactive, 0.4)
+	SetAlpha(rune.Rune_Grad, 0)
+	SetAlpha(rune.Rune_Lines, 0)
+	SetAlpha(rune.Rune_Mid, 0)
+	SetAlpha(rune.Rune_Eyes, 0)
+	SetAlpha(rune.Glow, 0)
+	SetAlpha(rune.Glow2, 0)
+	SetAlpha(rune.Smoke, 0)
+	rune.Cooldown:Hide()
+end
+
+function DeathKnightRunes:ApplyReadyBaseState(rune)
+	SetAlpha(rune.BG_Active, 1)
+	SetAlpha(rune.BG_Inactive, 0)
+	SetAlpha(rune.Rune_Active, 1)
+	SetAlpha(rune.Rune_Inactive, 0)
+	SetAlpha(rune.Rune_Grad, 0)
+	SetAlpha(rune.Rune_Lines, 0)
+	SetAlpha(rune.Rune_Mid, 0)
+	SetAlpha(rune.Rune_Eyes, 0)
+	SetAlpha(rune.Glow, 0)
+	SetAlpha(rune.Glow2, 0)
+	SetAlpha(rune.Smoke, 0)
+	rune.Cooldown:Hide()
+end
+
+function DeathKnightRunes:SkipToFinalAnimState(group)
+	if group then
+		RestartAnimationGroup(group, group:GetDuration())
+	end
+end
+
+function DeathKnightRunes:CreateSlotVisual(index)
+	local slot = CreateFrame("Frame", nil, self.root)
+	slot:SetSize(RUNE_SIZE, RUNE_SIZE)
+	slot:SetFrameLevel((self.root:GetFrameLevel() or 0) + 10)
+
+	slot.Rune_Inactive = slot:CreateTexture(nil, "OVERLAY", nil, 2)
+	slot.Rune_Inactive:SetPoint("CENTER")
+	slot.Rune_Inactive:SetAtlas("UF-DKRunes-SkullDis", true)
+
+	slot.Rune_Lines = slot:CreateTexture(nil, "OVERLAY", nil, 2)
+	slot.Rune_Lines:SetPoint("CENTER")
+
+	slot.FB_RuneDeplete = slot:CreateTexture(nil, "OVERLAY", nil, 2)
+	slot.FB_RuneDeplete:SetSize(20, 36)
+	slot.FB_RuneDeplete:SetPoint("CENTER", 0, 10)
+
+	slot.Glow2 = slot:CreateTexture(nil, "OVERLAY", nil, 2)
+	slot.Glow2:SetPoint("CENTER")
+
+	slot.DepleteAnim = CreateAnimationGroup(slot, true)
+	AddAlpha(slot.DepleteAnim, slot.Rune_Inactive, 1, 0.1, 1, 1)
+	AddAlpha(slot.DepleteAnim, slot.FB_RuneDeplete, 1, 0.1, 0, 1)
+	AddAlpha(slot.DepleteAnim, slot.Rune_Inactive, 1, 0.67, 1, 0.4)
+	AddFlipBook(slot.DepleteAnim, slot.FB_RuneDeplete, 1, 1.0, 4, 6, 23)
+	AddAlpha(slot.DepleteAnim, slot.Glow2, 1, 0.4, 1, 0)
+	AddAlpha(slot.DepleteAnim, slot.Rune_Lines, 1, 0.4, 1, 1)
+	AddAlpha(slot.DepleteAnim, slot.Rune_Lines, 1, 0.43, 1, 0, 0.4)
+	AddAlpha(slot.DepleteAnim, slot.FB_RuneDeplete, 1, 0.1, 1, 0, 1.0)
+	AddAlpha(slot.DepleteAnim, slot.Rune_Inactive, 1, 0.1, 0.4, 0, 1.0)
+	slot.DepleteAnim:SetScript("OnPlay", function()
+		PrimeDepleteVisualState(slot)
+		slot:Show()
+	end)
+	slot.DepleteAnim:SetScript("OnFinished", function()
+		ResetDepleteVisualState(slot)
+		slot:Hide()
+	end)
+
+	ResetDepleteVisualState(slot)
+	slot:Hide()
+	return slot
 end
 
 function DeathKnightRunes:CreateRune(runeIndex)
@@ -122,11 +253,9 @@ function DeathKnightRunes:CreateRune(runeIndex)
 	rune.layoutIndex = 7 - runeIndex
 	rune.visualState = nil
 	rune.lastRuneState = { start = 0, duration = 0, runeReady = false }
+	rune.cooldownFillAnimBasisSeconds = COOLDOWN_FILL_ANIM_BASIS_SECONDS
+	rune.cooldownEndingOffsetSeconds = COOLDOWN_ENDING_OFFSET_SECONDS
 	rune.cooldownEndingStartTime = nil
-	rune.cooldownEndingAnimStartTime = nil
-	rune.emptyAnimStartTime = nil
-	rune.pendingCooldownStart = nil
-	rune.pendingCooldownDuration = nil
 	rune.isNewlyDepleted = false
 
 	rune.BG_Shadow = rune:CreateTexture(nil, "BACKGROUND", nil, 0)
@@ -181,36 +310,49 @@ function DeathKnightRunes:CreateRune(runeIndex)
 	rune.Cooldown:SetEdgeTexture(RUNE_COOLDOWN_EDGE_TEXTURE, 1, 1, 1, 1)
 	rune.Cooldown:SetSwipeColor(1, 1, 1, 1)
 
+	rune.CooldownFillAnim = CreateAnimationGroup(rune, true)
+	AddAlpha(rune.CooldownFillAnim, rune.Rune_Mid, 1, 0.1, 0, 0)
+	AddAlpha(rune.CooldownFillAnim, rune.Rune_Eyes, 1, 0.1, 0, 0)
+	AddAlpha(rune.CooldownFillAnim, rune.Smoke, 1, 0.1, 0, 0)
+	AddAlpha(rune.CooldownFillAnim, rune.Glow, 1, 0.1, 0, 0)
+	AddAlpha(rune.CooldownFillAnim, rune.Rune_Grad, 1, 0.86, 0, 0)
+	AddAlpha(rune.CooldownFillAnim, rune.Rune_Lines, 1, 0.1, 0, 0, 0.85)
+	AddAlpha(rune.CooldownFillAnim, rune.Rune_Lines, 1, 3.18, 0, 0.16, 0.86)
+	AddAlpha(rune.CooldownFillAnim, rune.Rune_Grad, 1, 3.18, 0, 0.3, 0.86)
+	AddAlpha(rune.CooldownFillAnim, rune.Rune_Lines, 1, 2.83, 0.16, 0.3, 4.0)
+
+	rune.CooldownEndingAnim = CreateAnimationGroup(rune, true)
+	AddAlpha(rune.CooldownEndingAnim, rune.Rune_Mid, 1, 0.47, 0, 1)
+	AddAlpha(rune.CooldownEndingAnim, rune.Rune_Eyes, 1, 0.43, 0, 1, 0.24)
+	AddAlpha(rune.CooldownEndingAnim, rune.Smoke, 1, 0.5, 0, 1, 0.34)
+	AddTranslation(rune.CooldownEndingAnim, rune.Smoke, 1, 0.7, 0, 12, 0.34)
+	AddAlpha(rune.CooldownEndingAnim, rune.Rune_Lines, 1, 0.17, 1, 0, 0.67)
+	AddAlpha(rune.CooldownEndingAnim, rune.Rune_Grad, 1, 0.01, 1, 0, 0.67)
+	AddAlpha(rune.CooldownEndingAnim, rune.Rune_Inactive, 1, 0.01, 1, 0, 0.67)
+	AddAlpha(rune.CooldownEndingAnim, rune.BG_Active, 1, 0.01, 0, 1, 0.67)
+	AddAlpha(rune.CooldownEndingAnim, rune.BG_Inactive, 1, 0.01, 1, 0, 0.67)
+	AddAlpha(rune.CooldownEndingAnim, rune.Glow, 1, 0, 1, 1, 0.67)
+	AddAlpha(rune.CooldownEndingAnim, rune.Glow2, 1, 0, 1, 1, 0.67)
+	AddAlpha(rune.CooldownEndingAnim, rune.Rune_Active, 1, 0.01, 0, 1, 0.77)
+	AddAlpha(rune.CooldownEndingAnim, rune.Rune_Mid, 1, 0.4, 1, 0, 0.77)
+	AddAlpha(rune.CooldownEndingAnim, rune.Smoke, 1, 0.2, 1, 0, 0.83)
+	AddAlpha(rune.CooldownEndingAnim, rune.Glow, 1, 0.23, 1, 0, 0.84)
+	AddAlpha(rune.CooldownEndingAnim, rune.Glow2, 1, 0.17, 1, 0, 1.0)
+	AddAlpha(rune.CooldownEndingAnim, rune.Rune_Eyes, 1, 0.5, 1, 0, 1.14)
+
+	rune.EmptyAnim = CreateAnimationGroup(rune, true)
+	AddAlpha(rune.EmptyAnim, rune.BG_Active, 1, 0.1, 0, 0)
+	AddAlpha(rune.EmptyAnim, rune.BG_Inactive, 1, 0.1, 1, 1)
+	AddAlpha(rune.EmptyAnim, rune.Rune_Active, 1, 0.1, 0, 0)
+	AddAlpha(rune.EmptyAnim, rune.Rune_Inactive, 1, 0.1, 1, 0.4)
+	AddAlpha(rune.EmptyAnim, rune.Rune_Lines, 1, 0.1, 1, 0)
+
+	rune.Cooldown:SetScript("OnUpdate", function()
+		self:OnCooldownUpdate(rune)
+	end)
+
+	self:ApplyEmptyBaseState(rune)
 	return rune
-end
-
-function DeathKnightRunes:CreateSlotVisual(index)
-	local slot = CreateFrame("Frame", nil, self.root)
-	slot:SetSize(RUNE_SIZE, RUNE_SIZE)
-	slot:SetFrameLevel((self.root:GetFrameLevel() or 0) + 10)
-	slot.index = index
-	slot.depleteStartTime = nil
-
-	slot.Rune_Inactive = slot:CreateTexture(nil, "OVERLAY", nil, 2)
-	slot.Rune_Inactive:SetPoint("CENTER")
-	slot.Rune_Inactive:SetAtlas("UF-DKRunes-SkullDis", true)
-	slot.Rune_Inactive:SetAlpha(0)
-
-	slot.Rune_Lines = slot:CreateTexture(nil, "OVERLAY", nil, 2)
-	slot.Rune_Lines:SetPoint("CENTER")
-	slot.Rune_Lines:SetAlpha(0)
-
-	slot.FB_RuneDeplete = slot:CreateTexture(nil, "OVERLAY", nil, 2)
-	slot.FB_RuneDeplete:SetSize(20, 36)
-	slot.FB_RuneDeplete:SetPoint("CENTER", 0, 10)
-	slot.FB_RuneDeplete:SetAlpha(0)
-
-	slot.Glow2 = slot:CreateTexture(nil, "OVERLAY", nil, 2)
-	slot.Glow2:SetPoint("CENTER")
-	slot.Glow2:SetAlpha(0)
-
-	slot:Hide()
-	return slot
 end
 
 function DeathKnightRunes:ApplyRuneArt(rune, specIndex)
@@ -233,173 +375,6 @@ function DeathKnightRunes:ApplySlotVisualArt(slot, specIndex)
 	slot.Rune_Lines:SetAtlas(("UF-DKRunes-%s-SkullLines"):format(artType), true)
 	slot.Glow2:SetAtlas(("UF-DKRunes-%s-FilledGlwB"):format(artType), true)
 	ApplyDepleteFlipbookArt(slot.FB_RuneDeplete, artType)
-	SetFlipbookFrame(slot.FB_RuneDeplete, 0, 23, 6, 4)
-end
-
-function DeathKnightRunes:ShowAsReady(rune)
-	rune.visualState = VisualState.READY
-	rune.cooldownEndingStartTime = nil
-	rune.cooldownEndingAnimStartTime = nil
-	rune.emptyAnimStartTime = nil
-	rune.pendingCooldownStart = nil
-	rune.pendingCooldownDuration = nil
-	rune.Cooldown:Clear()
-end
-
-function DeathKnightRunes:ShowAsEmpty(rune, now)
-	rune.visualState = VisualState.EMPTY
-	rune.cooldownEndingStartTime = nil
-	rune.cooldownEndingAnimStartTime = nil
-	rune.emptyAnimStartTime = now or GetTime()
-	rune.Cooldown:Clear()
-	rune.isNewlyDepleted = true
-end
-
-function DeathKnightRunes:ShowAsOnCooldown(rune, start, duration, previousState, now)
-	local previousEndTime = rune.lastRuneState and ((rune.lastRuneState.start or 0) + (rune.lastRuneState.duration or 0)) or 0
-	local newEndTime = (start or 0) + (duration or 0)
-	local sameCooldown = math.abs(previousEndTime - newEndTime) < 0.01
-
-	rune.cooldownEndingStartTime = math.max(start or 0, newEndTime - COOLDOWN_ENDING_OFFSET_SECONDS)
-
-	if previousState == nil or previousState == VisualState.READY or (previousState == VisualState.COOLDOWN_ENDING and now < rune.cooldownEndingStartTime) then
-		self:ShowAsEmpty(rune, now)
-		rune.pendingCooldownStart = start
-		rune.pendingCooldownDuration = duration
-		return
-	end
-
-	if rune.emptyAnimStartTime and (now - rune.emptyAnimStartTime) < EMPTY_TRANSITION_DURATION then
-		rune.pendingCooldownStart = start
-		rune.pendingCooldownDuration = duration
-		rune.visualState = VisualState.EMPTY
-		return
-	end
-
-	rune.emptyAnimStartTime = nil
-	rune.pendingCooldownStart = nil
-	rune.pendingCooldownDuration = nil
-
-	rune.Cooldown:SetCooldown(start, duration)
-
-	if now >= rune.cooldownEndingStartTime then
-		rune.visualState = VisualState.COOLDOWN_ENDING
-		if not rune.cooldownEndingAnimStartTime or not sameCooldown then
-			rune.cooldownEndingAnimStartTime = now
-		end
-	else
-		rune.visualState = VisualState.ON_COOLDOWN
-		rune.cooldownEndingAnimStartTime = nil
-	end
-end
-
-function DeathKnightRunes:ApplyVisualState(rune, now)
-	local state = rune.visualState or VisualState.EMPTY
-
-	if state == VisualState.READY then
-		SetAlpha(rune.BG_Inactive, 0)
-		SetAlpha(rune.BG_Active, 1)
-		SetAlpha(rune.Rune_Inactive, 0)
-		SetAlpha(rune.Rune_Grad, 0)
-		SetAlpha(rune.Rune_Lines, 0)
-		SetAlpha(rune.Rune_Active, 1)
-		SetAlpha(rune.Rune_Mid, 0)
-		SetAlpha(rune.Rune_Eyes, 0)
-		SetAlpha(rune.Glow, 0)
-		SetAlpha(rune.Glow2, 0)
-		SetAlpha(rune.Smoke, 0)
-		rune.Cooldown:Hide()
-		rune.Cooldown:Clear()
-		return
-	end
-
-	if state == VisualState.EMPTY then
-		SetAlpha(rune.BG_Inactive, 1)
-		SetAlpha(rune.BG_Active, 0)
-		SetAlpha(rune.Rune_Inactive, 0.4)
-		SetAlpha(rune.Rune_Grad, 0)
-		SetAlpha(rune.Rune_Lines, 0)
-		SetAlpha(rune.Rune_Active, 0)
-		SetAlpha(rune.Rune_Mid, 0)
-		SetAlpha(rune.Rune_Eyes, 0)
-		SetAlpha(rune.Glow, 0)
-		SetAlpha(rune.Glow2, 0)
-		SetAlpha(rune.Smoke, 0)
-		rune.Cooldown:Hide()
-		rune.Cooldown:Clear()
-		return
-	end
-
-	local start = rune.lastRuneState.start or 0
-	local duration = rune.lastRuneState.duration or 0
-	local progress = 0
-	if duration > 0 then
-		progress = math.max(0, math.min(1, (now - start) / duration))
-	end
-
-	if state == VisualState.ON_COOLDOWN then
-		SetAlpha(rune.BG_Inactive, 1)
-		SetAlpha(rune.BG_Active, 0)
-		SetAlpha(rune.Rune_Inactive, 0.40)
-		SetAlpha(rune.Rune_Grad, 0.30 * progress)
-		SetAlpha(rune.Rune_Lines, 0.30 * math.max(0, (progress - 0.15) / 0.85))
-		SetAlpha(rune.Rune_Active, 0)
-		SetAlpha(rune.Rune_Mid, 0)
-		SetAlpha(rune.Rune_Eyes, 0)
-		SetAlpha(rune.Glow, 0)
-		SetAlpha(rune.Glow2, 0)
-		SetAlpha(rune.Smoke, 0)
-		rune.Cooldown:Show()
-		rune.Cooldown:SetCooldown(start, duration)
-		return
-	end
-
-	local endingStart = rune.cooldownEndingAnimStartTime or rune.cooldownEndingStartTime or now
-	local endingProgress = math.max(0, math.min(1, (now - endingStart) / COOLDOWN_ENDING_OFFSET_SECONDS))
-	if endingProgress >= 1 then
-		self:ShowAsReady(rune)
-		self:ApplyVisualState(rune, now)
-		return
-	end
-
-	SetAlpha(rune.BG_Inactive, 0)
-	SetAlpha(rune.BG_Active, 1)
-	SetAlpha(rune.Rune_Inactive, 0)
-	SetAlpha(rune.Rune_Grad, 0)
-	SetAlpha(rune.Rune_Lines, math.max(0, 1 - math.max(0, (endingProgress - 0.67) / 0.17)))
-	SetAlpha(rune.Rune_Active, 1)
-	SetAlpha(rune.Rune_Mid, math.max(0, 1 - math.max(0, (endingProgress - 0.15) / 0.60)))
-	SetAlpha(rune.Rune_Eyes, math.min(1, math.max(0, (endingProgress - 0.24) / 0.43)))
-	SetAlpha(rune.Glow, math.max(0, 1 - math.max(0, (endingProgress - 0.84) / 0.23)))
-	SetAlpha(rune.Glow2, math.max(0, 1 - math.max(0, (endingProgress - 1.00) / 0.17)))
-	SetAlpha(rune.Smoke, math.max(0, 1 - math.max(0, (endingProgress - 0.83) / 0.20)))
-	rune.Cooldown:Show()
-	rune.Cooldown:SetCooldown(start, duration)
-end
-
-function DeathKnightRunes:UpdateRuneState(rune, now)
-	local previousState = rune.visualState
-	local start, duration, runeReady = GetRuneCooldown(rune.runeIndex)
-	rune.isNewlyDepleted = false
-
-	if not runeReady then
-		if start and start > 0 and duration and duration > 0 then
-			self:ShowAsOnCooldown(rune, start, duration, previousState, now)
-		elseif previousState ~= VisualState.EMPTY then
-			self:ShowAsEmpty(rune, now)
-		end
-	else
-		self:ShowAsReady(rune)
-	end
-
-	rune.lastRuneState = {
-		start = start or 0,
-		duration = duration or 0,
-		runeReady = runeReady and true or false,
-	}
-
-	self:ApplyVisualState(rune, now)
-	return rune.visualState == VisualState.ON_COOLDOWN or rune.visualState == VisualState.COOLDOWN_ENDING
 end
 
 function DeathKnightRunes:PlayDepleteVisual(slot)
@@ -407,60 +382,177 @@ function DeathKnightRunes:PlayDepleteVisual(slot)
 		return
 	end
 
-	slot.depleteStartTime = GetTime()
-	SetAlpha(slot.Rune_Inactive, 1)
-	SetAlpha(slot.Rune_Lines, 1)
-	SetAlpha(slot.FB_RuneDeplete, 0)
-	SetAlpha(slot.Glow2, 1)
-	slot:Show()
+	ResetDepleteVisualState(slot)
+	RestartAnimationGroup(slot.DepleteAnim)
 end
 
-function DeathKnightRunes:UpdateDepleteVisual(slot, now)
-	if not slot or not slot.depleteStartTime then
+function DeathKnightRunes:UpdateLayoutIndex(rune, layoutIndex)
+	if rune.layoutIndex == layoutIndex then
 		return false
 	end
 
-	local elapsed = now - slot.depleteStartTime
-	if elapsed >= DEPLETE_VISUAL_DURATION then
-		slot.depleteStartTime = nil
-		slot:Hide()
-		return false
-	end
-
-	local progress = math.max(0, math.min(1, elapsed / DEPLETE_VISUAL_DURATION))
-	local fadeProgress = 0
-	if progress > DEPLETE_VISUAL_FADE_START then
-		fadeProgress = (progress - DEPLETE_VISUAL_FADE_START) / (1 - DEPLETE_VISUAL_FADE_START)
-	end
-
-	local frameIndex = math.min(22, math_floor(progress * 23))
-	SetFlipbookFrame(slot.FB_RuneDeplete, frameIndex, 23, 6, 4)
-	SetAlpha(slot.FB_RuneDeplete, progress < 0.1 and (progress / 0.1) or math.max(0, 1 - fadeProgress))
-	SetAlpha(slot.Glow2, math.max(0, 1 - math.min(1, progress / 0.4)))
-	SetAlpha(slot.Rune_Lines, progress < 0.4 and 1 or math.max(0, 1 - ((progress - 0.4) / 0.43)))
-	SetAlpha(slot.Rune_Inactive, progress < 0.67 and (1 - (0.6 * (progress / 0.67))) or math.max(0, 0.4 * (1 - fadeProgress)))
-	slot:Show()
+	rune.layoutIndex = layoutIndex
 	return true
 end
 
+function DeathKnightRunes:ShowAsReady(rune, previousState)
+	if rune.EmptyAnim:IsPlaying() then
+		self:SkipToFinalAnimState(rune.EmptyAnim)
+	end
+
+	if rune.CooldownFillAnim:IsPlaying() then
+		self:SkipToFinalAnimState(rune.CooldownFillAnim)
+	end
+
+	if not rune.CooldownEndingAnim:IsPlaying() and previousState ~= VisualState.READY then
+		self:SkipToFinalAnimState(rune.CooldownEndingAnim)
+	end
+
+	rune.visualState = VisualState.READY
+	rune.cooldownEndingStartTime = nil
+	rune.Cooldown:Clear()
+	self:ApplyReadyBaseState(rune)
+end
+
+function DeathKnightRunes:ShowAsEmpty(rune)
+	if rune.CooldownFillAnim:IsPlaying() then
+		self:SkipToFinalAnimState(rune.CooldownFillAnim)
+	end
+	if rune.CooldownEndingAnim:IsPlaying() then
+		self:SkipToFinalAnimState(rune.CooldownEndingAnim)
+	end
+	if not rune.EmptyAnim:IsPlaying() then
+		self:SkipToFinalAnimState(rune.EmptyAnim)
+	end
+	rune.Cooldown:Clear()
+	rune.cooldownEndingStartTime = nil
+	rune.visualState = VisualState.EMPTY
+	rune.isNewlyDepleted = true
+	self:ApplyEmptyBaseState(rune)
+end
+
+function DeathKnightRunes:ShowAsOnCooldown(rune, start, duration, previousState)
+	local timeEpsilon = 0.01
+	local oldStart, oldDuration = rune.Cooldown:GetCooldownTimes()
+	local oldEnd = (oldStart + oldDuration) / 1000
+	local newEnd = start + duration
+	if ApproximatelyEqual(oldEnd, newEnd, timeEpsilon) and rune.CooldownFillAnim:IsPlaying() then
+		return
+	end
+
+	local timeNow = GetTime()
+	local timeNowFloored = math_floor(timeNow)
+
+	rune.cooldownEndingStartTime = (start + duration) - rune.cooldownEndingOffsetSeconds
+	local isBeforeCooldownEndStartTime = timeNowFloored < math_floor(rune.cooldownEndingStartTime)
+
+	if previousState == nil or (isBeforeCooldownEndStartTime and rune.CooldownEndingAnim:IsPlaying()) then
+		self:SkipToFinalAnimState(rune.CooldownEndingAnim)
+	end
+
+	if previousState == nil or previousState == VisualState.READY or (previousState == VisualState.COOLDOWN_ENDING and isBeforeCooldownEndStartTime) then
+		RestartAnimationGroup(rune.EmptyAnim)
+		rune.visualState = VisualState.EMPTY
+		rune.isNewlyDepleted = true
+	end
+
+	rune.Cooldown:SetCooldown(start, duration)
+	rune.Cooldown:Show()
+
+	if isBeforeCooldownEndStartTime and timeNowFloored >= math_floor(start) then
+		local speedMultiplier = rune.cooldownFillAnimBasisSeconds / duration
+		local startOffset = timeNow - start
+		local shouldRestartFillAnim = true
+
+		if rune.CooldownFillAnim:IsPlaying() then
+			local currentMultiplier = rune.CooldownFillAnim:GetAnimationSpeedMultiplier()
+			local currentElapsed = rune.CooldownFillAnim:GetElapsed()
+			if ApproximatelyEqual(currentMultiplier, speedMultiplier, timeEpsilon) and ApproximatelyEqual(currentElapsed, startOffset, timeEpsilon) then
+				shouldRestartFillAnim = false
+			end
+		end
+
+		if shouldRestartFillAnim then
+			rune.CooldownFillAnim:SetAnimationSpeedMultiplier(speedMultiplier)
+			RestartAnimationGroup(rune.CooldownFillAnim, startOffset)
+		end
+
+		rune.visualState = VisualState.ON_COOLDOWN
+	else
+		self:OnCooldownUpdate(rune)
+	end
+end
+
+function DeathKnightRunes:OnCooldownUpdate(rune)
+	if not rune.cooldownEndingStartTime then
+		return
+	end
+
+	local timeNow = GetTime()
+	if timeNow >= rune.cooldownEndingStartTime then
+		local animStartOffset = timeNow - rune.cooldownEndingStartTime
+
+		StopAnimationGroup(rune.CooldownFillAnim)
+		RestartAnimationGroup(rune.CooldownEndingAnim, animStartOffset)
+		rune.cooldownEndingStartTime = nil
+		rune.visualState = VisualState.COOLDOWN_ENDING
+	end
+end
+
+function DeathKnightRunes:UpdateRuneState(rune)
+	local previousState = rune.visualState
+
+	rune.isNewlyDepleted = false
+
+	local start, duration, runeReady = GetRuneCooldown(rune.runeIndex)
+	rune.lastRuneState = {
+		start = start or 0,
+		duration = duration or 0,
+		runeReady = runeReady and true or false,
+	}
+
+	if not runeReady then
+		if start then
+			self:ShowAsOnCooldown(rune, start, duration, previousState)
+		elseif previousState ~= VisualState.EMPTY then
+			self:ShowAsEmpty(rune)
+		end
+	else
+		self:ShowAsReady(rune, previousState)
+	end
+end
+
 function DeathKnightRunes:CompareRunes(runeA, runeB)
-	local stateA = runeA.visualState or VisualState.EMPTY
-	local stateB = runeB.visualState or VisualState.EMPTY
+	local stateA = runeA.visualState
+	local stateB = runeB.visualState
+
+	if stateA == nil or stateB == nil then
+		if stateA == nil and stateB == nil then
+			return runeA.runeIndex > runeB.runeIndex
+		end
+		return stateA ~= nil
+	end
 
 	if stateA ~= stateB then
 		return stateA > stateB
 	end
 
 	if stateA == VisualState.READY then
-		local endingA = runeA.cooldownEndingAnimStartTime ~= nil
-		local endingB = runeB.cooldownEndingAnimStartTime ~= nil
-		if endingA ~= endingB then
-			return not endingA
+		local playingA = runeA.CooldownEndingAnim:IsPlaying()
+		local playingB = runeB.CooldownEndingAnim:IsPlaying()
+		if playingA ~= playingB then
+			return not playingA
+		end
+
+		local progressA = runeA.CooldownEndingAnim:GetProgress()
+		local progressB = runeB.CooldownEndingAnim:GetProgress()
+		if progressA ~= progressB then
+			return progressA > progressB
 		end
 	end
 
-	local startA = runeA.lastRuneState and runeA.lastRuneState.start or 0
-	local startB = runeB.lastRuneState and runeB.lastRuneState.start or 0
+	local startA = runeA.lastRuneState.start
+	local startB = runeB.lastRuneState.start
 	if startA ~= startB then
 		return startA < startB
 	end
@@ -497,33 +589,6 @@ function DeathKnightRunes:ApplyRuneLayout()
 	end
 end
 
-function DeathKnightRunes:UpdateTicker(anyCharging, anyAnimating)
-	if not self.root then
-		return
-	end
-
-	if anyCharging or anyAnimating then
-		if self.root:GetScript("OnUpdate") then
-			return
-		end
-
-		self.elapsed = 0
-		self.root:SetScript("OnUpdate", function(_, elapsed)
-			self.elapsed = self.elapsed + (elapsed or 0)
-			if self.elapsed < RUNE_UPDATE_INTERVAL then
-				return
-			end
-
-			self.elapsed = 0
-			self:Sync()
-		end)
-		return
-	end
-
-	self.elapsed = 0
-	self.root:SetScript("OnUpdate", nil)
-end
-
 function DeathKnightRunes:Initialize(parentFrame)
 	self.parentFrame = parentFrame
 
@@ -547,13 +612,24 @@ end
 
 function DeathKnightRunes:Shutdown()
 	self.activeResource = nil
-	self.resolved = nil
-	self:UpdateTicker(false, false)
+
 	for i = 1, #self.slotVisuals do
 		local slot = self.slotVisuals[i]
 		if slot then
-			slot.depleteStartTime = nil
+			StopAnimationGroup(slot.DepleteAnim)
+			ResetDepleteVisualState(slot)
 			slot:Hide()
+		end
+	end
+
+	for i = 1, #self.runes do
+		local rune = self.runes[i]
+		if rune then
+			StopAnimationGroup(rune.CooldownFillAnim)
+			StopAnimationGroup(rune.CooldownEndingAnim)
+			StopAnimationGroup(rune.EmptyAnim)
+			rune.Cooldown:Clear()
+			rune.Cooldown:Hide()
 		end
 	end
 
@@ -564,13 +640,13 @@ end
 
 function DeathKnightRunes:SetResource(resourceDef, resolved)
 	self.activeResource = resourceDef
-	self.resolved = resolved
 
 	local specIndex = resolved and resolved.context and resolved.context.spec or GetSpecialization()
 	for i = 1, #self.runes do
 		self:ApplyRuneArt(self.runes[i], specIndex)
 		self:ApplySlotVisualArt(self.slotVisuals[i], specIndex)
-		self.slotVisuals[i].depleteStartTime = nil
+		StopAnimationGroup(self.slotVisuals[i].DepleteAnim)
+		ResetDepleteVisualState(self.slotVisuals[i])
 		self.slotVisuals[i]:Hide()
 	end
 end
@@ -597,11 +673,9 @@ function DeathKnightRunes:SetVisible(visible)
 	if visible then
 		self.root:Show()
 		self:Sync()
-		return
+	else
+		self.root:Hide()
 	end
-
-	self.root:Hide()
-	self:UpdateTicker(false, false)
 end
 
 function DeathKnightRunes:Sync()
@@ -609,15 +683,10 @@ function DeathKnightRunes:Sync()
 		return
 	end
 
-	local anyCharging = false
-	local anyAnimating = false
-	local now = GetTime()
 	local numNewlyDepleted = 0
 
 	for i = 1, #self.runes do
-		if self:UpdateRuneState(self.runes[i], now) then
-			anyCharging = true
-		end
+		self:UpdateRuneState(self.runes[i])
 		if self.runes[i].isNewlyDepleted then
 			numNewlyDepleted = numNewlyDepleted + 1
 		end
@@ -627,28 +696,22 @@ function DeathKnightRunes:Sync()
 		return self:CompareRunes(self.runes[aIndex], self.runes[bIndex])
 	end)
 
-	self:ApplyRuneLayout()
+	local anyLayoutUpdates = false
+	for newLayoutIndex, runeIndex in ipairs(self.runeIndices) do
+		local rune = self.runes[runeIndex]
+		if self:UpdateLayoutIndex(rune, newLayoutIndex) then
+			anyLayoutUpdates = true
+		end
 
-	if numNewlyDepleted > 0 then
-		for layoutIndex, runeIndex in ipairs(self.runeIndices) do
-			local rune = self.runes[runeIndex]
-			if rune and rune.visualState ~= VisualState.READY then
-				self:PlayDepleteVisual(self.slotVisuals[layoutIndex])
-				numNewlyDepleted = numNewlyDepleted - 1
-				if numNewlyDepleted <= 0 then
-					break
-				end
-			end
+		if numNewlyDepleted > 0 and rune.visualState ~= VisualState.READY then
+			self:PlayDepleteVisual(self.slotVisuals[newLayoutIndex])
+			numNewlyDepleted = numNewlyDepleted - 1
 		end
 	end
 
-	for i = 1, #self.slotVisuals do
-		if self:UpdateDepleteVisual(self.slotVisuals[i], now) then
-			anyAnimating = true
-		end
+	if anyLayoutUpdates then
+		self:ApplyRuneLayout()
 	end
-
-	self:UpdateTicker(anyCharging, anyAnimating)
 end
 
 function DeathKnightRunes:WantsEvent(event)
@@ -669,8 +732,6 @@ local function CreateDeathKnightRunes()
 		slotVisuals = {},
 		runeIndices = {},
 		activeResource = nil,
-		resolved = nil,
-		elapsed = 0,
 	}, DeathKnightRunes)
 end
 
