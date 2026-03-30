@@ -143,6 +143,19 @@ local function DetectActiveResource()
 	return ResourceModel:GetCurrentClassResource("player")
 end
 
+local function ResolveRendererSystemID(resource)
+	if not resource then
+		return nil
+	end
+
+	local rendererMode = GetDBValue("classresource_rendererMode") or "CLASSIC"
+	if rendererMode == "SIMPLE" and resource.universalSupported and resource.universalSystemID then
+		return resource.universalSystemID
+	end
+
+	return resource.systemID
+end
+
 function ClassResource:ApplyLayout()
 	local anchor = AnchorFrame:GetFrame()
 	if not anchor or not container then
@@ -192,6 +205,10 @@ function ClassResource:Sync()
 end
 
 function ClassResource:Refresh()
+	if not isEnabled then
+		return
+	end
+
 	EnsureContainer()
 
 	local resource, resolved = DetectActiveResource()
@@ -203,7 +220,7 @@ function ClassResource:Refresh()
 		return
 	end
 
-	local system = EnsureActiveSystem(resource.systemID)
+	local system = EnsureActiveSystem(ResolveRendererSystemID(resource))
 	if not system then
 		activeResource = nil
 		self:UpdateVisibility()
@@ -331,12 +348,18 @@ CallbackRegistry:RegisterSettingCallback("attachToMouse", function()
 	ClassResource:UpdateVisibility()
 end)
 
-for _, key in ipairs({ "classresource_fillColor", "classresource_fillUseClassColor", "classresource_backgroundColor" }) do
+for _, key in ipairs({ "classresource_fillColor", "classresource_fillColorSource", "classresource_backgroundColor" }) do
 	CallbackRegistry:RegisterSettingCallback(key, function()
 		ClassResource:ApplyVisualOptions()
 		ClassResource:Sync()
 	end)
 end
+
+CallbackRegistry:RegisterSettingCallback("classresource_rendererMode", function()
+	if isEnabled then
+		ClassResource:Refresh()
+	end
+end)
 
 CallbackRegistry:Register("VisibilityContextChanged", function()
 	ClassResource:UpdateVisibility()

@@ -5,7 +5,6 @@ local _, addon = ...
 local API = addon.API
 local ResourceModel = addon.ResourceModel
 local ClassResourceSystems = addon.ClassResourceSystems
-local GetDBBool = addon.GetDBBool
 local GetDBColor = addon.GetDBColor
 local GetDBValue = addon.GetDBValue
 
@@ -113,8 +112,14 @@ local function MixToWhite(r, g, b, amount)
 	return r + (1 - r) * amount, g + (1 - g) * amount, b + (1 - b) * amount
 end
 
+local function LerpColor(r1, g1, b1, a1, r2, g2, b2, a2, t)
+	t = Clamp01(t or 0)
+	return r1 + (r2 - r1) * t, g1 + (g2 - g1) * t, b1 + (b2 - b1) * t, a1 + ((a2 or a1) - a1) * t
+end
+
 local function GetChargedColor(resource)
-	if GetDBBool("classresource_fillUseClassColor") and API and API.GetPlayerClassColor then
+	local fillSource = tostring(GetDBValue("classresource_fillColorSource") or "CLASS")
+	if fillSource == "CLASS" and API and API.GetPlayerClassColor then
 		return API.GetPlayerClassColor()
 	end
 
@@ -150,8 +155,13 @@ local function GetEmptyColor(resource)
 end
 
 local function GetSurgedColor(resource, chargedR, chargedG, chargedB, chargedA)
+	local fillSource = tostring(GetDBValue("classresource_fillColorSource") or "CLASS")
 	local empowerColor = resource and resource.empowerColor
 	if empowerColor then
+		if fillSource == "CUSTOM" and GetDBValue("classresource_fillColor") then
+			return LerpColor(chargedR, chargedG, chargedB, chargedA, empowerColor.r, empowerColor.g, empowerColor.b, empowerColor.a, 0.65)
+		end
+
 		return empowerColor.r, empowerColor.g, empowerColor.b, empowerColor.a
 	end
 

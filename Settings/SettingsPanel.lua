@@ -77,6 +77,7 @@ local NEW_SETTINGS = {
 	cast_hideInSpecialActionBarContext = true,
 	classresource_hideInPetBattle = true,
 	classresource_hideInSpecialActionBarContext = true,
+	classresource_rendererMode = true,
 	ring_hideInPetBattle = true,
 	ring_hideInSpecialActionBarContext = true,
 	assistedhighlight_hideInPetBattle = true,
@@ -351,6 +352,14 @@ local function BuildSettingsPanel()
 	local visibilitySourceOptions = {
 		{ value = "INHERIT", label = L["Visibility Inherit"] or "Inherit" },
 		{ value = "CUSTOM", label = L["Visibility Custom"] or "Custom" },
+	}
+	local classResourceRendererModeOptions = {
+		{ value = "CLASSIC", label = L["Class Resource Visual Style Classic"] or "Classic" },
+		{ value = "SIMPLE", label = L["Class Resource Visual Style Simple"] or "Simple" },
+	}
+	local classResourceFillColorSourceOptions = {
+		{ value = "CUSTOM", label = L["Class Resource Fill Color Source Custom"] or "Custom Color" },
+		{ value = "CLASS", label = L["Class Resource Fill Color Source Class"] or "Class Color" },
 	}
 	local visibilityRuleProxy = {}
 
@@ -1310,6 +1319,15 @@ local function BuildSettingsPanel()
 	------------------------------------------------------------------------
 	local cpCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Class Resource"] or "Class Resource")
 
+	AddDropdown(
+		cpCategory,
+		"classresource_rendererMode",
+		L["Class Resource Visual Style"] or "Visual Style",
+		classResourceRendererModeOptions,
+		L["Class Resource Visual Style Tooltip"]
+			or "Choose between class-specific visuals and the simpler shared flat style. Some resources are only partially supported in simple style."
+	)
+
 	AddSlider(
 		cpCategory,
 		"classresource_scale",
@@ -1328,6 +1346,13 @@ local function BuildSettingsPanel()
 		0.05,
 		L["Class Resource Opacity Tooltip"] or "Opacity for the class-resource copy frame"
 	)
+	AddDropdown(
+		cpCategory,
+		"classresource_fillColorSource",
+		L["Class Resource Fill Color Source"] or "Fill Color Source",
+		classResourceFillColorSourceOptions,
+		L["Class Resource Fill Color Source Tooltip"] or "Choose how the class resource fill color is selected. This option is mainly used by Simple visual style resources."
+	)
 	AddColor(
 		cpCategory,
 		"classresource_fillColor",
@@ -1340,12 +1365,6 @@ local function BuildSettingsPanel()
 		L["Background Color"] or "Background Color",
 		L["Class Resource Background Color Tooltip"] or "Tint multiplier for the class resource pip background texture.",
 		false
-	)
-	AddCheckbox(
-		cpCategory,
-		"classresource_fillUseClassColor",
-		L["Class Resource Use Class Color"] or "Class Resource Use Class Color",
-		L["Class Resource Use Class Color Tooltip"] or "Override class resource pip fill color with your class color"
 	)
 	AddSlider(cpCategory, "classresource_offsetX", L["Class Resource Horizontal Offset"] or "Class Resource Horizontal Offset", -300, 300, 1)
 	AddSlider(cpCategory, "classresource_offsetY", L["Class Resource Vertical Offset"] or "Class Resource Vertical Offset", -300, 300, 1)

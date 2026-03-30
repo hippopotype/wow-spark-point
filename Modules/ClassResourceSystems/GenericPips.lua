@@ -6,7 +6,6 @@ local API = addon.API
 local ResourceModel = addon.ResourceModel
 local ClassResourceSystems = addon.ClassResourceSystems
 local GetDBValue = addon.GetDBValue
-local GetDBBool = addon.GetDBBool
 local GetDBColor = addon.GetDBColor
 
 local UnitPower = UnitPower
@@ -134,7 +133,8 @@ function GenericPips:ConfigurePipTextures(pip, resource)
 	end
 
 	local function GetPipFillColor()
-		if GetDBBool("classresource_fillUseClassColor") then
+		local fillSource = tostring(GetDBValue("classresource_fillColorSource") or "CLASS")
+		if fillSource == "CLASS" then
 			return API.GetPlayerClassColor()
 		end
 
