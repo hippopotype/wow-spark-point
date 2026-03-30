@@ -69,6 +69,7 @@ end
 
 function GenericPips:Shutdown()
 	self.activeResource = nil
+	self.resolved = nil
 	self.pipMax = 0
 
 	if self.root then
@@ -76,8 +77,9 @@ function GenericPips:Shutdown()
 	end
 end
 
-function GenericPips:SetResource(resourceDef)
+function GenericPips:SetResource(resourceDef, resolved)
 	self.activeResource = resourceDef
+	self.resolved = resolved
 	self.pipMax = 0
 
 	for i = 1, #self.pips do
@@ -365,11 +367,23 @@ function GenericPips:WantsEvent(event)
 		return false
 	end
 
+	if self.activeResource.sourceType == ResourceModel.SourceTypes.AURA_STACKS then
+		return event == "UNIT_AURA"
+	end
+
 	if event == "UNIT_AURA" then
 		return self.activeResource.needsUnitAura and true or false
 	end
 
-	return event == "UNIT_POWER_UPDATE" or event == "UNIT_MAXPOWER" or event == "UNIT_POWER_POINT_CHARGE"
+	if event == "UNIT_POWER_POINT_CHARGE" then
+		return self.activeResource.needsPointCharge and true or false
+	end
+
+	if event == "UNIT_POWER_FREQUENT" then
+		return self.activeResource.needsFrequent and true or false
+	end
+
+	return event == "UNIT_POWER_UPDATE" or event == "UNIT_MAXPOWER"
 end
 
 function GenericPips:HandleEvent(event, unit, powerToken)
@@ -388,7 +402,7 @@ function GenericPips:HandleEvent(event, unit, powerToken)
 		return
 	end
 
-	if event == "UNIT_POWER_POINT_CHARGE" and self.activeResource.key ~= "ESSENCE" then
+	if event == "UNIT_POWER_POINT_CHARGE" and not self.activeResource.needsPointCharge then
 		return
 	end
 

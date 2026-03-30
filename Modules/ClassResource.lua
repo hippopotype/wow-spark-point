@@ -241,6 +241,12 @@ function ClassResource:UNIT_POWER_UPDATE(event, unit, powerToken)
 	end
 end
 
+function ClassResource:UNIT_POWER_FREQUENT(event, unit, powerToken)
+	if CallPredicate(activeSystem, "WantsEvent", event) then
+		CallMethod(activeSystem, "HandleEvent", event, unit, powerToken)
+	end
+end
+
 function ClassResource:UNIT_MAXPOWER(event, unit, powerToken)
 	if CallPredicate(activeSystem, "WantsEvent", event) then
 		CallMethod(activeSystem, "HandleEvent", event, unit, powerToken)
@@ -275,6 +281,7 @@ local function EnableModule(enabled)
 		EL:RegisterEvent("RUNE_POWER_UPDATE")
 		EL:RegisterUnitEvent("UNIT_DISPLAYPOWER", "player")
 		EL:RegisterUnitEvent("UNIT_POWER_UPDATE", "player")
+		EL:RegisterUnitEvent("UNIT_POWER_FREQUENT", "player")
 		EL:RegisterUnitEvent("UNIT_MAXPOWER", "player")
 		EL:RegisterUnitEvent("UNIT_AURA", "player")
 		EL:RegisterUnitEvent("UNIT_POWER_POINT_CHARGE", "player")
