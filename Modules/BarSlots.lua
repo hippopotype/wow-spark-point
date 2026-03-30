@@ -17,6 +17,9 @@ local GetDBColorTable = addon.GetDBColorTable
 local BAR_TEXTURE_WIDTH = 1024
 local BAR_TEXTURE_HEIGHT = 512
 local BAR_TEXTURE_ASPECT = BAR_TEXTURE_HEIGHT / BAR_TEXTURE_WIDTH
+local SPECIAL_PROVIDER_CLASS_POWER_OR_MANA = "CLASS_POWER_OR_MANA"
+local CLASS_POWER_PROVIDER_ID = "CLASS_POWER"
+local MANA_PROVIDER_ID = "MANA"
 local EL = CreateFrame("Frame")
 
 local BarSlots = {}
@@ -84,7 +87,8 @@ local SLOT_DEFS = {
 	},
 }
 
--- Per-slot runtime state: { moduleFrame, widget, text, provider, providerID }
+-- Per-slot runtime state:
+-- { moduleFrame, widget, text, configuredProviderID, provider, providerID }
 local slots = {}
 for _, def in ipairs(SLOT_DEFS) do
 	slots[def.id] = {}
@@ -212,28 +216,56 @@ end
 -- Provider assignment
 --------------------------------------------------------------------------------
 
-local function GetAssignedProviderID(def)
+local function GetConfiguredProviderID(def)
 	local providerID = NormalizeProviderID(GetSlotValue(def, "provider"))
 	if not providerID then
 		return nil
 	end
+
+	if providerID == SPECIAL_PROVIDER_CLASS_POWER_OR_MANA then
+		return providerID
+	end
+
 	if not BarProviders:Get(providerID) then
 		return nil
 	end
 	return providerID
 end
 
+local function ResolveConfiguredProvider(providerID)
+	if not providerID then
+		return nil, nil
+	end
+
+	if providerID == SPECIAL_PROVIDER_CLASS_POWER_OR_MANA then
+		local classPowerProvider = BarProviders:Get(CLASS_POWER_PROVIDER_ID)
+		if classPowerProvider and classPowerProvider.RefreshDetection then
+			classPowerProvider:RefreshDetection()
+		end
+		if classPowerProvider and classPowerProvider.IsAvailable and classPowerProvider:IsAvailable() then
+			return CLASS_POWER_PROVIDER_ID, classPowerProvider
+		end
+
+		local manaProvider = BarProviders:Get(MANA_PROVIDER_ID)
+		if manaProvider then
+			return MANA_PROVIDER_ID, manaProvider
+		end
+
+		return nil, nil
+	end
+
+	return providerID, BarProviders:Get(providerID)
+end
+
 local function ApplyAssignments(def, state)
+	state.configuredProviderID = GetConfiguredProviderID(def)
 	state.provider = nil
 	state.providerID = nil
 	if not GetSlotBool(def, "enabled") then
 		return
 	end
 
-	state.providerID = GetAssignedProviderID(def)
-	if state.providerID then
-		state.provider = BarProviders:Get(state.providerID)
-	end
+	state.providerID, state.provider = ResolveConfiguredProvider(state.configuredProviderID)
 end
 
 local function DisableInactiveProviders(requiredProviders)
@@ -269,6 +301,13 @@ local function UpdateActiveProviders()
 			activeProviders[providerID] = provider
 		end
 	end
+end
+
+local function RefreshProviderAssignments()
+	for _, def in ipairs(SLOT_DEFS) do
+		ApplyAssignments(def, slots[def.id])
+	end
+	UpdateActiveProviders()
 end
 
 --------------------------------------------------------------------------------
@@ -564,10 +603,7 @@ local function EnableModule(enabled)
 
 	if enabled then
 		BarSlots:Initialize()
-		for _, def in ipairs(SLOT_DEFS) do
-			ApplyAssignments(def, slots[def.id])
-		end
-		UpdateActiveProviders()
+		RefreshProviderAssignments()
 		BarSlots:ApplyLayout()
 		EL:RegisterEvent("PLAYER_ENTERING_WORLD")
 		EL:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
@@ -602,16 +638,19 @@ end
 
 function BarSlots:PLAYER_ENTERING_WORLD()
 	RefreshProviderDetection()
+	RefreshProviderAssignments()
 	RefreshAllSlots()
 end
 
 function BarSlots:PLAYER_SPECIALIZATION_CHANGED()
 	RefreshProviderDetection()
+	RefreshProviderAssignments()
 	RefreshAllSlots()
 end
 
 function BarSlots:UPDATE_SHAPESHIFT_FORM()
 	RefreshProviderDetection()
+	RefreshProviderAssignments()
 	RefreshAllSlots()
 end
 
@@ -620,6 +659,7 @@ function BarSlots:UNIT_DISPLAYPOWER(event, unit)
 		return
 	end
 	RefreshProviderDetection()
+	RefreshProviderAssignments()
 	RefreshAllSlots()
 end
 
@@ -733,15 +773,13 @@ for _, def in ipairs(SLOT_DEFS) do
 
 	-- Provider changed
 	CallbackRegistry:RegisterSettingCallback(SlotKey(def, "provider"), function()
-		ApplyAssignments(def, state)
-		UpdateActiveProviders()
+		RefreshProviderAssignments()
 		RefreshBar(def, state)
 	end)
 
 	-- Slot enabled changed
 	CallbackRegistry:RegisterSettingCallback(SlotKey(def, "enabled"), function()
-		ApplyAssignments(def, state)
-		UpdateActiveProviders()
+		RefreshProviderAssignments()
 		RefreshBar(def, state)
 	end)
 

@@ -164,8 +164,8 @@ addon.DefaultValues = {
 	barslot_top_hideInSpecialActionBarContext = true,
 
 	-- Bottom bar slot settings
-	barslot_bottom_enabled = false,
-	barslot_bottom_provider = "CLASS_POWER",
+	barslot_bottom_enabled = true,
+	barslot_bottom_provider = "CLASS_POWER_OR_MANA",
 
 	-- Bottom bar slot layout
 	barslot_bottom_scale = 1,
@@ -173,7 +173,7 @@ addon.DefaultValues = {
 	barslot_bottom_offsetY = 0,
 
 	-- Bottom bar slot appearance
-	barslot_bottom_fillColorSource = "CLASS",
+	barslot_bottom_fillColorSource = "PROVIDER",
 	barslot_bottom_barColor = { r = 1, g = 1, b = 1, a = 1 },
 	barslot_bottom_fillOpacity = 1,
 	barslot_bottom_backgroundColor = { r = 1, g = 1, b = 1, a = 1 },
@@ -211,7 +211,7 @@ addon.DefaultValues = {
 	classresource_fillColorSource = "CLASS",
 	classresource_backgroundColor = { r = 1, g = 1, b = 1, a = 1 },
 	classresource_offsetX = 0,
-	classresource_offsetY = -50,
+	classresource_offsetY = -60,
 
 	-- Ring module settings
 	ring_texture = "decorative_ring_1",

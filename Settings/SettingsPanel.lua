@@ -1123,6 +1123,24 @@ local function BuildSettingsPanel()
 	if addon.BarProviders and addon.BarProviders.GetDropdownOptions then
 		barSlotProviderOptions = addon.BarProviders:GetDropdownOptions()
 	end
+	local function InsertBarSlotProviderOption(value, label, afterValue)
+		for _, entry in ipairs(barSlotProviderOptions) do
+			if entry.value == value then
+				return
+			end
+		end
+
+		local insertIndex = #barSlotProviderOptions + 1
+		for index, entry in ipairs(barSlotProviderOptions) do
+			if entry.value == afterValue then
+				insertIndex = index + 1
+				break
+			end
+		end
+
+		table.insert(barSlotProviderOptions, insertIndex, { value = value, label = label })
+	end
+	InsertBarSlotProviderOption("CLASS_POWER_OR_MANA", L["Class Power or Mana"] or "Class Power or Mana", "CLASS_POWER")
 
 	local fillColorSourceOptions = {
 		{ value = "CUSTOM", label = L["Bar Slot Fill Color Source Custom"] or "Custom Color" },

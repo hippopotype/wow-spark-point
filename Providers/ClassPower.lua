@@ -125,4 +125,13 @@ function ClassPowerProvider:RefreshDetection()
 	RefreshDetection()
 end
 
+function ClassPowerProvider:IsAvailable()
+	if not activePower or not activePower.powerEnum then
+		return false
+	end
+
+	local maxValue = UnitPowerMax("player", activePower.powerEnum)
+	return maxValue ~= nil and maxValue > 0
+end
+
 addon.BarProviders:Register("CLASS_POWER", ClassPowerProvider)
