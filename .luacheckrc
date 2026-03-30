@@ -44,6 +44,7 @@ globals = {
 	"GetMouseFoci",
 	"GetMouseFocus",
 	"GetNetStats",
+	"GetPowerRegenForPowerType",
 	"GetRuneCooldown",
 	"GetSpecialization",
 	"GetTime",

@@ -42,6 +42,7 @@
     "GetMouseFocus",
     "GetMinimapShape",
     "GetNetStats",
+    "GetPowerRegenForPowerType",
     "GetRuneCooldown",
     "GetSpecialization",
     "GetTime",

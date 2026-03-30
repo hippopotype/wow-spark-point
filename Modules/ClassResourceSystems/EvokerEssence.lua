@@ -1,24 +1,19 @@
 -- SparkPoint Evoker Essence Class Resource System
--- Dedicated Evoker Essence implementation with Blizzard-style recharge and transition phases.
+-- Dedicated Evoker Essence implementation with native animation groups.
 
 local _, addon = ...
 local ResourceModel = addon.ResourceModel
 local ClassResourceSystems = addon.ClassResourceSystems
 
-local GetTime = GetTime
+local GetPowerRegenForPowerType = GetPowerRegenForPowerType
 local UnitPartialPower = UnitPartialPower
 local UnitPower = UnitPower
 local UnitPowerMax = UnitPowerMax
 local math_abs = math.abs
-local math_max = math.max
-local math_min = math.min
-local math_pi = math.pi
 
 local ESSENCE_POINT_SIZE = 24
 local ESSENCE_SPACING = -1
-local ESSENCE_UPDATE_INTERVAL = 0.05
-local ESSENCE_FULL_BURST_DURATION = 0.80
-local ESSENCE_DEPLETE_DURATION = 0.80
+local FILLING_ANIMATION_TIME = 5.0
 
 local EssenceState = {
 	EMPTY = 1,
@@ -30,22 +25,6 @@ local EssenceState = {
 
 local EvokerEssence = {}
 EvokerEssence.__index = EvokerEssence
-
-local function Clamp01(value)
-	return math_max(0, math_min(1, value or 0))
-end
-
-local function SetAlpha(region, alpha)
-	if region then
-		region:SetAlpha(alpha or 0)
-	end
-end
-
-local function SetRotation(texture, degrees)
-	if texture and texture.SetRotation then
-		texture:SetRotation((degrees or 0) * math_pi / 180)
-	end
-end
 
 local function CreateLayerFrame(parent)
 	local frame = CreateFrame("Frame", nil, parent)
@@ -60,14 +39,205 @@ local function CreateAtlasTexture(parent, layer, subLevel, atlas, useAtlasSize, 
 	return texture
 end
 
+local function CreateAnimationGroup(parent, toFinalAlpha)
+	local group = parent:CreateAnimationGroup()
+	if toFinalAlpha ~= nil then
+		group:SetToFinalAlpha(toFinalAlpha)
+	end
+	return group
+end
+
+local function AddAlpha(group, target, order, duration, fromAlpha, toAlpha, startDelay)
+	local anim = group:CreateAnimation("Alpha")
+	anim:SetTarget(target)
+	anim:SetOrder(order or 1)
+	anim:SetDuration(duration)
+	anim:SetFromAlpha(fromAlpha)
+	anim:SetToAlpha(toAlpha)
+	if startDelay and startDelay > 0 then
+		anim:SetStartDelay(startDelay)
+	end
+	return anim
+end
+
+local function AddRotation(group, target, order, duration, degrees, startDelay)
+	local anim = group:CreateAnimation("Rotation")
+	anim:SetTarget(target)
+	anim:SetOrder(order or 1)
+	anim:SetDuration(duration)
+	anim:SetDegrees(degrees)
+	if startDelay and startDelay > 0 then
+		anim:SetStartDelay(startDelay)
+	end
+	return anim
+end
+
+local function AddTranslation(group, target, order, duration, offsetX, offsetY, startDelay)
+	local anim = group:CreateAnimation("Translation")
+	anim:SetTarget(target)
+	anim:SetOrder(order or 1)
+	anim:SetDuration(duration)
+	anim:SetOffset(offsetX or 0, offsetY or 0)
+	if startDelay and startDelay > 0 then
+		anim:SetStartDelay(startDelay)
+	end
+	return anim
+end
+
+local function GetEssenceAnimationSpeedMultiplier()
+	local regen = GetPowerRegenForPowerType and GetPowerRegenForPowerType(Enum.PowerType.Essence)
+	if regen == nil or regen == 0 then
+		regen = 0.2
+	end
+
+	local cooldownDuration = 1 / regen
+	return FILLING_ANIMATION_TIME / cooldownDuration
+end
+
+local function HideFrame(frame)
+	if frame then
+		frame:Hide()
+	end
+end
+
+local function StopGroup(group)
+	if group and group:IsPlaying() then
+		group:Stop()
+	end
+end
+
+local function ResetFillingVisual(point)
+	local filling = point.Filling
+	HideFrame(filling)
+	filling.TimerSpinner:SetAlpha(1)
+	filling.TimerSpinner:ClearAllPoints()
+	filling.TimerSpinner:SetPoint("CENTER", 0, 0)
+	filling.TrailSpinner:SetAlpha(0)
+	filling.TrailSpinnerIn:SetAlpha(0)
+	filling.IconProgB:SetAlpha(0)
+	filling.IconProgC:SetAlpha(0)
+	filling.IconProg:SetAlpha(0)
+	filling.SpinnerOut:SetAlpha(0)
+	filling.SpinStar:SetAlpha(0)
+	filling.SpinOutBG:SetAlpha(0)
+end
+
+local function ResetBurstVisual(point)
+	local frame = point.FillDone
+	HideFrame(frame)
+	frame.CircBG:SetAlpha(1)
+	frame.CircBGActive:SetAlpha(0)
+	frame.Icon:SetAlpha(0)
+	frame.IconProg:SetAlpha(1)
+	frame.RimGlow:SetAlpha(0)
+	frame.IconGlow:SetAlpha(0)
+	frame.FXBurst:SetAlpha(0)
+end
+
+local function ResetDepleteVisual(point)
+	local frame = point.Depleting
+	HideFrame(frame)
+	frame.BG:SetAlpha(1)
+	frame.FXDepBG:SetAlpha(1)
+	frame.CircBGActive:SetAlpha(1)
+	frame.Icon:SetAlpha(1)
+	frame.FXRimGlow:SetAlpha(1)
+	frame.IconDeplete:SetAlpha(1)
+	frame.FXSmoke:SetAlpha(0)
+	frame.FXSmoke:ClearAllPoints()
+	frame.FXSmoke:SetPoint("CENTER", 0, 10)
+end
+
+local function StopPointOnUpdate(point)
+	if point and point:GetScript("OnUpdate") then
+		point:SetScript("OnUpdate", nil)
+	end
+end
+
+function EvokerEssence:StopPointAnimations(point)
+	StopPointOnUpdate(point)
+	StopGroup(point.Filling.FillingAnim)
+	StopGroup(point.Filling.CircleAnim)
+	StopGroup(point.FillDone.AnimIn)
+	StopGroup(point.Depleting.AnimIn)
+	ResetFillingVisual(point)
+	ResetBurstVisual(point)
+	ResetDepleteVisual(point)
+end
+
+function EvokerEssence:ShowEmpty(point)
+	self:StopPointAnimations(point)
+	point.Empty:Show()
+	point.Full:Hide()
+	point.state = EssenceState.EMPTY
+end
+
+function EvokerEssence:ShowFull(point)
+	self:StopPointAnimations(point)
+	point.Empty:Hide()
+	point.Full:Show()
+	point.state = EssenceState.FULL
+end
+
+function EvokerEssence:UpdateFillingAnimationSpeed(point)
+	local speedMultiplier = GetEssenceAnimationSpeedMultiplier()
+	point.Filling.FillingAnim:SetAnimationSpeedMultiplier(speedMultiplier)
+	point.Filling.CircleAnim:SetAnimationSpeedMultiplier(speedMultiplier)
+end
+
+function EvokerEssence:StartFilling(point, progress)
+	progress = progress or 0
+	self:StopPointAnimations(point)
+	point.Empty:Hide()
+	point.Full:Hide()
+	point.FillDone:Hide()
+	point.Depleting:Hide()
+	point.Filling:Show()
+	point.state = EssenceState.FILLING
+
+	self:UpdateFillingAnimationSpeed(point)
+	point:SetScript("OnUpdate", function(frame)
+		self:UpdateFillingAnimationSpeed(frame)
+	end)
+
+	local fillingElapsedOffset = progress * point.Filling.FillingAnim:GetDuration()
+	local circleElapsedOffset = progress * point.Filling.CircleAnim:GetDuration()
+	point.Filling.FillingAnim:Play(false, fillingElapsedOffset)
+	point.Filling.CircleAnim:Play(false, circleElapsedOffset)
+end
+
+function EvokerEssence:StartFullBurst(point)
+	self:StopPointAnimations(point)
+	point.Empty:Hide()
+	point.Full:Hide()
+	point.Filling:Hide()
+	point.Depleting:Hide()
+	point.FillDone:Show()
+	point.state = EssenceState.FULL_BURST
+	point.FillDone.AnimIn:Play()
+end
+
+function EvokerEssence:StartDepleting(point, fromFilling)
+	self:StopPointAnimations(point)
+	point.Empty:Hide()
+	point.Full:Hide()
+	point.Filling:Hide()
+	point.FillDone:Hide()
+	point.Depleting:Show()
+	point.state = EssenceState.DEPLETING
+
+	if fromFilling then
+		point.Depleting.AnimIn:Play(false, point.Depleting.AnimIn:GetDuration())
+	else
+		point.Depleting.AnimIn:Play()
+	end
+end
+
 function EvokerEssence:CreatePoint(index)
 	local point = CreateFrame("Frame", nil, self.root)
 	point:SetSize(ESSENCE_POINT_SIZE, ESSENCE_POINT_SIZE)
 	point.index = index
 	point.state = EssenceState.EMPTY
-	point.fullBurstStartTime = nil
-	point.depleteStartTime = nil
-	point.lastFillingProgress = nil
 
 	point.Empty = CreateLayerFrame(point)
 	point.Empty.BG = CreateAtlasTexture(point.Empty, "ARTWORK", 0, "UF-Essence-BG", true)
@@ -105,160 +275,79 @@ function EvokerEssence:CreatePoint(index)
 	point.Depleting.IconDeplete = CreateAtlasTexture(point.Depleting, "ARTWORK", 0, "UF-Essence-Icon-Dep", true)
 	point.Depleting.FXSmoke = CreateAtlasTexture(point.Depleting, "ARTWORK", 0, "UF-Essence-FX-DepSmoke", true, "CENTER", 0, 10)
 
-	point.Empty:Hide()
+	point.Filling.FillingAnim = CreateAnimationGroup(point.Filling, false)
+	AddRotation(point.Filling.FillingAnim, point.Filling.TimerSpinner, 1, 5, -360)
+	AddAlpha(point.Filling.FillingAnim, point.Filling.TimerSpinner, 1, 0.1, 1, 0, 2.8)
+	AddTranslation(point.Filling.FillingAnim, point.Filling.TimerSpinner, 1, 0.1, 0, 20, 4.9)
+	AddAlpha(point.Filling.FillingAnim, point.Filling.TimerSpinner, 1, 0.1, 0, 1, 0)
+	AddRotation(point.Filling.FillingAnim, point.Filling.TrailSpinner, 1, 5, -360)
+	AddAlpha(point.Filling.FillingAnim, point.Filling.TrailSpinner, 1, 2, 0, 1, 0.5)
+	AddAlpha(point.Filling.FillingAnim, point.Filling.TrailSpinner, 1, 0.2, 1, 0, 4.8)
+	AddRotation(point.Filling.FillingAnim, point.Filling.TrailSpinnerIn, 1, 5, -360)
+	AddAlpha(point.Filling.FillingAnim, point.Filling.TrailSpinnerIn, 1, 1, 0, 1, 0.5)
+	AddAlpha(point.Filling.FillingAnim, point.Filling.TrailSpinnerIn, 1, 0.2, 1, 0, 4.8)
+	AddAlpha(point.Filling.FillingAnim, point.Filling.IconProgB, 1, 0.5, 0, 0.8, 2.2)
+	AddAlpha(point.Filling.FillingAnim, point.Filling.IconProgC, 1, 0.5, 0, 0.8, 3.0)
+	AddAlpha(point.Filling.FillingAnim, point.Filling.IconProg, 1, 0.6, 0, 1, 4.3)
+
+	point.Filling.CircleAnim = CreateAnimationGroup(point.Filling, false)
+	AddAlpha(point.Filling.CircleAnim, point.Filling.SpinOutBG, 1, 0.3, 0, 1, 4.0)
+	AddAlpha(point.Filling.CircleAnim, point.Filling.SpinOutBG, 1, 0.2, 1, 0, 4.7)
+	AddAlpha(point.Filling.CircleAnim, point.Filling.SpinnerOut, 1, 0.3, 0, 1, 4.3)
+	AddAlpha(point.Filling.CircleAnim, point.Filling.SpinnerOut, 1, 0.2, 1, 0, 4.6)
+	AddRotation(point.Filling.CircleAnim, point.Filling.SpinnerOut, 1, 0.6, -260, 4.3)
+	AddAlpha(point.Filling.CircleAnim, point.Filling.SpinStar, 1, 0.3, 0, 1, 4.3)
+	AddAlpha(point.Filling.CircleAnim, point.Filling.SpinStar, 1, 0.2, 1, 0, 4.6)
+	AddRotation(point.Filling.CircleAnim, point.Filling.SpinStar, 1, 0.7, -260, 4.3)
+
+	point.FillDone.AnimIn = CreateAnimationGroup(point.FillDone, true)
+	AddAlpha(point.FillDone.AnimIn, point.FillDone.IconGlow, 1, 0.25, 0, 1, 0)
+	AddAlpha(point.FillDone.AnimIn, point.FillDone.IconGlow, 1, 0.5, 1, 0, 0.5)
+	AddAlpha(point.FillDone.AnimIn, point.FillDone.Icon, 1, 0.25, 0, 1, 0)
+	AddAlpha(point.FillDone.AnimIn, point.FillDone.RimGlow, 1, 0.25, 0, 1, 0)
+	AddAlpha(point.FillDone.AnimIn, point.FillDone.RimGlow, 1, 0.3, 1, 0, 0.5)
+	AddAlpha(point.FillDone.AnimIn, point.FillDone.CircBGActive, 1, 0.5, 0, 1, 0)
+	AddAlpha(point.FillDone.AnimIn, point.FillDone.FXBurst, 1, 0.2, 0, 0.8, 0)
+	AddAlpha(point.FillDone.AnimIn, point.FillDone.FXBurst, 1, 0.4, 0.8, 0, 0.2)
+	AddRotation(point.FillDone.AnimIn, point.FillDone.FXBurst, 1, 0.2, -30, 0)
+	AddRotation(point.FillDone.AnimIn, point.FillDone.FXBurst, 1, 0.5, -10, 0.2)
+
+	point.Depleting.AnimIn = CreateAnimationGroup(point.Depleting, true)
+	AddAlpha(point.Depleting.AnimIn, point.Depleting.FXRimGlow, 1, 0.5, 1, 0, 0.3)
+	AddAlpha(point.Depleting.AnimIn, point.Depleting.IconDeplete, 1, 0.5, 1, 0, 0.3)
+	AddAlpha(point.Depleting.AnimIn, point.Depleting.FXDepBG, 1, 0.5, 1, 0, 0.3)
+	AddAlpha(point.Depleting.AnimIn, point.Depleting.CircBGActive, 1, 0.8, 1, 0, 0)
+	AddAlpha(point.Depleting.AnimIn, point.Depleting.Icon, 1, 0.5, 1, 0, 0)
+	AddAlpha(point.Depleting.AnimIn, point.Depleting.FXSmoke, 1, 0.3, 0, 1, 0)
+	AddAlpha(point.Depleting.AnimIn, point.Depleting.FXSmoke, 1, 0.5, 1, 0, 0.4)
+	AddTranslation(point.Depleting.AnimIn, point.Depleting.FXSmoke, 1, 0.3, 0, 2, 0)
+	AddTranslation(point.Depleting.AnimIn, point.Depleting.FXSmoke, 1, 0.7, 0, 3, 0.3)
+
+	point.Filling.FillingAnim:SetScript("OnFinished", function()
+		if point.state == EssenceState.FILLING then
+			self:StartFullBurst(point)
+		end
+	end)
+
+	point.FillDone.AnimIn:SetScript("OnFinished", function()
+		if point.state == EssenceState.FULL_BURST then
+			self:ShowFull(point)
+		end
+	end)
+
+	point.Depleting.AnimIn:SetScript("OnFinished", function()
+		if point.state == EssenceState.DEPLETING then
+			self:ShowEmpty(point)
+		end
+	end)
+
+	ResetFillingVisual(point)
+	ResetBurstVisual(point)
+	ResetDepleteVisual(point)
+	point.Empty:Show()
 	point.Full:Hide()
-	point.Filling:Hide()
-	point.FillDone:Hide()
-	point.Depleting:Hide()
 
 	return point
-end
-
-function EvokerEssence:HideTransitions(point)
-	point.FillDone:Hide()
-	point.Depleting:Hide()
-	point.fullBurstStartTime = nil
-	point.depleteStartTime = nil
-end
-
-function EvokerEssence:ShowEmpty(point)
-	self:HideTransitions(point)
-	point.Filling:Hide()
-	point.Full:Hide()
-	point.Empty:Show()
-	point.state = EssenceState.EMPTY
-	point.lastFillingProgress = nil
-end
-
-function EvokerEssence:ShowFull(point)
-	self:HideTransitions(point)
-	point.Filling:Hide()
-	point.Empty:Hide()
-	point.Full:Show()
-	point.state = EssenceState.FULL
-	point.lastFillingProgress = nil
-end
-
-function EvokerEssence:UpdateFillingVisual(point, progress)
-	progress = Clamp01(progress)
-	point.Empty:Hide()
-	point.Full:Hide()
-	point.FillDone:Hide()
-	point.Depleting:Hide()
-	point.Filling:Show()
-	point.state = EssenceState.FILLING
-	point.lastFillingProgress = progress
-
-	local timerAlpha = (progress < 0.56) and 1 or 0
-	local trailInAlpha = Clamp01((progress - 0.10) / 0.20) * Clamp01((1 - progress) / 0.04)
-	local trailAlpha = Clamp01((progress - 0.10) / 0.40) * Clamp01((1 - progress) / 0.04)
-	local progBAlpha = Clamp01((progress - 0.44) / 0.10) * 0.8
-	local progCAlpha = Clamp01((progress - 0.60) / 0.10) * 0.8
-	local progAlpha = Clamp01((progress - 0.86) / 0.14)
-	local spinProgress = Clamp01((progress - 0.80) / 0.20)
-	local spinAlpha = Clamp01(1 - Clamp01((progress - 0.92) / 0.08))
-
-	SetAlpha(point.Filling.BG, 1)
-	SetAlpha(point.Filling.TimerSpinner, timerAlpha)
-	SetAlpha(point.Filling.TrailSpinnerIn, trailInAlpha)
-	SetAlpha(point.Filling.TrailSpinner, trailAlpha)
-	SetAlpha(point.Filling.IconProgB, progBAlpha)
-	SetAlpha(point.Filling.IconProgC, progCAlpha)
-	SetAlpha(point.Filling.IconProg, progAlpha)
-	SetAlpha(point.Filling.SpinOutBG, spinProgress * spinAlpha)
-	SetAlpha(point.Filling.SpinnerOut, spinProgress * spinAlpha)
-	SetAlpha(point.Filling.SpinStar, spinProgress * spinAlpha)
-
-	SetRotation(point.Filling.TimerSpinner, -360 * progress)
-	SetRotation(point.Filling.TrailSpinnerIn, -360 * progress)
-	SetRotation(point.Filling.TrailSpinner, -360 * progress)
-	SetRotation(point.Filling.SpinnerOut, -260 * spinProgress)
-	SetRotation(point.Filling.SpinStar, -260 * Clamp01((progress - 0.86) / 0.14))
-end
-
-function EvokerEssence:StartFullBurst(point, now)
-	point.fullBurstStartTime = now
-	point.depleteStartTime = nil
-	point.state = EssenceState.FULL_BURST
-	point.lastFillingProgress = nil
-end
-
-function EvokerEssence:UpdateFullBurst(point, now)
-	if not point.fullBurstStartTime then
-		self:ShowFull(point)
-		return false
-	end
-
-	local progress = Clamp01((now - point.fullBurstStartTime) / ESSENCE_FULL_BURST_DURATION)
-	point.Empty:Hide()
-	point.Full:Hide()
-	point.Filling:Hide()
-	point.Depleting:Hide()
-	point.FillDone:Show()
-	point.state = EssenceState.FULL_BURST
-
-	local iconGlowAlpha = (progress < 0.31) and Clamp01(progress / 0.31) or Clamp01(1 - ((progress - 0.62) / 0.38))
-	local rimGlowAlpha = (progress < 0.31) and Clamp01(progress / 0.31) or Clamp01(1 - ((progress - 0.62) / 0.18))
-	local burstAlpha = (progress < 0.25) and (0.8 * Clamp01(progress / 0.25)) or (0.8 * Clamp01(1 - ((progress - 0.25) / 0.50)))
-
-	SetAlpha(point.FillDone.CircBG, 1)
-	SetAlpha(point.FillDone.CircBGActive, Clamp01(progress / 0.62))
-	SetAlpha(point.FillDone.Icon, Clamp01(progress / 0.31))
-	SetAlpha(point.FillDone.IconProg, Clamp01(1 - Clamp01(progress / 0.25)))
-	SetAlpha(point.FillDone.RimGlow, rimGlowAlpha)
-	SetAlpha(point.FillDone.IconGlow, iconGlowAlpha)
-	SetAlpha(point.FillDone.FXBurst, burstAlpha)
-	SetRotation(point.FillDone.FXBurst, -30 * Clamp01(progress / 0.25))
-
-	if progress >= 1 then
-		self:ShowFull(point)
-		return false
-	end
-
-	return true
-end
-
-function EvokerEssence:StartDeplete(point, now)
-	point.depleteStartTime = now
-	point.fullBurstStartTime = nil
-	point.state = EssenceState.DEPLETING
-	point.lastFillingProgress = nil
-end
-
-function EvokerEssence:UpdateDeplete(point, now)
-	if not point.depleteStartTime then
-		self:ShowEmpty(point)
-		return false
-	end
-
-	local progress = Clamp01((now - point.depleteStartTime) / ESSENCE_DEPLETE_DURATION)
-	point.Empty:Hide()
-	point.Full:Hide()
-	point.Filling:Hide()
-	point.FillDone:Hide()
-	point.Depleting:Show()
-	point.state = EssenceState.DEPLETING
-
-	local fadeLate = Clamp01((progress - 0.375) / 0.625)
-	local smokeIn = Clamp01(progress / 0.375)
-	local smokeOut = Clamp01((progress - 0.50) / 0.50)
-
-	SetAlpha(point.Depleting.BG, 1)
-	SetAlpha(point.Depleting.CircBGActive, 1 - progress)
-	SetAlpha(point.Depleting.Icon, 1 - Clamp01(progress / 0.625))
-	SetAlpha(point.Depleting.FXDepBG, 1 - fadeLate)
-	SetAlpha(point.Depleting.FXRimGlow, 1 - fadeLate)
-	SetAlpha(point.Depleting.IconDeplete, 1 - fadeLate)
-	SetAlpha(point.Depleting.FXSmoke, smokeIn * (1 - smokeOut))
-	point.Depleting.FXSmoke:ClearAllPoints()
-	point.Depleting.FXSmoke:SetPoint("CENTER", 0, 10 + (5 * progress))
-
-	if progress >= 1 then
-		self:ShowEmpty(point)
-		return false
-	end
-
-	return true
 end
 
 function EvokerEssence:LayoutPoints(count)
@@ -305,38 +394,11 @@ function EvokerEssence:ReadEssenceState()
 	local current = UnitPower("player", resource.powerEnum) or 0
 	local maxValue = UnitPowerMax("player", resource.powerEnum) or 0
 	local partial = 0
-	if current < maxValue then
-		partial = (UnitPartialPower and UnitPartialPower("player", resource.powerEnum) or 0) or 0
+	if current < maxValue and UnitPartialPower then
+		partial = UnitPartialPower("player", resource.powerEnum) or 0
 	end
 
-	return current, maxValue, Clamp01((partial or 0) / 1000)
-end
-
-function EvokerEssence:UpdateTicker(shouldAnimate)
-	if not self.root then
-		return
-	end
-
-	if shouldAnimate then
-		if self.root:GetScript("OnUpdate") then
-			return
-		end
-
-		self.elapsed = 0
-		self.root:SetScript("OnUpdate", function(_, elapsed)
-			self.elapsed = self.elapsed + (elapsed or 0)
-			if self.elapsed < ESSENCE_UPDATE_INTERVAL then
-				return
-			end
-
-			self.elapsed = 0
-			self:Sync()
-		end)
-		return
-	end
-
-	self.elapsed = 0
-	self.root:SetScript("OnUpdate", nil)
+	return current, maxValue, (partial or 0) / 1000
 end
 
 function EvokerEssence:Initialize(parentFrame)
@@ -356,9 +418,9 @@ function EvokerEssence:Shutdown()
 	self.activeResource = nil
 	self.resolved = nil
 	self.suppressTransitions = true
-	self:UpdateTicker(false)
 
 	for i = 1, #self.points do
+		self:StopPointAnimations(self.points[i])
 		self.points[i]:Hide()
 	end
 
@@ -398,7 +460,9 @@ function EvokerEssence:SetVisible(visible)
 		self:Sync()
 	else
 		self.root:Hide()
-		self:UpdateTicker(false)
+		for i = 1, #self.points do
+			StopPointOnUpdate(self.points[i])
+		end
 	end
 end
 
@@ -408,8 +472,6 @@ function EvokerEssence:Sync()
 	end
 
 	local current, maxValue, partialProgress = self:ReadEssenceState()
-	local now = GetTime()
-	local anyAnimating = false
 	local allowTransitions = not self.suppressTransitions
 
 	if maxValue ~= self.visiblePointCount then
@@ -422,31 +484,25 @@ function EvokerEssence:Sync()
 		if point then
 			if i <= current then
 				if allowTransitions and point.state ~= EssenceState.FULL and point.state ~= EssenceState.FULL_BURST then
-					self:StartFullBurst(point, now)
-				end
-
-				if point.state == EssenceState.FULL_BURST then
-					if self:UpdateFullBurst(point, now) then
-						anyAnimating = true
-					end
-				else
+					self:StartFullBurst(point)
+				elseif point.state ~= EssenceState.FULL and point.state ~= EssenceState.FULL_BURST then
 					self:ShowFull(point)
 				end
 			elseif i == (current + 1) and current < maxValue then
-				point.fullBurstStartTime = nil
-				point.depleteStartTime = nil
-				self:UpdateFillingVisual(point, partialProgress)
-				anyAnimating = true
-			else
-				if allowTransitions and point.state ~= EssenceState.EMPTY and point.state ~= EssenceState.DEPLETING then
-					self:StartDeplete(point, now)
+				local alreadyFilling = point.Filling.FillingAnim:IsPlaying() or point.Full:IsShown()
+				local outdatedProgress = false
+				if alreadyFilling and point.Filling.FillingAnim.GetProgress then
+					outdatedProgress = math_abs(partialProgress - point.Filling.FillingAnim:GetProgress()) > 0.1
 				end
 
-				if point.state == EssenceState.DEPLETING then
-					if self:UpdateDeplete(point, now) then
-						anyAnimating = true
-					end
-				else
+				if not alreadyFilling or outdatedProgress or point.state ~= EssenceState.FILLING then
+					self:StartFilling(point, partialProgress)
+				end
+			else
+				local wasFilling = point.Filling.FillingAnim:IsPlaying()
+				if allowTransitions and (point.Full:IsShown() or point.Filling:IsShown() or point.FillDone:IsShown()) then
+					self:StartDepleting(point, wasFilling)
+				elseif point.state ~= EssenceState.EMPTY and point.state ~= EssenceState.DEPLETING then
 					self:ShowEmpty(point)
 				end
 			end
@@ -458,7 +514,6 @@ function EvokerEssence:Sync()
 	end
 
 	self.suppressTransitions = false
-	self:UpdateTicker(anyAnimating)
 end
 
 function EvokerEssence:WantsEvent(event)
@@ -485,7 +540,6 @@ local function CreateEvokerEssence()
 		activeResource = nil,
 		resolved = nil,
 		visiblePointCount = 0,
-		elapsed = 0,
 		suppressTransitions = true,
 	}, EvokerEssence)
 end
