@@ -1367,7 +1367,7 @@ local function BuildSettingsPanel()
 	local resourceColorsCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Resource Colors"] or "Resource Colors")
 	AddInfoText(
 		resourceColorsCategory,
-		L["Resource Colors Tooltip"] or "Override default resource colors addon-wide. These affect provider-based resource colors and supported class resource displays."
+		L["Resource Colors Tooltip"] or "Override default resource colors addon-wide. These affect bar slot colors and class resource displays."
 	)
 	if ResourceColors and ResourceColors.GetSettingEntries then
 		local initializer = CreateColorOverridesInitializer(resourceColorsCategory, {
@@ -1402,13 +1402,13 @@ local function BuildSettingsPanel()
 		L["Class Resource Visual Style"] or "Visual Style",
 		classResourceRendererModeOptions,
 		L["Class Resource Visual Style Tooltip"]
-			or "Choose between class-specific visuals and the simpler shared flat style. Some resources are only partially supported in simple style."
+			or "Classic uses dedicated per-class art and animations. Simple uses a shared flat style with configurable fill colors."
 	)
 	AddCheckbox(
 		cpCategory,
 		"classresource_simpleAnimations",
-		L["Class Resource Simple Animations"] or "Simple Animations",
-		L["Class Resource Simple Animations Tooltip"] or "Enable gain and spend animations for Simple visual style resources."
+		L["Class Resource Simple Animations"] or "Simple Style Animations",
+		L["Class Resource Simple Animations Tooltip"] or "Enable gain and spend animations when Visual Style is set to Simple. Has no effect in Classic mode."
 	)
 
 	AddSlider(
@@ -1434,19 +1434,19 @@ local function BuildSettingsPanel()
 		"classresource_fillColorSource",
 		L["Class Resource Fill Color Source"] or "Fill Color Source",
 		classResourceFillColorSourceOptions,
-		L["Class Resource Fill Color Source Tooltip"] or "Choose how the class resource fill color is selected. This option is mainly used by Simple visual style resources."
+		L["Class Resource Fill Color Source Tooltip"] or "Choose how the class resource fill color is selected. Applies to Simple visual style and supported Classic resource systems."
 	)
 	AddColor(
 		cpCategory,
 		"classresource_fillColor",
 		L["Class Resource Fill Color"] or "Class Resource Fill Color",
-		L["Class Resource Fill Color Tooltip"] or "Color for active class resource pips"
+		L["Class Resource Fill Color Tooltip"] or "Custom fill color for active class resource points. Used when Fill Color Source is set to Custom Color."
 	)
 	AddColor(
 		cpCategory,
 		"classresource_backgroundColor",
 		L["Background Color"] or "Background Color",
-		L["Class Resource Background Color Tooltip"] or "Tint multiplier for the class resource pip background texture.",
+		L["Class Resource Background Color Tooltip"] or "Background color for unfilled class resource points.",
 		false
 	)
 	AddSlider(cpCategory, "classresource_offsetX", L["Class Resource Horizontal Offset"] or "Class Resource Horizontal Offset", -300, 300, 1)

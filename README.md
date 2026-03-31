@@ -10,7 +10,7 @@
 
 <p align="center">
   <img alt="WoW Version" src="https://img.shields.io/badge/WoW-12.0%2F12.0.1-blue" />
-  <img alt="Version" src="https://img.shields.io/badge/version-1.4.1-green" />
+  <img alt="Version" src="https://img.shields.io/badge/version-1.4.2-green" />
   <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0-blue" />
   <a href="https://www.curseforge.com/wow/addons/sparkpoint">
     <img alt="CurseForge" src="https://img.shields.io/badge/CurseForge-SparkPoint-orange" />
@@ -27,24 +27,31 @@ It currently includes:
 
 - Cast ring with latency overlay, interrupt feedback, spell text, and click-feedback ring
 - Up to 3 assignable ring slots
-- Top and bottom bar slots with health and mana providers
-- Class resource display in pip or text mode
+- Top and bottom bar slots with health, mana, and class power providers
+- Class resource display with dedicated per-class systems
 - Decorative rotating ring
 - Spell icon with cast swipe, instant-cast feedback, and cooldown-blocked feedback
 - Assisted Highlight support for Blizzard's suggested-spell system
 - Shared visibility rules, per-module overrides, and optional HUD transitions
 - Cursor-attached mode, fixed anchor mode, minimap button, and profile support
 
-## New In v1.4.1
+## New In v1.4.2
+
+- Rebuilt class resources as a pluggable system with dedicated renderers for each class
+- Added dedicated resource systems for Death Knight Runes, Evoker Essences, Rogue and Druid Combo Points, Paladin Holy Power, Monk Chi, Arcane Charges, Soul Shards, and Maelstrom Weapon
+- Added native animation groups for spend, fill, recharge, and cooldown transitions in dedicated systems
+- Added a Class Power bar provider with dynamic class power or mana source resolution in bar slots
+- Added addon-wide resource color overrides for health, mana, class power, and class resource systems
+- Added visual style and fill color source settings for class resources
+- Added simple pip animation support for generic class resource pips
+
+## Previously In v1.4.x
 
 - Added a new bottom bar slot with dedicated fill texture and matching layout, text, and visibility controls
 - Refactored ring slot settings around named outer, middle, and inner slots with per-slot enable, provider, appearance, and shared visibility controls
 - Added a framed shell for the cast spell icon for cleaner HUD presentation
 - Improved cooldown and charge handling APIs used by GCD tracking and readable cooldown-blocked feedback
 - Added a `None` provider option for bar slots and updated defaults
-
-## Previously In v1.4.x
-
 - Added a new top bar slot module with dedicated health and mana providers
 - Added full top bar slot styling controls for fill, background, frame, and provider-based coloring
 - Added top bar slot text with configurable mode, number style, font, outline, opacity, and offsets
@@ -98,7 +105,7 @@ SparkPoint supports up to **3 concentric inner slots** inside the cast ring.
 
 SparkPoint supports dedicated **top and bottom bar slots** positioned above and below the main cast ring.
 
-- Current providers: **Health** and **Mana**
+- Current providers: **Health**, **Mana**, and **Class Power**
 - Configurable fill color source, background tint, frame tint, and independent opacity controls
 - Optional text overlay with current, max, and percent display modes
 - Configurable text font, outline, number style, opacity, and offsets
@@ -106,20 +113,19 @@ SparkPoint supports dedicated **top and bottom bar slots** positioned above and 
 
 ### Class Resource
 
-Displays class-specific resources near your cursor in either **Pips** or **Text** mode.
+Displays class-specific resources near your cursor with dedicated per-class rendering systems.
 
-**Pip mode supports:**
-Paladin, Death Knight, Rogue, Druid, Arcane Mage, Windwalker Monk, Warlock, Evoker, and Enhancement Shaman
+**Dedicated systems:** Death Knight Runes, Evoker Essences, Rogue Combo Points, Druid Combo Points, Paladin Holy Power, Monk Chi, Arcane Charges, Soul Shards, and Maelstrom Weapon
 
-**Text mode additionally supports:**
-Demon Hunter, Shadow Priest, Balance Druid, and Elemental Shaman
+**Generic pips:** fallback for simple discrete resources
 
 Configurable options include:
 
 - Scale and opacity
 - Separate offsets for the resource display
-- Font, size, outline, and color for text mode
-- Fill color, background tint, and class-color override for pip mode
+- Visual style and fill color source settings
+- Fill color, background tint, and class-color override
+- Simple pip animation support
 - Per-module visibility override
 
 ### Decorative Ring

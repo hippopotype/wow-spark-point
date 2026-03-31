@@ -97,8 +97,8 @@
     click-feedback ring
   </li>
   <li>Up to 3 assignable ring slots</li>
-  <li>Top and bottom bar slots with health and mana providers</li>
-  <li>Class resource display in pip or text mode</li>
+  <li>Top and bottom bar slots with health, mana, and class power providers</li>
+  <li>Class resource display with dedicated per-class systems</li>
   <li>Decorative rotating ring</li>
   <li>
     Spell icon with cast swipe, instant-cast feedback, and cooldown-blocked
@@ -112,7 +112,36 @@
     Cursor-attached mode, fixed anchor mode, minimap button, and profile support
   </li>
 </ul>
-<h2><strong>New In v1.4.1</strong></h2>
+<h2><strong>New In v1.4.2</strong></h2>
+<ul>
+  <li>
+    Rebuilt class resources as a pluggable system with dedicated renderers for
+    each class
+  </li>
+  <li>
+    Added dedicated resource systems for Death Knight Runes, Evoker Essences,
+    Rogue and Druid Combo Points, Paladin Holy Power, Monk Chi, Arcane Charges,
+    Soul Shards, and Maelstrom Weapon
+  </li>
+  <li>
+    Added native animation groups for spend, fill, recharge, and cooldown
+    transitions in dedicated systems
+  </li>
+  <li>
+    Added a Class Power bar provider with dynamic class power or mana source
+    resolution in bar slots
+  </li>
+  <li>
+    Added addon-wide resource color overrides for health, mana, class power, and
+    class resource systems
+  </li>
+  <li>
+    Added visual style and fill color source settings for class resources
+  </li>
+  <li>Added simple pip animation support for generic class resource pips</li>
+</ul>
+
+<h2><strong>Previously In v1.4.x</strong></h2>
 <ul>
   <li>
     Added a new bottom bar slot with dedicated fill texture and matching
@@ -130,10 +159,6 @@
     readable cooldown-blocked feedback
   </li>
   <li>Added a <code>None</code> provider option for bar slots and updated defaults</li>
-</ul>
-
-<h2><strong>Previously In v1.4.x</strong></h2>
-<ul>
   <li>
     Added a new top bar slot module with dedicated health and mana providers
   </li>
@@ -247,7 +272,7 @@
   positioned above and below the main cast ring.
 </p>
 <ul>
-  <li>Current providers: <strong>Health</strong> and <strong>Mana</strong></li>
+  <li>Current providers: <strong>Health</strong>, <strong>Mana</strong>, and <strong>Class Power</strong></li>
   <li>
     Configurable fill color source, background tint, frame tint, and independent
     opacity controls
@@ -258,23 +283,24 @@
 </ul>
 <h3>Class Resource</h3>
 <p>
-  Displays class-specific resources near your cursor in either
-  <strong>Pips</strong> or <strong>Text</strong> mode.
+  Displays class-specific resources near your cursor with dedicated per-class
+  rendering systems.
 </p>
 <p>
-  <strong>Pip mode supports:</strong> Paladin, Death Knight, Rogue, Druid,
-  Arcane Mage, Windwalker Monk, Warlock, Evoker, and Enhancement Shaman
+  <strong>Dedicated systems:</strong> Death Knight Runes, Evoker Essences,
+  Rogue Combo Points, Druid Combo Points, Paladin Holy Power, Monk Chi,
+  Arcane Charges, Soul Shards, and Maelstrom Weapon
 </p>
 <p>
-  <strong>Text mode additionally supports:</strong> Demon Hunter, Shadow Priest,
-  Balance Druid, and Elemental Shaman
+  <strong>Generic pips:</strong> fallback for simple discrete resources
 </p>
 <p>Configurable options include:</p>
 <ul>
   <li>Scale and opacity</li>
   <li>Separate offsets for the resource display</li>
-  <li>Font, size, outline, and color for text mode</li>
-  <li>Fill color, background tint, and class-color override for pip mode</li>
+  <li>Visual style and fill color source settings</li>
+  <li>Fill color, background tint, and class-color override</li>
+  <li>Simple pip animation support</li>
   <li>Per-module visibility override</li>
 </ul>
 <h3>Decorative Ring</h3>
