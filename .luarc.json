@@ -7,6 +7,7 @@
     "bit",
     "CANCEL",
     "C_ActionBar",
+    "C_AddOnProfiler",
     "C_AssistedCombat",
     "C_PetBattles",
     "C_CVar",
@@ -31,6 +32,7 @@
     "FindBaseSpellByID",
     "FindSpellOverrideByID",
     "GetActionInfo",
+    "GetAddOnMemoryUsage",
     "GetActionCharges",
     "GetActionCooldown",
     "GetCursorPosition",
@@ -99,6 +101,7 @@
     "UnitPowerType",
     "GetUnitChargedPowerPoints",
     "UnitReaction",
+    "UpdateAddOnMemoryUsage",
     "WorldFrame"
   ],
   "Lua.workspace.ignoreDir": [".clones", ".git"]

@@ -225,8 +225,7 @@ L["Class Resource Visual Style Simple"] = "Simple"
 L["Class Resource Simple Animations"] = "Simple Style Animations"
 L["Class Resource Simple Animations Tooltip"] = "Enable gain and spend animations when Visual Style is set to Simple. Has no effect in Classic mode."
 L["Class Resource Fill Color Source"] = "Fill Color Source"
-L["Class Resource Fill Color Source Tooltip"] =
-	"Choose how the class resource fill color is selected. Applies to Simple visual style and supported Classic resource systems."
+L["Class Resource Fill Color Source Tooltip"] = "Choose how the class resource fill color is selected. Applies to Simple visual style and supported Classic resource systems."
 L["Class Resource Fill Color Source Custom"] = "Custom Color"
 L["Class Resource Fill Color Source Class"] = "Class Color"
 L["Class Resource Fill Color Source Resource"] = "Resource Color"
@@ -402,6 +401,23 @@ L["Show Cooldown Blocked Presses Tooltip"] = "Show the spell icon with remaining
 --------------------------------------------------------------------------------
 L["Assisted Highlight"] = "Assisted Highlight"
 L["Assisted Highlight Description"] = "Shows the next suggested spell from Blizzard Assisted Highlight"
+
+--------------------------------------------------------------------------------
+-- Performance Stats
+--------------------------------------------------------------------------------
+L["Performance Stats"] = "Performance Stats"
+L["Performance Stats Description"] = "Shows SparkPoint addon memory and CPU usage near the cursor"
+L["Performance Stats Font"] = "Font"
+L["Performance Stats Font Tooltip"] = "Choose the font used by the performance stats text"
+L["Performance Stats Font Outline"] = "Font Outline"
+L["Performance Stats Font Outline Tooltip"] = "Choose the outline style used by the performance stats text"
+L["Performance Stats Font Size"] = "Font Size"
+L["Performance Stats Font Size Tooltip"] = "Font size used by the performance stats text"
+L["Performance Stats Color"] = "Text Color"
+L["Performance Stats Color Tooltip"] = "Color and alpha used by the performance stats text"
+L["Performance Stats Horizontal Offset"] = "Horizontal Offset"
+L["Performance Stats Vertical Offset"] = "Vertical Offset"
+L["Performance Stats Visibility Tooltip"] = "When to show the performance stats text"
 
 --------------------------------------------------------------------------------
 -- Colors (for future use)

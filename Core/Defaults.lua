@@ -52,6 +52,7 @@ addon.DefaultValues = {
 	moduleEnabled_Ring = true,
 	moduleEnabled_SpellIcon = true,
 	moduleEnabled_AssistedHighlight = true,
+	moduleEnabled_PerformanceStats = false,
 	resourceColorOverrides = {
 		HEALTH = { r = 0.12, g = 0.86, b = 0.20, a = 1.00 },
 		MANA = { r = 0.12, g = 0.36, b = 1.00, a = 1.00 },
@@ -285,4 +286,17 @@ addon.DefaultValues = {
 	assistedhighlight_hideOnUIHover = false,
 	assistedhighlight_hideInPetBattle = true,
 	assistedhighlight_hideInSpecialActionBarContext = true,
+
+	-- PerformanceStats module settings
+	performancestats_offsetX = 0,
+	performancestats_offsetY = -90,
+	performancestats_font = "Fonts\\FRIZQT__.TTF",
+	performancestats_outline = "OUTLINE",
+	performancestats_size = 10,
+	performancestats_color = { r = 0.40, g = 0.82, b = 0.52, a = 0.6 },
+	performancestats_visibilitySource = "INHERIT",
+	performancestats_visibility = { ALWAYS = true },
+	performancestats_hideOnUIHover = false,
+	performancestats_hideInPetBattle = true,
+	performancestats_hideInSpecialActionBarContext = true,
 }

@@ -84,6 +84,15 @@ local NEW_SETTINGS = {
 	ring_hideInSpecialActionBarContext = true,
 	assistedhighlight_hideInPetBattle = true,
 	assistedhighlight_hideInSpecialActionBarContext = true,
+	moduleEnabled_PerformanceStats = true,
+	performancestats_offsetX = true,
+	performancestats_offsetY = true,
+	performancestats_font = true,
+	performancestats_outline = true,
+	performancestats_size = true,
+	performancestats_color = true,
+	performancestats_hideInPetBattle = true,
+	performancestats_hideInSpecialActionBarContext = true,
 }
 
 local function ApplyNewFeatureBadge(initializer, isNew)
@@ -1365,10 +1374,7 @@ local function BuildSettingsPanel()
 	-- Resource Colors Settings Subcategory
 	------------------------------------------------------------------------
 	local resourceColorsCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Resource Colors"] or "Resource Colors")
-	AddInfoText(
-		resourceColorsCategory,
-		L["Resource Colors Tooltip"] or "Override default resource colors addon-wide. These affect bar slot colors and class resource displays."
-	)
+	AddInfoText(resourceColorsCategory, L["Resource Colors Tooltip"] or "Override default resource colors addon-wide. These affect bar slot colors and class resource displays.")
 	if ResourceColors and ResourceColors.GetSettingEntries then
 		local initializer = CreateColorOverridesInitializer(resourceColorsCategory, {
 			categoryID = resourceColorsCategory:GetID(),
@@ -1401,8 +1407,7 @@ local function BuildSettingsPanel()
 		"classresource_rendererMode",
 		L["Class Resource Visual Style"] or "Visual Style",
 		classResourceRendererModeOptions,
-		L["Class Resource Visual Style Tooltip"]
-			or "Classic uses dedicated per-class art and animations. Simple uses a shared flat style with configurable fill colors."
+		L["Class Resource Visual Style Tooltip"] or "Classic uses dedicated per-class art and animations. Simple uses a shared flat style with configurable fill colors."
 	)
 	AddCheckbox(
 		cpCategory,
@@ -1434,7 +1439,8 @@ local function BuildSettingsPanel()
 		"classresource_fillColorSource",
 		L["Class Resource Fill Color Source"] or "Fill Color Source",
 		classResourceFillColorSourceOptions,
-		L["Class Resource Fill Color Source Tooltip"] or "Choose how the class resource fill color is selected. Applies to Simple visual style and supported Classic resource systems."
+		L["Class Resource Fill Color Source Tooltip"]
+			or "Choose how the class resource fill color is selected. Applies to Simple visual style and supported Classic resource systems."
 	)
 	AddColor(
 		cpCategory,
@@ -1736,6 +1742,77 @@ local function BuildSettingsPanel()
 	AddCheckbox(
 		assistedHideCategory,
 		"assistedhighlight_hideInSpecialActionBarContext",
+		L["Hide While In Special Action Bar Context"] or "Hide While In Special Action Bar Context",
+		L["Hide While In Special Action Bar Context Tooltip"]
+			or "Hide SparkPoint while Blizzard replaces your normal action bar with a special context such as vehicle, override, possess, or temporary shapeshift bars."
+	)
+
+	------------------------------------------------------------------------
+	-- Performance Stats Settings Subcategory
+	------------------------------------------------------------------------
+	local performanceCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Performance Stats"] or "Performance Stats")
+	AddDropdown(
+		performanceCategory,
+		"performancestats_font",
+		L["Performance Stats Font"] or "Font",
+		fontOptions,
+		L["Performance Stats Font Tooltip"] or "Choose the font used by the performance stats text"
+	)
+	AddDropdown(
+		performanceCategory,
+		"performancestats_outline",
+		L["Performance Stats Font Outline"] or "Font Outline",
+		fontOutlineOptions,
+		L["Performance Stats Font Outline Tooltip"] or "Choose the outline style used by the performance stats text"
+	)
+	AddSlider(
+		performanceCategory,
+		"performancestats_size",
+		L["Performance Stats Font Size"] or "Font Size",
+		8,
+		24,
+		1,
+		L["Performance Stats Font Size Tooltip"] or "Font size used by the performance stats text"
+	)
+	AddColor(
+		performanceCategory,
+		"performancestats_color",
+		L["Performance Stats Color"] or "Text Color",
+		L["Performance Stats Color Tooltip"] or "Color and alpha used by the performance stats text"
+	)
+	AddSlider(performanceCategory, "performancestats_offsetX", L["Performance Stats Horizontal Offset"] or "Horizontal Offset", -240, 240, 1)
+	AddSlider(performanceCategory, "performancestats_offsetY", L["Performance Stats Vertical Offset"] or "Vertical Offset", -240, 240, 1)
+
+	local performanceVisibilityCategory = Settings.RegisterVerticalLayoutSubcategory(performanceCategory, L["Visibility"] or "Visibility")
+	AddDropdown(
+		performanceVisibilityCategory,
+		"performancestats_visibilitySource",
+		L["Visibility Source"] or "Visibility Source",
+		visibilitySourceOptions,
+		L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility"
+	)
+	AddVisibilityRuleGroup(
+		performanceVisibilityCategory,
+		"performancestats_visibility",
+		nil,
+		L["Performance Stats Visibility Tooltip"] or "When to show the performance stats text"
+	)
+	local performanceHideCategory = Settings.RegisterVerticalLayoutSubcategory(performanceVisibilityCategory, L["Hide Overrides"] or "Hide Overrides")
+	AddCheckbox(
+		performanceHideCategory,
+		"performancestats_hideOnUIHover",
+		L["Hide While Hovering UI"] or "Hide While Hovering UI",
+		L["Hide While Hovering UI Tooltip"] or "Hide SparkPoint while cursor is over clickable UI frames. Keeps SparkPoint visible primarily for world targeting."
+	)
+	AddCheckbox(
+		performanceHideCategory,
+		"performancestats_hideInPetBattle",
+		L["Hide While In Pet Battle"] or "Hide While In Pet Battle",
+		L["Hide While In Pet Battle Tooltip"] or "Hide SparkPoint while you are in a pet battle."
+	)
+	AddCheckbox(
+		performanceHideCategory,
+		"performancestats_hideInSpecialActionBarContext",
 		L["Hide While In Special Action Bar Context"] or "Hide While In Special Action Bar Context",
 		L["Hide While In Special Action Bar Context Tooltip"]
 			or "Hide SparkPoint while Blizzard replaces your normal action bar with a special context such as vehicle, override, possess, or temporary shapeshift bars."

@@ -53,6 +53,7 @@ Modules\ClassResource.lua
 Modules\DecorativeRing.lua
 Modules\SpellIcon.lua
 Modules\AssistedHighlight.lua
+Modules\PerformanceStats.lua
 
 # Settings
 Settings\SettingsTemplates.xml

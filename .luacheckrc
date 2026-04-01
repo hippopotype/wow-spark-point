@@ -15,6 +15,7 @@ globals = {
 	"bit",
 	-- WoW API
 	"C_ActionBar",
+	"C_AddOnProfiler",
 	"C_AssistedCombat",
 	"C_CVar",
 	"C_ClassColor",
@@ -49,6 +50,7 @@ globals = {
 	"GetSpecialization",
 	"GetTime",
 	"GetActionInfo",
+	"GetAddOnMemoryUsage",
 	"GetActionCharges",
 	"GetActionCooldown",
 	"GetMinimapShape",
@@ -101,6 +103,7 @@ globals = {
 	"AbbreviateNumbers",
 	"BreakUpLargeNumbers",
 	"PowerBarColor",
+	"UpdateAddOnMemoryUsage",
 	"WorldFrame",
 	-- WoW locale strings
 	"ACCEPT",
