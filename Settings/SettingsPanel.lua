@@ -80,6 +80,7 @@ local NEW_SETTINGS = {
 	classresource_hideInSpecialActionBarContext = true,
 	classresource_rendererMode = true,
 	classresource_simpleAnimations = true,
+	cast_spellTextAnchor = true,
 	ring_hideInPetBattle = true,
 	ring_hideInSpecialActionBarContext = true,
 	assistedhighlight_hideInPetBattle = true,
@@ -1020,6 +1021,13 @@ local function BuildSettingsPanel()
 		{ value = "MONOCHROME", label = "Monochrome" },
 		{ value = "MONOCHROME,OUTLINE", label = "Mono + Outline" },
 		{ value = "MONOCHROME,THICKOUTLINE", label = "Mono + Thick Outline" },
+	})
+
+	AddDropdown(castCategory, "cast_spellTextAnchor", L["Cast Spell Text Anchor"] or "Cast Spell Text Anchor", {
+		{ value = "TOP", label = L["Anchor Top"] or "Top" },
+		{ value = "BOTTOM", label = L["Anchor Bottom"] or "Bottom" },
+		{ value = "LEFT", label = L["Anchor Left"] or "Left" },
+		{ value = "RIGHT", label = L["Anchor Right"] or "Right" },
 	})
 
 	AddSlider(castCategory, "cast_spellTextOffsetX", L["Cast Spell Text Offset X"] or "Cast Spell Text Offset X", -240, 240, 1)

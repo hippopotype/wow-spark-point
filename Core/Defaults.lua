@@ -109,6 +109,7 @@ addon.DefaultValues = {
 	cast_spellTextOutline = "OUTLINE",
 	cast_spellTextColor = { r = 1, g = 1, b = 1, a = 0.8 },
 	cast_spellTextUseClassColor = false,
+	cast_spellTextAnchor = "TOP",
 	cast_spellTextOffsetX = 0,
 	cast_spellTextOffsetY = 0,
 

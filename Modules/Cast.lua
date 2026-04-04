@@ -114,6 +114,47 @@ local ShouldPreserveConfirmedInstantIcon
 local TryShowActionCooldownBlocked
 local rejectedAttemptToken = 0
 
+local SPELL_TEXT_ANCHORS = {
+	TOP = {
+		point = "BOTTOM",
+		relativePoint = "CENTER",
+		justifyH = "CENTER",
+	},
+	BOTTOM = {
+		point = "TOP",
+		relativePoint = "CENTER",
+		justifyH = "CENTER",
+	},
+	LEFT = {
+		point = "RIGHT",
+		relativePoint = "CENTER",
+		justifyH = "RIGHT",
+	},
+	RIGHT = {
+		point = "LEFT",
+		relativePoint = "CENTER",
+		justifyH = "LEFT",
+	},
+}
+
+local function GetSpellTextAnchorConfig(anchor)
+	return SPELL_TEXT_ANCHORS[anchor] or SPELL_TEXT_ANCHORS.TOP
+end
+
+local function GetSpellTextAnchorOffsets(anchor, radius, offsetX, offsetY)
+	local distance = (radius or 0) + 5
+
+	if anchor == "BOTTOM" then
+		return offsetX, -distance + offsetY
+	elseif anchor == "LEFT" then
+		return -distance + offsetX, offsetY
+	elseif anchor == "RIGHT" then
+		return distance + offsetX, offsetY
+	end
+
+	return offsetX, distance + offsetY
+end
+
 local function GetCastFrameLevel()
 	if not castFrame then
 		return 0
@@ -2342,10 +2383,15 @@ function Cast:ApplyOptions()
 		end
 		castFrame.spellText:SetTextColor(tr, tg, tb, ta)
 
+		local anchor = GetDBValue("cast_spellTextAnchor") or "TOP"
+		local anchorConfig = GetSpellTextAnchorConfig(anchor)
 		local offsetX = GetDBValue("cast_spellTextOffsetX")
 		local offsetY = GetDBValue("cast_spellTextOffsetY")
+		local anchorOffsetX, anchorOffsetY = GetSpellTextAnchorOffsets(anchor, radius, offsetX, offsetY)
+		castFrame.spellText:SetJustifyH(anchorConfig.justifyH)
+		castFrame.spellText:SetJustifyV("MIDDLE")
 		castFrame.spellText:ClearAllPoints()
-		castFrame.spellText:SetPoint("BOTTOM", castFrame, "CENTER", offsetX, radius + 5 + offsetY)
+		castFrame.spellText:SetPoint(anchorConfig.point, castFrame, anchorConfig.relativePoint, anchorOffsetX, anchorOffsetY)
 		-- Warm text rendering after font is set
 		castFrame.spellText:SetText(" ")
 		castFrame.spellText:Hide()
@@ -2568,6 +2614,7 @@ local settingKeys = {
 	"cast_spellTextOutline",
 	"cast_spellTextColor",
 	"cast_spellTextUseClassColor",
+	"cast_spellTextAnchor",
 	"cast_spellTextOffsetX",
 	"cast_spellTextOffsetY",
 	"spellicon_size",
