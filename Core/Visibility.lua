@@ -347,17 +347,31 @@ local function HasInteractiveMouseScript(frame)
 	return false
 end
 
+local function GetObjectTypeSafe(frame)
+	if not (frame and frame.GetObjectType) then
+		return nil
+	end
+
+	local ok, objectType = pcall(frame.GetObjectType, frame)
+	if not ok or type(objectType) ~= "string" or objectType == "" then
+		return nil
+	end
+
+	return objectType
+end
+
 local function IsFrameMouseInteractive(frame)
 	local current = frame
 	local depth = 0
 
 	while current and depth < 12 do
-		if current.IsObjectType then
-			for objectType in pairs(INTERACTIVE_OBJECT_TYPES) do
-				if current:IsObjectType(objectType) then
-					return true
-				end
-			end
+		if current.IsForbidden and current:IsForbidden() then
+			return true
+		end
+
+		local objectType = GetObjectTypeSafe(current)
+		if objectType and INTERACTIVE_OBJECT_TYPES[objectType] then
+			return true
 		end
 
 		if HasInteractiveMouseScript(current) then
