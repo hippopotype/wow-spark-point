@@ -20,6 +20,7 @@ local SlotRingWidget = addon.SlotRingWidget
 local SlotProviders = addon.SlotProviders
 
 local Cast = {}
+local Empower = {}
 local SPELL_ICON_BACKGROUND_PATH = addon.addonFolder .. "\\Textures\\spell_icon_background.png"
 local SPELL_ICON_COOLDOWN_SWIPE_PATH = addon.addonFolder .. "\\Textures\\spell_icon_cooldown_swipe.png"
 local SPELL_ICON_ERROR_PATH = addon.addonFolder .. "\\Textures\\spell_icon_error.png"
@@ -48,6 +49,7 @@ local castShadowFrame
 local castDonut, latencyDonut
 local isCasting = false
 local isChanneling = false
+local isEmpowering = false
 local castStartTime, castEndTime, castDuration
 local castLatency = 0
 local castGlowMaxOpacity = 0.8
@@ -89,6 +91,15 @@ local PENDING_SOURCE_ACTION = "action"
 local CAST_OVERLAY_DEFAULT = "cast_glow"
 local CAST_OVERLAY_INTERRUPT = "cast_error"
 local CAST_OVERLAY_LEVEL_OFFSET = 10
+local EMPOWER_VISUALS = {
+	MARKER_SIZE = 12,
+	MARKER_GLOW_SIZE = 22,
+	MARKER_ALPHA_INACTIVE = 0.35,
+	MARKER_ALPHA_REACHED = 0.9,
+	MARKER_ALPHA_CURRENT = 1,
+	MARKER_GLOW_REACHED = 0.2,
+	MARKER_GLOW_CURRENT = 0.75,
+}
 
 -- Inner ring slots
 local slots = {} -- {widget, provider, providerID} per slot
@@ -96,12 +107,12 @@ local activeProviders = {}
 local moduleEnabled = false
 local clickFeedbackLeftDown = false
 local clickFeedbackRightDown = false
+local empowerNumStages = 0
+local empowerCurrentStage = 0
+local empowerHoldAtMaxMS = 0
+local empowerStagePercents = {}
 
-local GetTime = GetTime
-local UnitCastingInfo = UnitCastingInfo
-local UnitChannelInfo = UnitChannelInfo
-local IsMouseButtonDown = IsMouseButtonDown
-local cos, sin, rad = math.cos, math.sin, math.rad
+local issecretvalue = _G.issecretvalue
 local ShouldShowPlayerInstantCasts
 local ShouldShowTriggeredInstantCasts
 local ShouldShowAnyInstantCasts
@@ -113,6 +124,7 @@ local IsConfirmedInstantIconActiveForSpell
 local ShouldPreserveConfirmedInstantIcon
 local TryShowActionCooldownBlocked
 local rejectedAttemptToken = 0
+local GetActiveCastBarColor
 
 local SPELL_TEXT_ANCHORS = {
 	TOP = {
@@ -153,6 +165,55 @@ local function GetSpellTextAnchorOffsets(anchor, radius, offsetX, offsetY)
 	end
 
 	return offsetX, distance + offsetY
+end
+
+function Empower.ClearSequentialTable(tbl)
+	if type(tbl) ~= "table" then
+		return
+	end
+
+	for i = #tbl, 1, -1 do
+		tbl[i] = nil
+	end
+end
+
+function Empower.IsChannelLikeCast()
+	return isChanneling or isEmpowering
+end
+
+function Empower.GetCastRingRadius()
+	return GetDBValue("cast_radius") or 0
+end
+
+function Empower.GetRingCenterlineRadius(radius)
+	local texThickness = 20
+	local texRadius = 38
+	local ringHalf = radius * (texThickness / texRadius) * 0.5
+	return math.max(0, radius - ringHalf)
+end
+
+function Empower.GetProgressPolarAngle(progress)
+	local angle = (math.max(0, math.min(1, progress or 0)) * 360)
+	return 360 - (-90 + angle)
+end
+
+function Empower.GetRingPointForProgress(progress, radius)
+	local polarAngle = Empower.GetProgressPolarAngle(progress)
+	local ringRadius = Empower.GetRingCenterlineRadius(radius)
+	return math.cos(math.rad(polarAngle)) * ringRadius, math.sin(math.rad(polarAngle)) * ringRadius, polarAngle
+end
+
+function Empower.GetVisualStageCount()
+	if type(empowerStagePercents) ~= "table" then
+		return 0
+	end
+
+	local stageCount = tonumber(empowerNumStages) or 0
+	if stageCount <= 0 then
+		return 0
+	end
+
+	return math.min(stageCount, #empowerStagePercents)
 end
 
 local function GetCastFrameLevel()
@@ -296,6 +357,176 @@ local function SetTextureSmooth(texture, texturePath)
 	end
 end
 
+function Empower.IsSafeNumericValue(value)
+	if value == nil then
+		return false
+	end
+	if issecretvalue and issecretvalue(value) then
+		return false
+	end
+	return type(value) == "number"
+end
+
+function Empower.GetHoldAtMaxTimeMS(unit)
+	if not (unit and GetUnitEmpowerHoldAtMaxTime) then
+		return 0
+	end
+
+	local value = GetUnitEmpowerHoldAtMaxTime(unit)
+	if not Empower.IsSafeNumericValue(value) then
+		return 0
+	end
+
+	return math.max(0, value)
+end
+
+function Empower.NormalizeStagePercents(values, numStages)
+	if type(values) ~= "table" then
+		return nil
+	end
+
+	local cleaned = {}
+	local scale = 1
+	for i = 1, #values do
+		local value = values[i]
+		if Empower.IsSafeNumericValue(value) and value > 1 then
+			scale = 100
+			break
+		end
+	end
+
+	local last = -1
+	for i = 1, #values do
+		local value = values[i]
+		if Empower.IsSafeNumericValue(value) then
+			if scale == 100 then
+				value = value / 100
+			end
+			if value < 0 then
+				value = 0
+			elseif value > 1 then
+				value = 1
+			end
+			if value > last then
+				cleaned[#cleaned + 1] = value
+				last = value
+			end
+		end
+		if numStages and #cleaned >= numStages then
+			break
+		end
+	end
+
+	if #cleaned == 0 then
+		return nil
+	end
+
+	return cleaned
+end
+
+function Empower.BuildStagePercentsFromPercentages(values, numStages)
+	if type(values) ~= "table" then
+		return nil
+	end
+
+	local cleaned = {}
+	local scale = 1
+	for i = 1, #values do
+		local value = values[i]
+		if Empower.IsSafeNumericValue(value) and value > 1 then
+			scale = 100
+			break
+		end
+	end
+
+	for i = 1, #values do
+		local value = values[i]
+		if Empower.IsSafeNumericValue(value) then
+			if scale == 100 then
+				value = value / 100
+			end
+			if value < 0 then
+				value = 0
+			elseif value > 1 then
+				value = 1
+			end
+			cleaned[#cleaned + 1] = value
+		end
+		if numStages and #cleaned >= numStages then
+			break
+		end
+	end
+
+	if numStages and #cleaned < numStages then
+		return nil
+	end
+	if #cleaned == 0 then
+		return nil
+	end
+
+	local sum = 0
+	for i = 1, #cleaned do
+		sum = sum + cleaned[i]
+	end
+
+	local assumeCumulative = #cleaned > 1 and sum > 1.02
+	if assumeCumulative then
+		return Empower.NormalizeStagePercents(cleaned, numStages)
+	end
+
+	local cumulative = {}
+	local running = 0
+	for i = 1, #cleaned do
+		running = running + cleaned[i]
+		cumulative[i] = running
+	end
+
+	return Empower.NormalizeStagePercents(cumulative, numStages)
+end
+
+function Empower.BuildStagePercents(unit, numStages)
+	numStages = tonumber(numStages) or 0
+	if numStages <= 0 then
+		return nil
+	end
+
+	if UnitEmpoweredStagePercentages then
+		local percents = UnitEmpoweredStagePercentages(unit, true)
+		percents = Empower.BuildStagePercentsFromPercentages(percents, numStages)
+		if percents then
+			return percents
+		end
+	end
+
+	if not GetUnitEmpowerStageDuration then
+		return nil
+	end
+
+	local durations = {}
+	local total = Empower.GetHoldAtMaxTimeMS(unit)
+	local running = 0
+	for i = 1, numStages do
+		local duration = GetUnitEmpowerStageDuration(unit, i - 1)
+		if not Empower.IsSafeNumericValue(duration) then
+			return nil
+		end
+		running = running + duration
+		durations[i] = running
+		total = total + duration
+	end
+
+	if total <= 0 then
+		return nil
+	end
+
+	local percents = {}
+	for i = 1, numStages do
+		percents[i] = durations[i] / total
+	end
+
+	return Empower.NormalizeStagePercents(percents, numStages)
+end
+
 local function IsCastVisibilityAllowed()
 	return (not Visibility) or Visibility:ShouldShow("cast")
 end
@@ -347,6 +578,233 @@ local function GetConfiguredInnerSlotFrameColor(slotIndex)
 	}
 end
 
+function Empower.EnsureMarker(index)
+	if not (castFrame and castFrame.empowerStageFrame) then
+		return nil
+	end
+
+	castFrame.empowerMarkers = castFrame.empowerMarkers or {}
+	local marker = castFrame.empowerMarkers[index]
+	if marker then
+		return marker
+	end
+
+	marker = CreateFrame("Frame", nil, castFrame.empowerStageFrame)
+	marker:SetSize(EMPOWER_VISUALS.MARKER_SIZE, EMPOWER_VISUALS.MARKER_SIZE)
+
+	marker.base = marker:CreateTexture(nil, "OVERLAY", nil, 2)
+	marker.base:SetPoint("CENTER")
+	marker.base:SetSize(7, 10)
+	if marker.base.SetAtlas then
+		marker.base:SetAtlas("ui-castingbar-empower-pip", true)
+	else
+		marker.base:SetTexture("Interface\\Buttons\\WHITE8X8")
+	end
+
+	marker.glow = marker:CreateTexture(nil, "OVERLAY", nil, 3)
+	marker.glow:SetPoint("CENTER")
+	marker.glow:SetSize(EMPOWER_VISUALS.MARKER_GLOW_SIZE, EMPOWER_VISUALS.MARKER_GLOW_SIZE)
+	if marker.glow.SetAtlas then
+		marker.glow:SetAtlas("cast-empowered-pipflare", true)
+	else
+		marker.glow:SetTexture("Interface\\Buttons\\WHITE8X8")
+	end
+	marker.glow:SetBlendMode("ADD")
+	marker.glow:SetAlpha(0)
+
+	marker.flash = marker.glow:CreateAnimationGroup()
+	local fadeIn = marker.flash:CreateAnimation("Alpha")
+	fadeIn:SetFromAlpha(0)
+	fadeIn:SetToAlpha(1)
+	fadeIn:SetDuration(0.08)
+	fadeIn:SetOrder(1)
+	local fadeOut = marker.flash:CreateAnimation("Alpha")
+	fadeOut:SetFromAlpha(1)
+	fadeOut:SetToAlpha(0)
+	fadeOut:SetDuration(0.35)
+	fadeOut:SetOrder(2)
+
+	castFrame.empowerMarkers[index] = marker
+	return marker
+end
+
+function Empower.HideStageVisuals()
+	if not castFrame then
+		return
+	end
+
+	if castFrame.empowerStageFrame then
+		castFrame.empowerStageFrame:Hide()
+	end
+
+	if castFrame.empowerMarkers then
+		for _, marker in ipairs(castFrame.empowerMarkers) do
+			if marker.flash then
+				marker.flash:Stop()
+			end
+			if marker.glow then
+				marker.glow:SetAlpha(0)
+			end
+			marker:Hide()
+		end
+	end
+end
+
+function Empower.UpdateStageVisualState(previousStage)
+	if not (castFrame and castFrame.empowerStageFrame) then
+		return
+	end
+
+	local stageCount = Empower.GetVisualStageCount()
+	if not isEmpowering or stageCount <= 0 then
+		Empower.HideStageVisuals()
+		return
+	end
+
+	local color = GetActiveCastBarColor()
+	local activeR = color.r or 1
+	local activeG = color.g or 1
+	local activeB = color.b or 1
+	castFrame.empowerStageFrame:Show()
+
+	for i = 1, stageCount do
+		local marker = Empower.EnsureMarker(i)
+		if marker then
+			local reached = i <= empowerCurrentStage
+			local isCurrent = reached and i == empowerCurrentStage
+			local alpha = EMPOWER_VISUALS.MARKER_ALPHA_INACTIVE
+			local glowAlpha = 0
+			local scale = 1
+
+			if reached then
+				alpha = isCurrent and EMPOWER_VISUALS.MARKER_ALPHA_CURRENT or EMPOWER_VISUALS.MARKER_ALPHA_REACHED
+				glowAlpha = isCurrent and EMPOWER_VISUALS.MARKER_GLOW_CURRENT or EMPOWER_VISUALS.MARKER_GLOW_REACHED
+				scale = isCurrent and 1.15 or 1
+			end
+
+			if marker.base.SetVertexColor then
+				marker.base:SetVertexColor(activeR, activeG, activeB, alpha)
+			end
+			if marker.glow.SetVertexColor then
+				marker.glow:SetVertexColor(activeR, activeG, activeB, 1)
+			end
+			marker:SetScale(scale)
+			marker:Show()
+
+			if previousStage and empowerCurrentStage > previousStage and i > previousStage and i <= empowerCurrentStage and marker.flash then
+				marker.flash:Stop()
+				marker.flash:Play()
+			else
+				marker.glow:SetAlpha(glowAlpha)
+			end
+		end
+	end
+
+	if castFrame.empowerMarkers then
+		for i = stageCount + 1, #castFrame.empowerMarkers do
+			castFrame.empowerMarkers[i]:Hide()
+		end
+	end
+end
+
+function Empower.LayoutStageVisuals()
+	if not (castFrame and castFrame.empowerStageFrame) then
+		return
+	end
+
+	local stageCount = Empower.GetVisualStageCount()
+	if not isEmpowering or stageCount <= 0 then
+		Empower.HideStageVisuals()
+		return
+	end
+
+	local radius = Empower.GetCastRingRadius()
+	for i = 1, stageCount do
+		local progress = empowerStagePercents[i]
+		local marker = Empower.EnsureMarker(i)
+		if marker and type(progress) == "number" then
+			local offsetX, offsetY, polarAngle = Empower.GetRingPointForProgress(progress, radius)
+			marker:ClearAllPoints()
+			marker:SetPoint("CENTER", castFrame.empowerStageFrame, "CENTER", offsetX, offsetY)
+			if marker.base and marker.base.SetRotation then
+				marker.base:SetRotation(math.rad(progress * 360))
+			end
+			if marker.glow and marker.glow.SetRotation then
+				marker.glow:SetRotation(math.rad(progress * 360))
+			end
+			marker:Show()
+			marker.polarAngle = polarAngle
+		elseif marker then
+			marker:Hide()
+		end
+	end
+
+	Empower.UpdateStageVisualState()
+end
+
+function Empower.ResetState()
+	isEmpowering = false
+	empowerNumStages = 0
+	empowerCurrentStage = 0
+	empowerHoldAtMaxMS = 0
+	Empower.ClearSequentialTable(empowerStagePercents)
+	Empower.HideStageVisuals()
+end
+
+function Empower.UpdateStageFromProgress(progress)
+	if not isEmpowering then
+		return
+	end
+
+	local stageCount = Empower.GetVisualStageCount()
+	if stageCount <= 0 then
+		return
+	end
+	if not Empower.IsSafeNumericValue(progress) then
+		return
+	end
+
+	local nextStage = 0
+	for i = 1, stageCount do
+		local threshold = empowerStagePercents[i]
+		if type(threshold) == "number" and progress >= threshold then
+			nextStage = i
+		else
+			break
+		end
+	end
+
+	if nextStage ~= empowerCurrentStage then
+		local previousStage = empowerCurrentStage
+		empowerCurrentStage = nextStage
+		Empower.UpdateStageVisualState(previousStage)
+	end
+end
+
+function Empower.UpdateSparkAppearance()
+	if not (castFrame and castFrame.sparkTexture) then
+		return
+	end
+
+	local radius = Empower.GetCastRingRadius()
+	local r, g, b, a
+	if GetDBBool("cast_sparkUseClassColor") then
+		r, g, b, a = API.GetPlayerClassColor()
+	else
+		r, g, b, a = GetDBColor("cast_sparkColor")
+	end
+
+	if isEmpowering and castFrame.sparkTexture.SetAtlas then
+		castFrame.sparkTexture:SetAtlas("ui-castingbar-empower-cursor")
+		castFrame.sparkTexture:SetSize(math.max(18, radius * 0.38), math.max(18, radius * 0.38))
+	else
+		castFrame.sparkTexture:SetTexture("Interface\\CastingBar\\UI-CastingBar-Spark")
+		castFrame.sparkTexture:SetSize(radius * 0.5, radius * 0.5)
+	end
+
+	castFrame.sparkTexture:SetVertexColor(r, g, b, a)
+end
+
 local function UpdateAssignedSlotWidgetVisibility()
 	local shouldShow = AreInnerSlotsShown()
 	for i = 1, NUM_SLOTS do
@@ -362,21 +820,21 @@ end
 local function ShouldShowCurrentCastProgress()
 	local mode = GetDBValue("cast_displayMode")
 	if mode == "CHANNEL" then
-		return isChanneling
+		return Empower.IsChannelLikeCast()
 	end
 	if mode == "NON_CHANNEL" then
-		return not isChanneling
+		return not Empower.IsChannelLikeCast()
 	end
 	return true
 end
 
-local function GetActiveCastBarColor()
+GetActiveCastBarColor = function()
 	local source = GetDBValue("cast_fillColorSource")
 	if source == "CLASS" then
 		local r, g, b, a = API.GetPlayerClassColor()
 		return { r = r, g = g, b = b, a = a }
 	end
-	if source == "SPLIT" and isChanneling then
+	if source == "SPLIT" and Empower.IsChannelLikeCast() then
 		return GetDBColorTable("cast_channelBarColor")
 	end
 	return GetDBColorTable("cast_barColor")
@@ -386,7 +844,7 @@ local function DidChannelEndEarly(interruptedBy)
 	if interruptedBy then
 		return true
 	end
-	if not isChanneling or castEndTime == 0 then
+	if not isChanneling or isEmpowering or castEndTime == 0 then
 		return false
 	end
 	return (GetTime() * 1000) < (castEndTime - CHANNEL_INTERRUPT_EARLY_STOP_GRACE_MS)
@@ -852,6 +1310,7 @@ local function ClearCastShellVisuals()
 	if castFrame and castFrame.sparkTexture then
 		castFrame.sparkTexture:Hide()
 	end
+	Empower.HideStageVisuals()
 	if castFrame and castFrame.spellText then
 		castFrame.spellText:Hide()
 	end
@@ -1573,6 +2032,7 @@ local function OnUpdate(self, elapsed)
 		if castFrame.sparkTexture then
 			castFrame.sparkTexture:Hide()
 		end
+		Empower.HideStageVisuals()
 		if castPerc >= 1 then
 			Cast:Hide()
 		end
@@ -1584,13 +2044,17 @@ local function OnUpdate(self, elapsed)
 		local clampedPerc = math.max(0, math.min(1, castPerc))
 
 		-- Reverse for channeled spells if enabled
-		if GetDBBool("cast_reverseChanneling") and isChanneling then
+		if GetDBBool("cast_reverseChanneling") and isChanneling and not isEmpowering then
 			angle = (1 - castPerc) * 360
 		end
 
 		if castDonut then
 			castDonut:SetAngle(angle)
-			castDonut:SetOverlayAlpha(castGlowMaxOpacity * clampedPerc)
+			local overlayAlpha = castGlowMaxOpacity * clampedPerc
+			if isEmpowering and empowerCurrentStage >= Empower.GetVisualStageCount() and Empower.GetVisualStageCount() > 0 then
+				overlayAlpha = math.max(overlayAlpha, castGlowMaxOpacity * 0.9)
+			end
+			castDonut:SetOverlayAlpha(overlayAlpha)
 		end
 		-- Keep latency arc static (Cooldown swipe animates otherwise)
 		if latencyDonut then
@@ -1599,28 +2063,20 @@ local function OnUpdate(self, elapsed)
 		end
 
 		-- Update spark position (rotates around ring)
-		local sparkAngle = 360 - (-90 + angle)
-		local radius = GetDBValue("cast_radius")
-		-- Align spark to the centerline of the 20px ring texture (texture radius = 128px)
-		local texThickness = 20
-		local texRadius = 38
-		local ringHalf = radius * (texThickness / texRadius) * 0.5
-		local sparkRadius = math.max(0, radius - ringHalf)
-		local x = cos(rad(sparkAngle)) * sparkRadius
-		local y = sin(rad(sparkAngle)) * sparkRadius
+		local radius = Empower.GetCastRingRadius()
+		local x, y, sparkAngle = Empower.GetRingPointForProgress(math.max(0, math.min(1, angle / 360)), radius)
 
 		local spark = castFrame.sparkTexture
-		spark:SetRotation(rad(sparkAngle + 90))
+		spark:SetRotation(math.rad(sparkAngle + 90))
 		spark:ClearAllPoints()
 		spark:SetPoint("CENTER", castFrame, "CENTER", x, y)
-
-		local r, g, b, a
-		if GetDBBool("cast_sparkUseClassColor") then
-			r, g, b, a = API.GetPlayerClassColor()
+		Empower.UpdateSparkAppearance()
+		if isEmpowering then
+			Empower.LayoutStageVisuals()
+			Empower.UpdateStageFromProgress(clampedPerc)
 		else
-			r, g, b, a = GetDBColor("cast_sparkColor")
+			Empower.HideStageVisuals()
 		end
-		spark:SetVertexColor(r, g, b, a)
 	else
 		Cast:Hide()
 	end
@@ -1646,6 +2102,7 @@ function Cast:Show()
 	if castDonut then
 		castDonut:SetBarColor(GetActiveCastBarColor())
 	end
+	Empower.UpdateSparkAppearance()
 
 	if castDonut and not ShouldShowCurrentCastProgress() then
 		if castShadowFrame and castShadowFrame.texture then
@@ -1683,6 +2140,11 @@ function Cast:Show()
 		castFrame.sparkTexture:Show()
 	elseif castFrame.sparkTexture then
 		castFrame.sparkTexture:Hide()
+	end
+	if isEmpowering and ShouldShowCurrentCastProgress() then
+		Empower.LayoutStageVisuals()
+	else
+		Empower.HideStageVisuals()
 	end
 
 	pendingVisuals = true
@@ -1736,6 +2198,7 @@ function Cast:UpdateShellVisibility()
 		if castFrame.sparkTexture then
 			castFrame.sparkTexture:Hide()
 		end
+		Empower.HideStageVisuals()
 		if castFrame.spellText then
 			castFrame.spellText:Hide()
 		end
@@ -1769,6 +2232,7 @@ function Cast:Hide()
 	interruptFlashActive = false
 	isCasting = false
 	isChanneling = false
+	Empower.ResetState()
 	currentCastGUID = nil
 	pendingVisuals = false
 	if castDonut then
@@ -1826,6 +2290,7 @@ function Cast:ShowInterruptFlash(castGUID)
 	-- Stop cast progress lifecycle from racing this brief flash.
 	isCasting = false
 	isChanneling = false
+	Empower.ResetState()
 	castDuration = 0
 	castStartTime = 0
 	castEndTime = 0
@@ -1887,6 +2352,97 @@ end
 --------------------------------------------------------------------------------
 -- Event Handlers
 --------------------------------------------------------------------------------
+local function ResetCastStartState()
+	instantIconActive = false
+	instantIconExpiry = 0
+	instantIconForcedShell = false
+	instantIconConfirmed = false
+	instantIconMode = "instant"
+	instantIconCooldownStart = 0
+	instantIconCooldownDuration = 0
+	CancelRejectedAttemptFeedback()
+	ClearPendingInstantIntent()
+	interruptFlashToken = interruptFlashToken + 1
+	interruptFlashActive = false
+end
+
+local function SetCurrentSpellVisual(spellID, name, text, texture)
+	currentSpellID = spellID
+	currentSpellTexture = texture
+	if spellID then
+		local info = C_Spell.GetSpellInfo(spellID)
+		currentSpellName = (info and info.name) or text or name
+		currentSpellTexture = (info and info.iconID) or currentSpellTexture
+	else
+		currentSpellName = text or name
+	end
+end
+
+local function UpdateCastLatency()
+	local sendLag = (castSent > 0) and (GetTime() * 1000 - castSent) or 0
+	if sendLag <= 0 then
+		local _, _, home, world = GetNetStats()
+		sendLag = math.max(home or 0, world or 0)
+	end
+	sendLag = math.min(sendLag, castDuration)
+	castLatency = (castDuration > 0) and (sendLag / castDuration) or 0
+end
+
+local function StartStandardCast(castGUID, spellID)
+	local name, text, texture, startTimeMS, endTimeMS = UnitCastingInfo("player")
+	if not name then
+		return false
+	end
+
+	Empower.ResetState()
+	isChanneling = false
+	currentCastGUID = castGUID
+	castStartTime = startTimeMS
+	castEndTime = endTimeMS
+	castDuration = castEndTime - castStartTime
+	SetCurrentSpellVisual(spellID, name, text, texture)
+	UpdateCastLatency()
+	return true
+end
+
+local function StartChannelLikeCast(castGUID, spellID, forceEmpower)
+	local name, text, texture, startTimeMS, endTimeMS, isTradeSkill, notInterruptible, channelSpellID, isEmpowered, numEmpowerStages = UnitChannelInfo("player")
+	if not name then
+		return false
+	end
+
+	local resolvedSpellID = channelSpellID or spellID
+	local empowered = forceEmpower or ((isEmpowered == true) and (tonumber(numEmpowerStages) or 0) > 0)
+
+	isChanneling = not empowered
+	currentCastGUID = castGUID
+	castStartTime = startTimeMS
+	castEndTime = endTimeMS
+	castDuration = castEndTime - castStartTime
+
+	if empowered then
+		isEmpowering = true
+		empowerNumStages = tonumber(numEmpowerStages) or 0
+		empowerHoldAtMaxMS = Empower.GetHoldAtMaxTimeMS("player")
+		castEndTime = castEndTime + empowerHoldAtMaxMS
+		castDuration = castEndTime - castStartTime
+		Empower.ClearSequentialTable(empowerStagePercents)
+		local stagePercents = Empower.BuildStagePercents("player", empowerNumStages)
+		if type(stagePercents) == "table" then
+			for i = 1, #stagePercents do
+				empowerStagePercents[i] = stagePercents[i]
+			end
+		end
+		empowerCurrentStage = 0
+	else
+		Empower.ResetState()
+	end
+
+	SetCurrentSpellVisual(resolvedSpellID, name, text, texture)
+	UpdateCastLatency()
+	return true
+end
+
 function Cast:UNIT_SPELLCAST_SENT(event, unit, target, castGUID, spellID)
 	if unit ~= "player" then
 		return
@@ -1904,46 +2460,10 @@ function Cast:UNIT_SPELLCAST_START(event, unit, castGUID, spellID)
 	if unit ~= "player" then
 		return
 	end
-	instantIconActive = false
-	instantIconExpiry = 0
-	instantIconForcedShell = false
-	instantIconConfirmed = false
-	instantIconMode = "instant"
-	instantIconCooldownStart = 0
-	instantIconCooldownDuration = 0
-	CancelRejectedAttemptFeedback()
-	ClearPendingInstantIntent()
-	interruptFlashToken = interruptFlashToken + 1
-	interruptFlashActive = false
-
-	local name, text, texture, startTimeMS, endTimeMS = UnitCastingInfo("player")
-	if not name then
+	ResetCastStartState()
+	if not StartStandardCast(castGUID, spellID) then
 		return
 	end
-
-	isChanneling = false
-	currentCastGUID = castGUID
-	castStartTime = startTimeMS
-	castEndTime = endTimeMS
-	castDuration = castEndTime - castStartTime
-	currentSpellID = spellID
-	currentSpellTexture = texture
-	if spellID then
-		local info = C_Spell.GetSpellInfo(spellID)
-		currentSpellName = (info and info.name) or text or name
-		currentSpellTexture = (info and info.iconID) or currentSpellTexture
-	else
-		currentSpellName = text or name
-	end
-
-	-- Calculate latency
-	local sendLag = (castSent > 0) and (GetTime() * 1000 - castSent) or 0
-	if sendLag <= 0 then
-		local _, _, home, world = GetNetStats()
-		sendLag = math.max(home or 0, world or 0)
-	end
-	sendLag = math.min(sendLag, castDuration)
-	castLatency = (castDuration > 0) and (sendLag / castDuration) or 0
 
 	self:Show()
 end
@@ -2016,6 +2536,8 @@ function Cast:UNIT_SPELLCAST_DELAYED(event, unit, castGUID, spellID)
 
 	local name, text, texture, startTimeMS, endTimeMS = UnitCastingInfo("player")
 	if name then
+		Empower.ResetState()
+		isChanneling = false
 		castStartTime = startTimeMS
 		castEndTime = endTimeMS
 		castDuration = castEndTime - castStartTime
@@ -2027,46 +2549,10 @@ function Cast:UNIT_SPELLCAST_CHANNEL_START(event, unit, castGUID, spellID)
 	if unit ~= "player" then
 		return
 	end
-	instantIconActive = false
-	instantIconExpiry = 0
-	instantIconForcedShell = false
-	instantIconConfirmed = false
-	instantIconMode = "instant"
-	instantIconCooldownStart = 0
-	instantIconCooldownDuration = 0
-	CancelRejectedAttemptFeedback()
-	ClearPendingInstantIntent()
-	interruptFlashToken = interruptFlashToken + 1
-	interruptFlashActive = false
-
-	local name, text, texture, startTimeMS, endTimeMS = UnitChannelInfo("player")
-	if not name then
+	ResetCastStartState()
+	if not StartChannelLikeCast(castGUID, spellID, false) then
 		return
 	end
-
-	isChanneling = true
-	currentCastGUID = castGUID
-	castStartTime = startTimeMS
-	castEndTime = endTimeMS
-	castDuration = castEndTime - castStartTime
-	currentSpellID = spellID
-	currentSpellTexture = texture
-	if spellID then
-		local info = C_Spell.GetSpellInfo(spellID)
-		currentSpellName = (info and info.name) or text or name
-		currentSpellTexture = (info and info.iconID) or currentSpellTexture
-	else
-		currentSpellName = text or name
-	end
-
-	-- Calculate latency
-	local sendLag = (castSent > 0) and (GetTime() * 1000 - castSent) or 0
-	if sendLag <= 0 then
-		local _, _, home, world = GetNetStats()
-		sendLag = math.max(home or 0, world or 0)
-	end
-	sendLag = math.min(sendLag, castDuration)
-	castLatency = (castDuration > 0) and (sendLag / castDuration) or 0
 
 	self:Show()
 end
@@ -2096,8 +2582,13 @@ function Cast:UNIT_SPELLCAST_CHANNEL_UPDATE(event, unit, castGUID, spellID)
 		return
 	end
 
-	local name, text, texture, startTimeMS, endTimeMS = UnitChannelInfo("player")
+	local name, text, texture, startTimeMS, endTimeMS, isTradeSkill, notInterruptible, channelSpellID, empowered, numEmpowerStages = UnitChannelInfo("player")
 	if name then
+		if empowered and (tonumber(numEmpowerStages) or 0) > 0 then
+			return self:UNIT_SPELLCAST_EMPOWER_UPDATE(event, unit, castGUID, spellID)
+		end
+		Empower.ResetState()
+		isChanneling = true
 		castStartTime = startTimeMS
 		castEndTime = endTimeMS
 		castDuration = castEndTime - castStartTime
@@ -2140,15 +2631,66 @@ end
 
 -- Evoker Empower support
 function Cast:UNIT_SPELLCAST_EMPOWER_START(event, unit, castGUID, spellID)
-	self:UNIT_SPELLCAST_START(event, unit, castGUID, spellID)
+	if unit ~= "player" then
+		return
+	end
+	ResetCastStartState()
+	if not StartChannelLikeCast(castGUID, spellID, true) then
+		return
+	end
+	self:Show()
 end
 
-function Cast:UNIT_SPELLCAST_EMPOWER_STOP(event, unit, castGUID, spellID)
-	self:UNIT_SPELLCAST_STOP(event, unit, castGUID, spellID)
+function Cast:UNIT_SPELLCAST_EMPOWER_STOP(event, unit, castGUID, spellID, complete, interruptedBy)
+	if unit ~= "player" then
+		return
+	end
+	CancelRejectedAttemptFeedback()
+	ClearPendingInstantIntent()
+	if not isCasting then
+		return
+	end
+	if interruptFlashActive then
+		return
+	end
+	if castGUID ~= currentCastGUID then
+		return
+	end
+	if interruptedBy or complete == false then
+		self:ShowInterruptFlash(castGUID)
+	else
+		self:Hide()
+	end
 end
 
 function Cast:UNIT_SPELLCAST_EMPOWER_UPDATE(event, unit, castGUID, spellID)
-	self:UNIT_SPELLCAST_DELAYED(event, unit, castGUID, spellID)
+	if unit ~= "player" then
+		return
+	end
+
+	local name, text, texture, startTimeMS, endTimeMS, isTradeSkill, notInterruptible, channelSpellID, empowered, numEmpowerStages = UnitChannelInfo("player")
+	if not name then
+		return
+	end
+
+	isChanneling = false
+	isEmpowering = true
+	empowerNumStages = tonumber(numEmpowerStages) or empowerNumStages
+	empowerHoldAtMaxMS = Empower.GetHoldAtMaxTimeMS("player")
+	if #empowerStagePercents == 0 and empowerNumStages > 0 then
+		local stagePercents = Empower.BuildStagePercents("player", empowerNumStages)
+		if type(stagePercents) == "table" then
+			Empower.ClearSequentialTable(empowerStagePercents)
+			for i = 1, #stagePercents do
+				empowerStagePercents[i] = stagePercents[i]
+			end
+		end
+	end
+	castStartTime = startTimeMS
+	castEndTime = endTimeMS + empowerHoldAtMaxMS
+	castDuration = castEndTime - castStartTime
+	self:UpdateIconCooldown()
+	Empower.LayoutStageVisuals()
 end
 
 --------------------------------------------------------------------------------
@@ -2257,14 +2799,7 @@ function Cast:ApplyOptions()
 	local shadowColor = { r = 1, g = 1, b = 1, a = backgroundOpacity }
 
 	-- Update spark
-	local r, g, b, a
-	if GetDBBool("cast_sparkUseClassColor") then
-		r, g, b, a = API.GetPlayerClassColor()
-	else
-		r, g, b, a = GetDBColor("cast_sparkColor")
-	end
-	castFrame.sparkTexture:SetVertexColor(r, g, b, a)
-	castFrame.sparkTexture:SetSize(radius * 0.5, radius * 0.5)
+	Empower.UpdateSparkAppearance()
 
 	-- Rebuild donuts if needed
 	if not castDonut then
@@ -2363,9 +2898,13 @@ function Cast:ApplyOptions()
 	if castFrame.overlayFrame then
 		castFrame.overlayFrame:SetFrameLevel(self:GetOverlayFrameLevel())
 	end
+	if castFrame.empowerStageFrame then
+		castFrame.empowerStageFrame:SetFrameLevel(self:GetOverlayFrameLevel())
+	end
 
 	-- Update inner ring slot options
 	self:ApplySlotOptions()
+	Empower.LayoutStageVisuals()
 
 	-- Update spell text
 	if castFrame.spellText then
@@ -2430,6 +2969,10 @@ function Cast:Initialize()
 	-- Create overlay frame for top-most cast visuals.
 	castFrame.overlayFrame = CreateFrame("Frame", nil, castFrame)
 	castFrame.overlayFrame:SetAllPoints()
+
+	castFrame.empowerStageFrame = CreateFrame("Frame", nil, castFrame.overlayFrame)
+	castFrame.empowerStageFrame:SetAllPoints()
+	castFrame.empowerStageFrame:Hide()
 
 	-- Create spark texture (above rings)
 	castFrame.sparkTexture = castFrame.overlayFrame:CreateTexture(nil, "OVERLAY")
