@@ -339,12 +339,42 @@ local function HasInteractiveMouseScript(frame)
 	end
 
 	for scriptName in pairs(INTERACTIVE_MOUSE_SCRIPTS) do
-		if frame:HasScript(scriptName) and frame:GetScript(scriptName) then
-			return true
+		local okHasScript, hasScript = pcall(frame.HasScript, frame, scriptName)
+		if okHasScript and hasScript then
+			local okGetScript, script = pcall(frame.GetScript, frame, scriptName)
+			if okGetScript and script then
+				return true
+			end
 		end
 	end
 
 	return false
+end
+
+local function IsForbiddenSafe(frame)
+	if not (frame and frame.IsForbidden) then
+		return false
+	end
+
+	local ok, forbidden = pcall(frame.IsForbidden, frame)
+	if not ok then
+		return false
+	end
+
+	return forbidden and true or false
+end
+
+local function GetParentSafe(frame)
+	if not (frame and frame.GetParent) then
+		return nil
+	end
+
+	local ok, parent = pcall(frame.GetParent, frame)
+	if not ok then
+		return nil
+	end
+
+	return parent
 end
 
 local function GetObjectTypeSafe(frame)
@@ -365,7 +395,7 @@ local function IsFrameMouseInteractive(frame)
 	local depth = 0
 
 	while current and depth < 12 do
-		if current.IsForbidden and current:IsForbidden() then
+		if IsForbiddenSafe(current) then
 			return true
 		end
 
@@ -378,10 +408,7 @@ local function IsFrameMouseInteractive(frame)
 			return true
 		end
 
-		if not current.GetParent then
-			break
-		end
-		current = current:GetParent()
+		current = GetParentSafe(current)
 		depth = depth + 1
 	end
 
