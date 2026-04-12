@@ -28,6 +28,7 @@ local SPELL_ICON_FRAME_PATH = addon.addonFolder .. "\\Textures\\spell_icon_frame
 local CAST_FEEDBACK_PATH = addon.addonFolder .. "\\Textures\\cast_feedback.png"
 local CAST_BACKGROUND_SHADOW_PATH = addon.addonFolder .. "\\Textures\\cast_background_shadow.png"
 local SPELL_ICON_MASK_BASE_EXPAND = 6
+local CAST_FILL_TEXTURE_BASE = "cast_fill"
 
 --------------------------------------------------------------------------------
 -- Inner Ring Slot Constants
@@ -93,12 +94,23 @@ local CAST_OVERLAY_INTERRUPT = "cast_error"
 local CAST_OVERLAY_LEVEL_OFFSET = 10
 local EMPOWER_VISUALS = {
 	MARKER_SIZE = 12,
-	MARKER_GLOW_SIZE = 22,
+	MARKER_GLOW_SIZE = 24,
 	MARKER_ALPHA_INACTIVE = 0.35,
 	MARKER_ALPHA_REACHED = 0.9,
 	MARKER_ALPHA_CURRENT = 1,
 	MARKER_GLOW_REACHED = 0.2,
 	MARKER_GLOW_CURRENT = 0.75,
+	TIER_INACTIVE_ALPHA = 0.12,
+	TIER_ACTIVE_ALPHA = 0.55,
+	TIER_CURRENT_ALPHA = 0.9,
+	TIER_GLOW_ACTIVE = 0.14,
+	TIER_GLOW_CURRENT = 0.45,
+	TIER_SEGMENT_HEIGHT = 4,
+	TIER_SEGMENT_GLOW_HEIGHT = 10,
+	TIER_SEGMENT_GAP = 5,
+	TIER_SEGMENT_MARGIN = 0.015,
+	TIER_MAX_SEGMENTS = 6,
+	HOLD_SCALE = 1.08,
 }
 
 -- Inner ring slots
@@ -578,6 +590,22 @@ local function GetConfiguredInnerSlotFrameColor(slotIndex)
 	}
 end
 
+local function GetCastProgressTextureBase()
+	return CAST_FILL_TEXTURE_BASE
+end
+
+local function UpdateCastProgressTexture()
+	if not castDonut then
+		return
+	end
+
+	local desiredBase = GetCastProgressTextureBase()
+	if castDonut.progressBase ~= desiredBase then
+		castDonut.progressBase = desiredBase
+		castDonut:SetThickness(castDonut.thickness)
+	end
+end
+
 function Empower.EnsureMarker(index)
 	if not (castFrame and castFrame.empowerStageFrame) then
 		return nil
@@ -623,9 +651,173 @@ function Empower.EnsureMarker(index)
 	fadeOut:SetToAlpha(0)
 	fadeOut:SetDuration(0.35)
 	fadeOut:SetOrder(2)
+	marker.flash:SetScript("OnFinished", function()
+		if marker.glow then
+			marker.glow:SetAlpha(marker.targetGlowAlpha or 0)
+		end
+	end)
 
 	castFrame.empowerMarkers[index] = marker
 	return marker
+end
+
+function Empower.EnsureTier(index)
+	if not (castFrame and castFrame.empowerStageFrame) then
+		return nil
+	end
+
+	castFrame.empowerTiers = castFrame.empowerTiers or {}
+	local tier = castFrame.empowerTiers[index]
+	if tier then
+		return tier
+	end
+
+	tier = { segments = {} }
+	castFrame.empowerTiers[index] = tier
+	return tier
+end
+
+function Empower.EnsureTierSegment(tier, index)
+	if not (tier and castFrame and castFrame.empowerStageFrame) then
+		return nil
+	end
+
+	local segment = tier.segments[index]
+	if segment then
+		return segment
+	end
+
+	segment = {}
+	segment.base = castFrame.empowerStageFrame:CreateTexture(nil, "OVERLAY", nil, 1)
+	segment.base:SetTexture("Interface\\Buttons\\WHITE8x8")
+	segment.base:SetBlendMode("BLEND")
+
+	segment.glow = castFrame.empowerStageFrame:CreateTexture(nil, "OVERLAY", nil, 0)
+	segment.glow:SetTexture("Interface\\Buttons\\WHITE8x8")
+	segment.glow:SetBlendMode("ADD")
+	segment.glow:SetAlpha(0)
+
+	tier.segments[index] = segment
+	return segment
+end
+
+function Empower.GetStageStartProgress(index)
+	if index <= 1 then
+		return 0
+	end
+
+	return tonumber(empowerStagePercents[index - 1]) or 0
+end
+
+function Empower.GetStageEndProgress(index)
+	return tonumber(empowerStagePercents[index]) or 0
+end
+
+function Empower.GetTierSegmentCount(startProgress, endProgress)
+	local span = math.max(0, (tonumber(endProgress) or 0) - (tonumber(startProgress) or 0))
+	if span <= 0 then
+		return 0
+	end
+
+	local angle = span * 360
+	local estimated = math.floor(angle / 22 + 0.5)
+	if estimated < 2 then
+		return 2
+	end
+	if estimated > EMPOWER_VISUALS.TIER_MAX_SEGMENTS then
+		return EMPOWER_VISUALS.TIER_MAX_SEGMENTS
+	end
+	return estimated
+end
+
+function Empower.IsHoldingAtMax()
+	return isEmpowering and empowerCurrentStage >= Empower.GetVisualStageCount() and Empower.GetVisualStageCount() > 0
+end
+
+function Empower.LayoutTierVisual(index, radius)
+	local tier = Empower.EnsureTier(index)
+	if not tier then
+		return
+	end
+
+	local startProgress = Empower.GetStageStartProgress(index)
+	local endProgress = Empower.GetStageEndProgress(index)
+	local segmentCount = Empower.GetTierSegmentCount(startProgress, endProgress)
+	local ringRadius = Empower.GetRingCenterlineRadius(radius)
+	local margin = math.min(EMPOWER_VISUALS.TIER_SEGMENT_MARGIN, math.max(0, (endProgress - startProgress) * 0.2))
+	local usableStart = math.min(endProgress, startProgress + margin)
+	local usableEnd = math.max(startProgress, endProgress - margin)
+	if usableEnd <= usableStart then
+		usableStart = startProgress
+		usableEnd = endProgress
+	end
+
+	if segmentCount <= 0 or usableEnd <= usableStart then
+		for _, segment in ipairs(tier.segments) do
+			segment.base:Hide()
+			segment.glow:Hide()
+		end
+		return
+	end
+
+	local spanProgress = usableEnd - usableStart
+	local arcLength = (2 * math.pi * ringRadius) * spanProgress
+	local totalGap = math.max(0, segmentCount - 1) * EMPOWER_VISUALS.TIER_SEGMENT_GAP
+	local segmentLength = (arcLength - totalGap) / segmentCount
+	if segmentLength < 6 then
+		segmentLength = 6
+	end
+
+	for i = 1, segmentCount do
+		local sampleProgress = usableStart + (((i - 0.5) / segmentCount) * spanProgress)
+		local offsetX, offsetY, polarAngle = Empower.GetRingPointForProgress(sampleProgress, radius)
+		local segment = Empower.EnsureTierSegment(tier, i)
+		if segment then
+			segment.base:ClearAllPoints()
+			segment.base:SetPoint("CENTER", castFrame.empowerStageFrame, "CENTER", offsetX, offsetY)
+			segment.base:SetSize(segmentLength, EMPOWER_VISUALS.TIER_SEGMENT_HEIGHT)
+			segment.base:SetRotation(math.rad(polarAngle))
+			segment.base:Show()
+
+			segment.glow:ClearAllPoints()
+			segment.glow:SetPoint("CENTER", castFrame.empowerStageFrame, "CENTER", offsetX, offsetY)
+			segment.glow:SetSize(segmentLength + 4, EMPOWER_VISUALS.TIER_SEGMENT_GLOW_HEIGHT)
+			segment.glow:SetRotation(math.rad(polarAngle))
+			segment.glow:Show()
+		end
+	end
+
+	for i = segmentCount + 1, #tier.segments do
+		tier.segments[i].base:Hide()
+		tier.segments[i].glow:Hide()
+	end
+end
+
+function Empower.UpdateTierVisualState(index, activeR, activeG, activeB)
+	local tiers = castFrame and castFrame.empowerTiers
+	local tier = tiers and tiers[index]
+	if not tier then
+		return
+	end
+
+	local reached = index <= empowerCurrentStage
+	local isCurrent = reached and index == empowerCurrentStage
+	local alpha = EMPOWER_VISUALS.TIER_INACTIVE_ALPHA
+	local glowAlpha = 0
+
+	if reached then
+		alpha = isCurrent and EMPOWER_VISUALS.TIER_CURRENT_ALPHA or EMPOWER_VISUALS.TIER_ACTIVE_ALPHA
+		glowAlpha = isCurrent and EMPOWER_VISUALS.TIER_GLOW_CURRENT or EMPOWER_VISUALS.TIER_GLOW_ACTIVE
+		if Empower.IsHoldingAtMax() and index == Empower.GetVisualStageCount() then
+			alpha = math.max(alpha, EMPOWER_VISUALS.TIER_CURRENT_ALPHA)
+			glowAlpha = math.max(glowAlpha, EMPOWER_VISUALS.TIER_GLOW_CURRENT)
+		end
+	end
+
+	for _, segment in ipairs(tier.segments) do
+		segment.base:SetVertexColor(activeR, activeG, activeB, alpha)
+		segment.glow:SetVertexColor(activeR, activeG, activeB, glowAlpha)
+	end
 end
 
 function Empower.HideStageVisuals()
@@ -648,6 +840,15 @@ function Empower.HideStageVisuals()
 			marker:Hide()
 		end
 	end
+
+	if castFrame.empowerTiers then
+		for _, tier in ipairs(castFrame.empowerTiers) do
+			for _, segment in ipairs(tier.segments) do
+				segment.base:Hide()
+				segment.glow:Hide()
+			end
+		end
+	end
 end
 
 function Empower.UpdateStageVisualState(previousStage)
@@ -665,6 +866,7 @@ function Empower.UpdateStageVisualState(previousStage)
 	local activeR = color.r or 1
 	local activeG = color.g or 1
 	local activeB = color.b or 1
+	local holdingAtMax = Empower.IsHoldingAtMax()
 	castFrame.empowerStageFrame:Show()
 
 	for i = 1, stageCount do
@@ -679,7 +881,12 @@ function Empower.UpdateStageVisualState(previousStage)
 			if reached then
 				alpha = isCurrent and EMPOWER_VISUALS.MARKER_ALPHA_CURRENT or EMPOWER_VISUALS.MARKER_ALPHA_REACHED
 				glowAlpha = isCurrent and EMPOWER_VISUALS.MARKER_GLOW_CURRENT or EMPOWER_VISUALS.MARKER_GLOW_REACHED
-				scale = isCurrent and 1.15 or 1
+				scale = isCurrent and EMPOWER_VISUALS.HOLD_SCALE or 1
+			end
+			if holdingAtMax and i == stageCount then
+				alpha = EMPOWER_VISUALS.MARKER_ALPHA_CURRENT
+				glowAlpha = math.max(glowAlpha, EMPOWER_VISUALS.MARKER_GLOW_CURRENT)
+				scale = EMPOWER_VISUALS.HOLD_SCALE
 			end
 
 			if marker.base.SetVertexColor then
@@ -688,6 +895,7 @@ function Empower.UpdateStageVisualState(previousStage)
 			if marker.glow.SetVertexColor then
 				marker.glow:SetVertexColor(activeR, activeG, activeB, 1)
 			end
+			marker.targetGlowAlpha = glowAlpha
 			marker:SetScale(scale)
 			marker:Show()
 
@@ -698,11 +906,23 @@ function Empower.UpdateStageVisualState(previousStage)
 				marker.glow:SetAlpha(glowAlpha)
 			end
 		end
+
+		Empower.UpdateTierVisualState(i, activeR, activeG, activeB)
 	end
 
 	if castFrame.empowerMarkers then
 		for i = stageCount + 1, #castFrame.empowerMarkers do
 			castFrame.empowerMarkers[i]:Hide()
+		end
+	end
+
+	if castFrame.empowerTiers then
+		for i = stageCount + 1, #castFrame.empowerTiers do
+			local tier = castFrame.empowerTiers[i]
+			for _, segment in ipairs(tier.segments) do
+				segment.base:Hide()
+				segment.glow:Hide()
+			end
 		end
 	end
 end
@@ -727,16 +947,18 @@ function Empower.LayoutStageVisuals()
 			marker:ClearAllPoints()
 			marker:SetPoint("CENTER", castFrame.empowerStageFrame, "CENTER", offsetX, offsetY)
 			if marker.base and marker.base.SetRotation then
-				marker.base:SetRotation(math.rad(progress * 360))
+				marker.base:SetRotation(math.rad(polarAngle - 90))
 			end
 			if marker.glow and marker.glow.SetRotation then
-				marker.glow:SetRotation(math.rad(progress * 360))
+				marker.glow:SetRotation(math.rad(polarAngle - 90))
 			end
 			marker:Show()
 			marker.polarAngle = polarAngle
 		elseif marker then
 			marker:Hide()
 		end
+
+		Empower.LayoutTierVisual(i, radius)
 	end
 
 	Empower.UpdateStageVisualState()
@@ -796,7 +1018,8 @@ function Empower.UpdateSparkAppearance()
 
 	if isEmpowering and castFrame.sparkTexture.SetAtlas then
 		castFrame.sparkTexture:SetAtlas("ui-castingbar-empower-cursor")
-		castFrame.sparkTexture:SetSize(math.max(18, radius * 0.38), math.max(18, radius * 0.38))
+		local sparkScale = Empower.IsHoldingAtMax() and 0.44 or 0.38
+		castFrame.sparkTexture:SetSize(math.max(18, radius * sparkScale), math.max(18, radius * sparkScale))
 	else
 		castFrame.sparkTexture:SetTexture("Interface\\CastingBar\\UI-CastingBar-Spark")
 		castFrame.sparkTexture:SetSize(radius * 0.5, radius * 0.5)
@@ -1354,14 +1577,14 @@ function Cast:GetFrame()
 	return castFrame
 end
 
-local function ApplySpellIconMask()
+function Cast.ApplySpellIconMask()
 	if not castFrame or not castFrame.iconFrame then
 		return false
 	end
 	return IconMask:ApplyToIconFrame(castFrame.iconFrame, SPELL_ICON_MASK_BASE_EXPAND)
 end
 
-local function LayoutSpellIconErrorOverlay()
+function Cast.LayoutSpellIconErrorOverlay()
 	if not castFrame or not castFrame.iconFrame or not castFrame.iconFrame.icon or not castFrame.iconFrame.errorIcon then
 		return
 	end
@@ -1369,7 +1592,7 @@ local function LayoutSpellIconErrorOverlay()
 	IconMask:LayoutToIcon(castFrame.iconFrame.errorIcon, castFrame.iconFrame.icon, SPELL_ICON_MASK_BASE_EXPAND)
 end
 
-local function LayoutSpellIconShell()
+function Cast.LayoutSpellIconShell()
 	if not castFrame or not castFrame.iconFrame or not castFrame.iconFrame.icon then
 		return
 	end
@@ -1382,7 +1605,7 @@ local function LayoutSpellIconShell()
 	end
 end
 
-local function LayoutSpellIconCooldown()
+function Cast.LayoutSpellIconCooldown()
 	if not castFrame or not castFrame.iconFrame or not castFrame.iconFrame.icon or not castFrame.iconFrame.cooldown then
 		return
 	end
@@ -1390,7 +1613,7 @@ local function LayoutSpellIconCooldown()
 	IconMask:LayoutToIcon(castFrame.iconFrame.cooldown, castFrame.iconFrame.icon, SPELL_ICON_MASK_BASE_EXPAND)
 end
 
-local function GetSpellIconSwipeColor(mode)
+function Cast.GetSpellIconSwipeColor(mode)
 	local colorKey = "spellicon_castProgressSwipeColor"
 	if mode == "cooldownBlocked" then
 		colorKey = "spellicon_cooldownBlockedSwipeColor"
@@ -1409,7 +1632,7 @@ local function GetSpellIconSwipeColor(mode)
 	return color.r or 1, color.g or 1, color.b or 1, color.a or 1
 end
 
-local function ActivateAfterInstantCastVisibility(duration)
+function Cast.ActivateAfterInstantCastVisibility(duration)
 	if not Visibility or not Visibility.ActivateAfterInstantCastWindow then
 		return
 	end
@@ -1419,7 +1642,7 @@ local function ActivateAfterInstantCastVisibility(duration)
 	end
 end
 
-local function ActivateAfterPlayerInstantCastVisibility(duration)
+function Cast.ActivateAfterPlayerInstantCastVisibility(duration)
 	if not Visibility or not Visibility.ActivateAfterPlayerInstantCastWindow then
 		return
 	end
@@ -1429,7 +1652,7 @@ local function ActivateAfterPlayerInstantCastVisibility(duration)
 	end
 end
 
-local function ActivateAfterTriggeredInstantCastVisibility(duration)
+function Cast.ActivateAfterTriggeredInstantCastVisibility(duration)
 	if not Visibility or not Visibility.ActivateAfterTriggeredInstantCastWindow then
 		return
 	end
@@ -1481,7 +1704,7 @@ function Cast:ApplyIconOptions()
 	castFrame.iconFrame:SetPoint("CENTER", castFrame, "CENTER", offsetX, offsetY)
 
 	castFrame.iconFrame.icon:SetSize(size, size)
-	LayoutSpellIconShell()
+	Cast.LayoutSpellIconShell()
 	if castFrame.iconFrame.background then
 		SetTextureSmooth(castFrame.iconFrame.background, SPELL_ICON_BACKGROUND_PATH)
 		castFrame.iconFrame.background:SetVertexColor(1, 1, 1, 1)
@@ -1500,9 +1723,9 @@ function Cast:ApplyIconOptions()
 			castFrame.iconFrame.cooldown:SetHideCountdownNumbers(true)
 			pcall(castFrame.iconFrame.cooldown.SetSwipeTexture, castFrame.iconFrame.cooldown, SPELL_ICON_COOLDOWN_SWIPE_PATH)
 		end
-		LayoutSpellIconCooldown()
+		Cast.LayoutSpellIconCooldown()
 		if castFrame.iconFrame.cooldown.SetSwipeColor then
-			local swipeR, swipeG, swipeB, swipeA = GetSpellIconSwipeColor("cast")
+			local swipeR, swipeG, swipeB, swipeA = Cast.GetSpellIconSwipeColor("cast")
 			castFrame.iconFrame.cooldown:SetSwipeColor(swipeR, swipeG, swipeB, swipeA)
 		end
 		castFrame.iconFrame.cooldown:Show()
@@ -1510,9 +1733,9 @@ function Cast:ApplyIconOptions()
 		castFrame.iconFrame.cooldown:Hide()
 	end
 
-	castFrame.iconMaskReady = ApplySpellIconMask()
-	LayoutSpellIconCooldown()
-	LayoutSpellIconErrorOverlay()
+	castFrame.iconMaskReady = Cast.ApplySpellIconMask()
+	Cast.LayoutSpellIconCooldown()
+	Cast.LayoutSpellIconErrorOverlay()
 	self:UpdateIconCooldown()
 end
 
@@ -1547,7 +1770,7 @@ function Cast:UpdateSpellIcon()
 		return
 	end
 	if not castFrame.iconMaskReady then
-		castFrame.iconMaskReady = ApplySpellIconMask()
+		castFrame.iconMaskReady = Cast.ApplySpellIconMask()
 		if not castFrame.iconMaskReady then
 			castFrame.iconFrame:Hide()
 			return
@@ -1587,7 +1810,7 @@ ClearInstantIcon = function(reason)
 	end
 end
 
-local function ShowSpellIconFeedback(spellID, opts)
+function Cast.ShowSpellIconFeedback(spellID, opts)
 	opts = opts or {}
 	local resolvedSpellID = ResolvePlayerFacingSpellID(spellID)
 	if not resolvedSpellID then
@@ -1649,20 +1872,20 @@ local function ShowSpellIconFeedback(spellID, opts)
 	instantIconExpiry = GetTime() + duration
 end
 
-local function ShowInstantSpellIcon(spellID, isConfirmed)
-	ShowSpellIconFeedback(spellID, {
+function Cast.ShowInstantSpellIcon(spellID, isConfirmed)
+	Cast.ShowSpellIconFeedback(spellID, {
 		requireInstant = true,
 		isConfirmed = isConfirmed,
 		mode = "instant",
 	})
 end
 
-local function ShowFailedAttemptIcon(spellID)
+function Cast.ShowFailedAttemptIcon(spellID)
 	if GetFailedAttemptFeedbackStyle() ~= "ERROR_ICON" then
 		return
 	end
-	ActivateAfterInstantCastVisibility(FAILED_ATTEMPT_FEEDBACK_DURATION)
-	ShowSpellIconFeedback(spellID, {
+	Cast.ActivateAfterInstantCastVisibility(FAILED_ATTEMPT_FEEDBACK_DURATION)
+	Cast.ShowSpellIconFeedback(spellID, {
 		requireInstant = false,
 		isConfirmed = false,
 		mode = "failed",
@@ -1680,8 +1903,8 @@ ShowCooldownBlockedIcon = function(spellID, cooldownStart, cooldownDuration)
 		return
 	end
 
-	ActivateAfterInstantCastVisibility(remaining)
-	ShowSpellIconFeedback(spellID, {
+	Cast.ActivateAfterInstantCastVisibility(remaining)
+	Cast.ShowSpellIconFeedback(spellID, {
 		requireInstant = false,
 		isConfirmed = false,
 		mode = "cooldownBlocked",
@@ -1691,7 +1914,7 @@ ShowCooldownBlockedIcon = function(spellID, cooldownStart, cooldownDuration)
 	})
 end
 
-local function RecordPendingInstantIntent(spellID, source, castGUID)
+function Cast.RecordPendingInstantIntent(spellID, source, castGUID)
 	if not spellIconEnabled then
 		return
 	end
@@ -1736,7 +1959,7 @@ local function RecordPendingInstantIntent(spellID, source, castGUID)
 	pendingInstantSource = source
 end
 
-local function InstallActionIntentHook()
+function Cast.InstallActionIntentHook()
 	if actionIntentHookInstalled or not hooksecurefunc or not UseAction then
 		return
 	end
@@ -1755,14 +1978,14 @@ local function InstallActionIntentHook()
 		local actionSpellID = GetActionSpellID(slot)
 		if actionSpellID then
 			RecordLastAttemptedSpell(actionSpellID, slot)
-			RecordPendingInstantIntent(actionSpellID, PENDING_SOURCE_ACTION)
+			Cast.RecordPendingInstantIntent(actionSpellID, PENDING_SOURCE_ACTION)
 		end
 	end)
 
 	actionIntentHookInstalled = true
 end
 
-local function GetConfirmedPlayerInstantSpellID(castGUID, spellID)
+function Cast.GetConfirmedPlayerInstantSpellID(castGUID, spellID)
 	if not HasFreshPendingInstantIntent() then
 		return nil
 	end
@@ -1777,7 +2000,7 @@ local function GetConfirmedPlayerInstantSpellID(castGUID, spellID)
 	return pendingInstantResolvedSpellID or resolvedSpellID
 end
 
-local function GetAttemptFeedbackSpellID(spellID, castGUID)
+function Cast.GetAttemptFeedbackSpellID(spellID, castGUID)
 	local freshAttempt = GetFreshLastAttemptedSpellID()
 	local normalizedFailedSpellID = ResolvePlayerFacingSpellID(spellID)
 	if freshAttempt and (not normalizedFailedSpellID or AreSpellIntentsEquivalent(freshAttempt, normalizedFailedSpellID)) then
@@ -1812,7 +2035,7 @@ ShouldPreserveConfirmedInstantIcon = function(spellID, castGUID)
 		return true
 	end
 
-	local feedbackSpellID = GetAttemptFeedbackSpellID(spellID, castGUID)
+	local feedbackSpellID = Cast.GetAttemptFeedbackSpellID(spellID, castGUID)
 	if not feedbackSpellID or not currentSpellID then
 		return false
 	end
@@ -1851,7 +2074,7 @@ TryShowActionCooldownBlocked = function(spellID)
 	return true
 end
 
-local function ShowRejectedAttemptFeedback(spellID, castGUID)
+function Cast.ShowRejectedAttemptFeedback(spellID, castGUID)
 	if ShouldPreserveConfirmedInstantIcon(spellID, castGUID) then
 		return
 	end
@@ -1864,14 +2087,14 @@ local function ShowRejectedAttemptFeedback(spellID, castGUID)
 		return
 	end
 
-	local feedbackSpellID = GetAttemptFeedbackSpellID(spellID, castGUID)
+	local feedbackSpellID = Cast.GetAttemptFeedbackSpellID(spellID, castGUID)
 	if not feedbackSpellID then
 		local token = rejectedAttemptToken
 		C_Timer.After(0, function()
 			if token ~= rejectedAttemptToken then
 				return
 			end
-			ShowRejectedAttemptFeedback(spellID, castGUID)
+			Cast.ShowRejectedAttemptFeedback(spellID, castGUID)
 		end)
 		return
 	end
@@ -1882,7 +2105,7 @@ local function ShowRejectedAttemptFeedback(spellID, castGUID)
 
 	if ShouldShowFailedAttempts() then
 		ClearInstantIcon("rejectedAttempt")
-		ShowFailedAttemptIcon(feedbackSpellID)
+		Cast.ShowFailedAttemptIcon(feedbackSpellID)
 	else
 		ClearInstantIcon("rejectedAttempt")
 	end
@@ -1907,13 +2130,13 @@ function Cast:UpdateIconCooldown()
 			return
 		end
 		if castFrame.iconFrame.cooldown.SetSwipeColor then
-			local swipeR, swipeG, swipeB, swipeA = GetSpellIconSwipeColor("cast")
+			local swipeR, swipeG, swipeB, swipeA = Cast.GetSpellIconSwipeColor("cast")
 			castFrame.iconFrame.cooldown:SetSwipeColor(swipeR, swipeG, swipeB, swipeA)
 		end
 		castFrame.iconFrame.cooldown:SetCooldown(castStartTime / 1000, castDuration / 1000)
 	elseif instantIconActive and instantIconMode == "cooldownBlocked" and instantIconCooldownStart > 0 and instantIconCooldownDuration > 0 then
 		if castFrame.iconFrame.cooldown.SetSwipeColor then
-			local swipeR, swipeG, swipeB, swipeA = GetSpellIconSwipeColor("cooldownBlocked")
+			local swipeR, swipeG, swipeB, swipeA = Cast.GetSpellIconSwipeColor("cooldownBlocked")
 			castFrame.iconFrame.cooldown:SetSwipeColor(swipeR, swipeG, swipeB, swipeA)
 		end
 		castFrame.iconFrame.cooldown:SetCooldown(instantIconCooldownStart, instantIconCooldownDuration)
@@ -1923,7 +2146,7 @@ function Cast:UpdateIconCooldown()
 	end
 
 	if castFrame.iconMaskReady and not castFrame.iconFrame.cooldownMaskAttached then
-		ApplySpellIconMask()
+		Cast.ApplySpellIconMask()
 	end
 	castFrame.iconFrame.cooldown:Show()
 end
@@ -2099,6 +2322,7 @@ function Cast:Show()
 	end
 	ShowCastFrame()
 
+	UpdateCastProgressTexture()
 	if castDonut then
 		castDonut:SetBarColor(GetActiveCastBarColor())
 	end
@@ -2233,6 +2457,7 @@ function Cast:Hide()
 	isCasting = false
 	isChanneling = false
 	Empower.ResetState()
+	UpdateCastProgressTexture()
 	currentCastGUID = nil
 	pendingVisuals = false
 	if castDonut then
@@ -2322,7 +2547,7 @@ function Cast:ShowInterruptFlash(castGUID)
 	if spellIconEnabled and castFrame.iconFrame and castFrame.iconFrame.errorIcon then
 		if GetFailedAttemptFeedbackStyle() == "ERROR_ICON" then
 			SetTextureSmooth(castFrame.iconFrame.errorIcon, SPELL_ICON_ERROR_PATH)
-			LayoutSpellIconErrorOverlay()
+			Cast.LayoutSpellIconErrorOverlay()
 			castFrame.iconFrame.errorIcon:Show()
 			castFrame.iconFrame:Show()
 		else
@@ -2352,7 +2577,7 @@ end
 --------------------------------------------------------------------------------
 -- Event Handlers
 --------------------------------------------------------------------------------
-local function ResetCastStartState()
+function Cast.ResetCastStartState()
 	instantIconActive = false
 	instantIconExpiry = 0
 	instantIconForcedShell = false
@@ -2366,7 +2591,7 @@ local function ResetCastStartState()
 	interruptFlashActive = false
 end
 
-local function SetCurrentSpellVisual(spellID, name, text, texture)
+function Cast.SetCurrentSpellVisual(spellID, name, text, texture)
 	currentSpellID = spellID
 	currentSpellTexture = texture
 	if spellID then
@@ -2378,7 +2603,7 @@ local function SetCurrentSpellVisual(spellID, name, text, texture)
 	end
 end
 
-local function UpdateCastLatency()
+function Cast.UpdateCastLatency()
 	local sendLag = (castSent > 0) and (GetTime() * 1000 - castSent) or 0
 	if sendLag <= 0 then
 		local _, _, home, world = GetNetStats()
@@ -2388,7 +2613,7 @@ local function UpdateCastLatency()
 	castLatency = (castDuration > 0) and (sendLag / castDuration) or 0
 end
 
-local function StartStandardCast(castGUID, spellID)
+function Cast.StartStandardCast(castGUID, spellID)
 	local name, text, texture, startTimeMS, endTimeMS = UnitCastingInfo("player")
 	if not name then
 		return false
@@ -2400,12 +2625,12 @@ local function StartStandardCast(castGUID, spellID)
 	castStartTime = startTimeMS
 	castEndTime = endTimeMS
 	castDuration = castEndTime - castStartTime
-	SetCurrentSpellVisual(spellID, name, text, texture)
-	UpdateCastLatency()
+	Cast.SetCurrentSpellVisual(spellID, name, text, texture)
+	Cast.UpdateCastLatency()
 	return true
 end
 
-local function StartChannelLikeCast(castGUID, spellID, forceEmpower)
+function Cast.StartChannelLikeCast(castGUID, spellID, forceEmpower)
 	local name, text, texture, startTimeMS, endTimeMS, isTradeSkill, notInterruptible, channelSpellID, isEmpowered, numEmpowerStages = UnitChannelInfo("player")
 	if not name then
 		return false
@@ -2438,8 +2663,8 @@ local function StartChannelLikeCast(castGUID, spellID, forceEmpower)
 		Empower.ResetState()
 	end
 
-	SetCurrentSpellVisual(resolvedSpellID, name, text, texture)
-	UpdateCastLatency()
+	Cast.SetCurrentSpellVisual(resolvedSpellID, name, text, texture)
+	Cast.UpdateCastLatency()
 	return true
 end
 
@@ -2452,7 +2677,7 @@ function Cast:UNIT_SPELLCAST_SENT(event, unit, target, castGUID, spellID)
 	RecordLastSentSpell(spellID, castGUID)
 
 	if not isCasting and not interruptFlashActive and not UnitCastingInfo("player") and not UnitChannelInfo("player") then
-		RecordPendingInstantIntent(spellID, PENDING_SOURCE_SENT, castGUID)
+		Cast.RecordPendingInstantIntent(spellID, PENDING_SOURCE_SENT, castGUID)
 	end
 end
 
@@ -2460,8 +2685,8 @@ function Cast:UNIT_SPELLCAST_START(event, unit, castGUID, spellID)
 	if unit ~= "player" then
 		return
 	end
-	ResetCastStartState()
-	if not StartStandardCast(castGUID, spellID) then
+	Cast.ResetCastStartState()
+	if not Cast.StartStandardCast(castGUID, spellID) then
 		return
 	end
 
@@ -2504,7 +2729,7 @@ function Cast:UNIT_SPELLCAST_FAILED(event, unit, castGUID, spellID)
 		return
 	end
 	if not isCasting then
-		ShowRejectedAttemptFeedback(spellID, castGUID)
+		Cast.ShowRejectedAttemptFeedback(spellID, castGUID)
 		return
 	end
 	CancelRejectedAttemptFeedback()
@@ -2519,7 +2744,7 @@ function Cast:UNIT_SPELLCAST_FAILED_QUIET(event, unit, castGUID, spellID)
 		return
 	end
 	if not isCasting then
-		ShowRejectedAttemptFeedback(spellID, castGUID)
+		Cast.ShowRejectedAttemptFeedback(spellID, castGUID)
 		return
 	end
 	CancelRejectedAttemptFeedback()
@@ -2549,8 +2774,8 @@ function Cast:UNIT_SPELLCAST_CHANNEL_START(event, unit, castGUID, spellID)
 	if unit ~= "player" then
 		return
 	end
-	ResetCastStartState()
-	if not StartChannelLikeCast(castGUID, spellID, false) then
+	Cast.ResetCastStartState()
+	if not Cast.StartChannelLikeCast(castGUID, spellID, false) then
 		return
 	end
 
@@ -2608,23 +2833,23 @@ function Cast:UNIT_SPELLCAST_SUCCEEDED(event, unit, castGUID, spellID)
 		return
 	end
 
-	local playerInstantSpellID = GetConfirmedPlayerInstantSpellID(castGUID, spellID)
+	local playerInstantSpellID = Cast.GetConfirmedPlayerInstantSpellID(castGUID, spellID)
 	local resolvedSpellID = ResolvePlayerFacingSpellID(spellID)
 
 	ClearPendingInstantIntent()
 
 	if playerInstantSpellID then
-		ActivateAfterPlayerInstantCastVisibility()
+		Cast.ActivateAfterPlayerInstantCastVisibility()
 		if ShouldShowPlayerInstantCasts() then
-			ShowInstantSpellIcon(playerInstantSpellID, true)
+			Cast.ShowInstantSpellIcon(playerInstantSpellID, true)
 		end
 		return
 	end
 
 	if IsInstantSpell(resolvedSpellID) then
-		ActivateAfterTriggeredInstantCastVisibility()
+		Cast.ActivateAfterTriggeredInstantCastVisibility()
 		if ShouldShowTriggeredInstantCasts() then
-			ShowInstantSpellIcon(resolvedSpellID, true)
+			Cast.ShowInstantSpellIcon(resolvedSpellID, true)
 		end
 	end
 end
@@ -2634,8 +2859,8 @@ function Cast:UNIT_SPELLCAST_EMPOWER_START(event, unit, castGUID, spellID)
 	if unit ~= "player" then
 		return
 	end
-	ResetCastStartState()
-	if not StartChannelLikeCast(castGUID, spellID, true) then
+	Cast.ResetCastStartState()
+	if not Cast.StartChannelLikeCast(castGUID, spellID, true) then
 		return
 	end
 	self:Show()
@@ -2812,7 +3037,7 @@ function Cast:ApplyOptions()
 			barColor = GetDBColorTable("cast_latencyColor"),
 			backgroundColor = { r = 1, g = 1, b = 1, a = 0 },
 			backgroundTextureBase = nil,
-			progressTextureBase = "cast_fill",
+			progressTextureBase = CAST_FILL_TEXTURE_BASE,
 			frameTextureBase = nil,
 		})
 		latencyDonut:AttachTo(castFrame)
@@ -2828,13 +3053,14 @@ function Cast:ApplyOptions()
 			barColor = GetActiveCastBarColor(),
 			backgroundColor = backgroundColor,
 			backgroundTextureBase = "cast_background",
-			progressTextureBase = "cast_fill",
+			progressTextureBase = GetCastProgressTextureBase(),
 			overlayTextureBase = CAST_OVERLAY_DEFAULT,
 			frameTextureBase = nil,
 		})
 		castDonut:AttachTo(castFrame)
 	else
 		-- Update existing donuts
+		UpdateCastProgressTexture()
 		castDonut:SetRadius(radius)
 		castDonut:SetThickness(thickness)
 		castDonut:SetBarColor(GetActiveCastBarColor())
@@ -3040,11 +3266,11 @@ function Cast:Initialize()
 		castFrame.iconFrame.cooldown:SetDrawEdge(false)
 		castFrame.iconFrame.cooldown:SetHideCountdownNumbers(true)
 		pcall(castFrame.iconFrame.cooldown.SetSwipeTexture, castFrame.iconFrame.cooldown, SPELL_ICON_COOLDOWN_SWIPE_PATH)
-		LayoutSpellIconCooldown()
+		Cast.LayoutSpellIconCooldown()
 		castFrame.iconFrame.cooldown:Hide()
 	end
 
-	castFrame.iconMaskReady = ApplySpellIconMask()
+	castFrame.iconMaskReady = Cast.ApplySpellIconMask()
 
 	ApplyLayering()
 
@@ -3072,7 +3298,7 @@ function Cast:Initialize()
 	end)
 
 	spellIconEnabled = addon.GetDBBool("moduleEnabled_SpellIcon")
-	InstallActionIntentHook()
+	Cast.InstallActionIntentHook()
 	self:ApplyOptions()
 	self:ApplyIconOptions()
 	self:ApplySlotAssignments()
