@@ -281,7 +281,7 @@ function CastEmpowerRenderer:Create(parent)
 end
 
 -- Allocate or reuse pooled primitives up to `count` bands' worth of
--- separators (count - 1 boundaries) and bursts (one per band for rank-up
+-- separators (one breakpoint per band) and bursts (one per band for rank-up
 -- flash).
 function CastEmpowerRenderer:EnsurePoolCapacity(count)
 	for index = 1, count do
@@ -290,7 +290,7 @@ function CastEmpowerRenderer:EnsurePoolCapacity(count)
 		end
 	end
 
-	for index = 1, math.max(count, #self.separators) - 1 do
+	for index = 1, math.max(count, #self.separators) do
 		if not self.separators[index] then
 			local texture = self.separatorLayer:CreateTexture(nil, "ARTWORK", nil, 0)
 			SetTextureSmooth(texture, SEPARATOR_TEXTURE_PATH)
@@ -338,7 +338,7 @@ function CastEmpowerRenderer:Begin(layout)
 	local count = #bands
 	self:EnsurePoolCapacity(count)
 
-	for index = count, #self.separators do
+	for index = count + 1, #self.separators do
 		if self.separators[index] then
 			self.separators[index].separator:Hide()
 			self.separators[index].pip:Hide()
@@ -404,6 +404,18 @@ function CastEmpowerRenderer:PlayBandBurst(bandIndex, color)
 	visual.animation:Play()
 end
 
+local function GetMarkerAlpha(index, achievedCount, activeIndex)
+	if index == activeIndex then
+		return 1.0, 1.0
+	end
+
+	if index <= achievedCount then
+		return 0.45, 0.55
+	end
+
+	return 0.20, 0.35
+end
+
 --------------------------------------------------------------------------------
 -- Public query API for the cast donut recolour
 --------------------------------------------------------------------------------
@@ -455,8 +467,8 @@ function CastEmpowerRenderer:ApplyProgress(progress, color)
 	end
 
 	self.achievedBandCount = achievedCount
-	self.activeBandIndex = activeIndex
 	self.isHoldingAtMax = isHoldingAtMax and true or false
+	self.activeBandIndex = self.isHoldingAtMax and 0 or activeIndex
 
 	if self.isHoldingAtMax then
 		self.holdGlow:SetVertexColor(burstColor.r, burstColor.g, burstColor.b, 0.6)
@@ -474,7 +486,7 @@ function CastEmpowerRenderer:UpdateSeparators(achievedCount, activeIndex)
 	local bands = self.bands
 	local count = #bands
 	local ringRadius = self.radius
-	if ringRadius <= 0 or count <= 1 then
+	if ringRadius <= 0 or count <= 0 then
 		for _, pair in ipairs(self.separators) do
 			pair.separator:Hide()
 			pair.pip:Hide()
@@ -482,32 +494,26 @@ function CastEmpowerRenderer:UpdateSeparators(achievedCount, activeIndex)
 		return
 	end
 
-	-- Separators sit at each interior boundary (count - 1 of them). Each
-	-- boundary is attributed to the band that ends there, so separator i
-	-- lights in band i's tier colour once band i is achieved.
-	for index = 1, count - 1 do
+	-- Separators sit at each stage breakpoint, including the final breakpoint
+	-- at the cast/hold boundary. Each breakpoint is attributed to the band that
+	-- ends there, so separator i lights in band i's tier colour once band i is
+	-- achieved.
+	for index = 1, count do
 		local pair = self.separators[index]
 		if pair then
 			PositionOnRing(pair.separator, self.separatorLayer, bands[index].endProgress, ringRadius)
 			PositionOnRing(pair.pip, self.separatorLayer, bands[index].endProgress, ringRadius)
 
 			local tierColor = GetTierColor(index)
-			local alpha
-			if index <= achievedCount then
-				alpha = 1.0
-			elseif index == activeIndex then
-				alpha = 0.70
-			else
-				alpha = 0.35
-			end
-			pair.separator:SetVertexColor(1, 1, 1, alpha)
-			pair.pip:SetVertexColor(tierColor.r, tierColor.g, tierColor.b, alpha)
+			local separatorAlpha, pipAlpha = GetMarkerAlpha(index, achievedCount, activeIndex)
+			pair.separator:SetVertexColor(1, 1, 1, separatorAlpha)
+			pair.pip:SetVertexColor(tierColor.r, tierColor.g, tierColor.b, pipAlpha)
 			pair.separator:Show()
 			pair.pip:Show()
 		end
 	end
 
-	for index = count, #self.separators do
+	for index = count + 1, #self.separators do
 		if self.separators[index] then
 			self.separators[index].separator:Hide()
 			self.separators[index].pip:Hide()
