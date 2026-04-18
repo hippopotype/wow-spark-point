@@ -7,14 +7,13 @@ addon.CastEmpowerRenderer = CastEmpowerRenderer
 -- design): the main cast donut is the sole progress fill. Its swipe colour is
 -- recoloured on-the-fly to match the current rank's tier, so the single
 -- advancing arc communicates both "how far into the cast" and "which rank is
--- currently being charged". Tier boundaries are marked by pip+separator
--- overlays on the ring. Burst flashes at rank-up transitions; a hold-glow
+-- currently being charged". Tier boundaries are marked by unified breakpoint
+-- markers on the ring. Burst flashes at rank-up transitions; a hold-glow
 -- overlay shows once hold-at-max begins. The stacked-band / reverse-z design
 -- was abandoned because CooldownFrame instances at overlapping ranges did not
 -- render reliably (session 20 runtime testing confirmed a middle band
 -- dropping its swipe entirely even with all state flags correct).
-local SEPARATOR_TEXTURE_PATH = addon.addonFolder .. "\\Textures\\cast_empower_separator.png"
-local PIP_TEXTURE_PATH = addon.addonFolder .. "\\Textures\\cast_empower_pip.png"
+local MARKER_TEXTURE_PATH = addon.addonFolder .. "\\Textures\\cast_empower_marker.png"
 local BURST_TEXTURE_PATH = addon.addonFolder .. "\\Textures\\cast_empower_burst.png"
 local HOLD_GLOW_TEXTURE_PATH = addon.addonFolder .. "\\Textures\\cast_empower_hold_glow.png"
 
@@ -215,7 +214,7 @@ local function CreateBurstVisual(parent)
 	}
 end
 
--- Place a separator/pip texture at the ring angle that corresponds to
+-- Place a breakpoint marker texture at the ring angle that corresponds to
 -- `progress` (cast-only, 0..1). Matches Empower.GetProgressPolarAngle in
 -- Modules/Cast.lua: progress 0 = 12 o'clock, clockwise positive.
 local function PositionOnRing(texture, parent, progress, ringRadius)
@@ -226,7 +225,7 @@ local function PositionOnRing(texture, parent, progress, ringRadius)
 	local y = math.sin(rad) * ringRadius
 	texture:ClearAllPoints()
 	texture:SetPoint("CENTER", parent, "CENTER", x, y)
-	texture:SetRotation(math.rad(polar + 90))
+	texture:SetRotation(math.rad(polar - 90))
 end
 
 --------------------------------------------------------------------------------
@@ -243,9 +242,9 @@ function CastEmpowerRenderer:Create(parent)
 	ringFrame:SetSize(1, 1)
 	ringFrame:SetFrameLevel(frame:GetFrameLevel() + 1)
 
-	local separatorLayer = CreateFrame("Frame", nil, ringFrame)
-	separatorLayer:SetAllPoints(ringFrame)
-	separatorLayer:SetFrameLevel(ringFrame:GetFrameLevel() + 10)
+	local markerLayer = CreateFrame("Frame", nil, ringFrame)
+	markerLayer:SetAllPoints(ringFrame)
+	markerLayer:SetFrameLevel(ringFrame:GetFrameLevel() + 10)
 
 	local burstLayer = CreateFrame("Frame", nil, ringFrame)
 	burstLayer:SetAllPoints(ringFrame)
@@ -264,7 +263,7 @@ function CastEmpowerRenderer:Create(parent)
 	local renderer = {
 		frame = frame,
 		ringFrame = ringFrame,
-		separatorLayer = separatorLayer,
+		markerLayer = markerLayer,
 		burstLayer = burstLayer,
 		holdGlowLayer = holdGlowLayer,
 		holdGlow = holdGlow,
@@ -278,7 +277,7 @@ function CastEmpowerRenderer:Create(parent)
 		achievedBandCount = 0,
 		isHoldingAtMax = false,
 
-		separators = {},
+		markers = {},
 		bursts = {},
 	}
 
@@ -286,7 +285,7 @@ function CastEmpowerRenderer:Create(parent)
 end
 
 -- Allocate or reuse pooled primitives up to `count` bands' worth of
--- separators (one breakpoint per band) and bursts (one per band for rank-up
+-- markers (one breakpoint per band) and bursts (one per band for rank-up
 -- flash).
 function CastEmpowerRenderer:EnsurePoolCapacity(count)
 	for index = 1, count do
@@ -295,27 +294,21 @@ function CastEmpowerRenderer:EnsurePoolCapacity(count)
 		end
 	end
 
-	for index = 1, math.max(count, #self.separators) do
-		if not self.separators[index] then
-			local texture = self.separatorLayer:CreateTexture(nil, "ARTWORK", nil, 0)
-			SetTextureSmooth(texture, SEPARATOR_TEXTURE_PATH)
-			texture:SetSize(12, 16)
+	for index = 1, math.max(count, #self.markers) do
+		if not self.markers[index] then
+			local texture = self.markerLayer:CreateTexture(nil, "ARTWORK", nil, 0)
+			SetTextureSmooth(texture, MARKER_TEXTURE_PATH)
+			texture:SetSize(16, 16)
 			texture:Hide()
 
-			local pip = self.separatorLayer:CreateTexture(nil, "OVERLAY", nil, 0)
-			SetTextureSmooth(pip, PIP_TEXTURE_PATH)
-			pip:SetSize(8, 8)
-			pip:Hide()
-
-			self.separators[index] = { separator = texture, pip = pip }
+			self.markers[index] = texture
 		end
 	end
 end
 
 function CastEmpowerRenderer:HideAll()
-	for _, pair in ipairs(self.separators) do
-		pair.separator:Hide()
-		pair.pip:Hide()
+	for _, marker in ipairs(self.markers) do
+		marker:Hide()
 	end
 	for _, burst in ipairs(self.bursts) do
 		burst.texture:Hide()
@@ -343,10 +336,9 @@ function CastEmpowerRenderer:Begin(layout)
 	local count = #bands
 	self:EnsurePoolCapacity(count)
 
-	for index = count + 1, #self.separators do
-		if self.separators[index] then
-			self.separators[index].separator:Hide()
-			self.separators[index].pip:Hide()
+	for index = count + 1, #self.markers do
+		if self.markers[index] then
+			self.markers[index]:Hide()
 		end
 	end
 
@@ -462,7 +454,7 @@ function CastEmpowerRenderer:ApplyProgress(progress, color)
 	local achievedCount, activeIndex = ResolveBandStates(self.bands, clamped, previousAchievedCount, isHoldingAtMax)
 	local burstColor = NormalizeColor(color)
 
-	self:UpdateSeparators(achievedCount, activeIndex)
+	self:UpdateMarkers(achievedCount, activeIndex)
 
 	if previousAchievedCount < achievedCount then
 		for index = previousAchievedCount + 1, achievedCount do
@@ -483,52 +475,46 @@ function CastEmpowerRenderer:ApplyProgress(progress, color)
 	end
 
 	self.frame:Show()
-	self.separatorLayer:Show()
+	self.markerLayer:Show()
 	self.burstLayer:Show()
 end
 
-function CastEmpowerRenderer:UpdateSeparators(achievedCount, activeIndex)
+function CastEmpowerRenderer:UpdateMarkers(achievedCount, activeIndex)
 	local bands = self.bands
 	local count = #bands
 	local ringRadius = self.radius
 	if ringRadius <= 0 or count <= 0 then
-		for _, pair in ipairs(self.separators) do
-			pair.separator:Hide()
-			pair.pip:Hide()
+		for _, marker in ipairs(self.markers) do
+			marker:Hide()
 		end
 		return
 	end
 
-	-- Separators sit at each stage breakpoint, including the final breakpoint
+	-- Markers sit at each stage breakpoint, including the final breakpoint
 	-- at the cast/hold boundary. Each breakpoint is attributed to the band that
-	-- ends there, so separator i lights in band i's tier colour once band i is
+	-- ends there, so marker i lights in band i's tier colour once band i is
 	-- achieved.
 	for index = 1, count do
-		local pair = self.separators[index]
-		if pair then
-			PositionOnRing(pair.separator, self.separatorLayer, bands[index].endProgress, ringRadius)
-			PositionOnRing(pair.pip, self.separatorLayer, bands[index].endProgress, ringRadius)
-
+		local marker = self.markers[index]
+		if marker then
+			PositionOnRing(marker, self.markerLayer, bands[index].endProgress, ringRadius)
 			local tierColor = GetTierColor(index)
-			local separatorAlpha, pipAlpha = GetMarkerAlpha(index, achievedCount, activeIndex)
-			pair.separator:SetVertexColor(1, 1, 1, separatorAlpha)
-			pair.pip:SetVertexColor(tierColor.r, tierColor.g, tierColor.b, pipAlpha)
-			pair.separator:Show()
-			pair.pip:Show()
+			local _unusedSeparatorAlpha, markerAlpha = GetMarkerAlpha(index, achievedCount, activeIndex)
+			marker:SetVertexColor(tierColor.r, tierColor.g, tierColor.b, markerAlpha)
+			marker:Show()
 		end
 	end
 
-	for index = count + 1, #self.separators do
-		if self.separators[index] then
-			self.separators[index].separator:Hide()
-			self.separators[index].pip:Hide()
+	for index = count + 1, #self.markers do
+		if self.markers[index] then
+			self.markers[index]:Hide()
 		end
 	end
 end
 
 function CastEmpowerRenderer:Show()
 	self.frame:Show()
-	self.separatorLayer:Show()
+	self.markerLayer:Show()
 	self.burstLayer:Show()
 	if self.holdGlowLayer then
 		self.holdGlowLayer:Show()
