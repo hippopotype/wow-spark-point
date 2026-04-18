@@ -108,58 +108,6 @@ local empowerHoldAtMaxMS = 0
 local empowerLayout = nil
 local empowerStagePercents = {}
 
---------------------------------------------------------------------------------
--- Empower diagnostic logging. Toggle with /run SparkPoint.Cast.DebugEmpower =
--- true/false; defaults on while we track down the alternate-cast visibility
--- bug. The logger deliberately captures cast-frame/donut state alongside each
--- lifecycle event so we can correlate the fade animation with the fill
--- rendering.
---------------------------------------------------------------------------------
-local debugEmpower = true
-local function SPDiag(fmt, ...)
-	if not debugEmpower then
-		return
-	end
-	local ok, msg = pcall(string.format, fmt, ...)
-	if ok and DEFAULT_CHAT_FRAME then
-		DEFAULT_CHAT_FRAME:AddMessage("|cffffcc66[SP cast]|r " .. msg)
-	end
-end
-
-local function SPDiagCastDonutState(label)
-	if not debugEmpower then
-		return
-	end
-	local cfShown = castFrame and castFrame:IsShown() or false
-	local cfVis = castFrame and castFrame:IsVisible() or false
-	local cfAlpha = (castFrame and castFrame:GetAlpha()) or -1
-	-- bgFrame is the DonutWidget's root frame; if it's hidden, every inner
-	-- texture (cooldown swipe, foreground) is invisible regardless of its own
-	-- IsShown state. Track it explicitly so a "cd shown=true" with the fill
-	-- invisible on screen becomes visible in the log.
-	local bgShown = (castDonut and castDonut.bgFrame and castDonut.bgFrame:IsShown()) or false
-	local bgVis = (castDonut and castDonut.bgFrame and castDonut.bgFrame:IsVisible()) or false
-	local cdShown = (castDonut and castDonut.cooldown and castDonut.cooldown:IsShown()) or false
-	local cdVis = (castDonut and castDonut.cooldown and castDonut.cooldown:IsVisible()) or false
-	local fgShown = (castDonut and castDonut.foreground and castDonut.foreground:IsShown()) or false
-	SPDiag(
-		"%s :: cf[s=%s v=%s a=%.2f] bg[s=%s v=%s] cd[s=%s v=%s] fg[s=%s]",
-		label,
-		tostring(cfShown),
-		tostring(cfVis),
-		cfAlpha,
-		tostring(bgShown),
-		tostring(bgVis),
-		tostring(cdShown),
-		tostring(cdVis),
-		tostring(fgShown)
-	)
-end
-
-Cast.SetDebugEmpower = function(enabled)
-	debugEmpower = enabled and true or false
-end
-
 local issecretvalue = _G.issecretvalue
 local ShouldShowPlayerInstantCasts
 local ShouldShowTriggeredInstantCasts
@@ -1219,7 +1167,6 @@ local function ShowCastFrame(opts)
 	if not castFrame then
 		return
 	end
-	SPDiag("ShowCastFrame() cf shown=%s a=%.2f dur=%s", tostring(castFrame:IsShown()), castFrame:GetAlpha() or -1, tostring(opts and opts.duration))
 	AnchorFrame:Show("cast")
 	if castShadowFrame then
 		if Transition and Transition.ShowFrame then
@@ -1244,10 +1191,7 @@ local function HideCastFrame(onComplete)
 		return
 	end
 
-	SPDiag("HideCastFrame() cf shown=%s a=%.2f", tostring(castFrame:IsShown()), castFrame:GetAlpha() or -1)
-
 	local function Finish()
-		SPDiag("HideCastFrame.Finish() (fade-out completed)")
 		AnchorFrame:Hide("cast")
 		if onComplete then
 			onComplete()
@@ -1271,8 +1215,6 @@ local function HideCastFrame(onComplete)
 end
 
 local function ClearCastShellVisuals()
-	SPDiag("ClearCastShellVisuals() (fade-out onComplete) emp=%s isCasting=%s", tostring(isEmpowering), tostring(isCasting))
-	SPDiagCastDonutState("  before clear")
 	if castDonut then
 		castDonut:Hide()
 		castDonut:SetOverlayShown(false)
@@ -2045,14 +1987,6 @@ local function OnUpdate(self, elapsed)
 				angle = math.min(359.5, clampedPerc * 360)
 			end
 			castDonut:SetAngle(angle)
-			if isEmpowering and debugEmpower then
-				local tnow = GetTime()
-				if not Cast._spDiagLastTick or tnow - Cast._spDiagLastTick >= 0.25 then
-					Cast._spDiagLastTick = tnow
-					SPDiag("update angle=%.1f clampedPerc=%.3f", angle, clampedPerc)
-					SPDiagCastDonutState("  donut")
-				end
-			end
 
 			-- Recolour the donut per-frame. During empower the fill takes the
 			-- current rank's tier colour; outside empower we restore the normal
@@ -2120,8 +2054,6 @@ function Cast:Show()
 		return
 	end
 
-	SPDiag("Cast:Show() entry emp=%s ch=%s isCasting=%s", tostring(isEmpowering), tostring(isChanneling), tostring(isCasting))
-	SPDiagCastDonutState("Cast:Show() before")
 	isCasting = true
 	if not IsCastVisibilityAllowed() then
 		if castFrame then
@@ -2201,7 +2133,6 @@ function Cast:Show()
 	UpdateAssignedSlotWidgetVisibility()
 
 	ShowCastFrame()
-	SPDiagCastDonutState("Cast:Show() exit")
 end
 
 function Cast:UpdateShellVisibility()
@@ -2273,8 +2204,6 @@ function Cast:Hide()
 		return
 	end
 
-	SPDiag("Cast:Hide() entry emp=%s ch=%s isCasting=%s", tostring(isEmpowering), tostring(isChanneling), tostring(isCasting))
-	SPDiagCastDonutState("Cast:Hide() before")
 	CancelRejectedAttemptFeedback()
 	ClearPendingInstantIntent()
 	interruptFlashToken = interruptFlashToken + 1
@@ -2319,7 +2248,6 @@ function Cast:Hide()
 	end
 
 	self:UpdateShellVisibility()
-	SPDiagCastDonutState("Cast:Hide() exit")
 end
 
 function Cast:ShowInterruptFlash(castGUID)
@@ -2487,10 +2415,8 @@ function Cast.StartChannelLikeCast(castGUID, spellID, forceEmpower)
 		end
 		empowerCurrentStage = 0
 		empowerLayout = BuildEmpowerLayoutForUnit("player", empowerNumStages)
-		SPDiag("StartChannelLikeCast(empower=true) numStages=%d holdMs=%d castDuration=%d", empowerNumStages, empowerHoldAtMaxMS, castDuration)
 		if empowerRenderer and empowerLayout then
 			empowerRenderer:Begin(empowerLayout)
-			SPDiag("  renderer:Begin() done, layout=%s", tostring(empowerLayout ~= nil))
 			if castFrame and castFrame.empowerStageFrame then
 				castFrame.empowerStageFrame:Show()
 			end
@@ -2735,7 +2661,6 @@ function Cast:UNIT_SPELLCAST_EMPOWER_UPDATE(event, unit, castGUID, spellID)
 		return
 	end
 
-	SPDiag("UNIT_SPELLCAST_EMPOWER_UPDATE stages=%s layoutAlready=%s", tostring(numEmpowerStages), tostring(empowerLayout ~= nil))
 	isChanneling = false
 	isEmpowering = true
 	empowerNumStages = tonumber(numEmpowerStages) or empowerNumStages
