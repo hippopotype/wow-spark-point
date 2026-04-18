@@ -251,10 +251,14 @@ function CastEmpowerRenderer:Create(parent)
 	burstLayer:SetAllPoints(ringFrame)
 	burstLayer:SetFrameLevel(ringFrame:GetFrameLevel() + 15)
 
-	local holdGlow = ringFrame:CreateTexture(nil, "OVERLAY", nil, 7)
+	local holdGlowLayer = CreateFrame("Frame", nil, frame)
+	holdGlowLayer:SetAllPoints(ringFrame)
+	holdGlowLayer:SetFrameLevel(burstLayer:GetFrameLevel() + 5)
+
+	local holdGlow = holdGlowLayer:CreateTexture(nil, "OVERLAY", nil, 0)
 	SetTextureSmooth(holdGlow, HOLD_GLOW_TEXTURE_PATH)
 	holdGlow:SetBlendMode("ADD")
-	holdGlow:SetAllPoints(ringFrame)
+	holdGlow:SetAllPoints(holdGlowLayer)
 	holdGlow:Hide()
 
 	local renderer = {
@@ -262,6 +266,7 @@ function CastEmpowerRenderer:Create(parent)
 		ringFrame = ringFrame,
 		separatorLayer = separatorLayer,
 		burstLayer = burstLayer,
+		holdGlowLayer = holdGlowLayer,
 		holdGlow = holdGlow,
 
 		layout = nil,
@@ -525,6 +530,9 @@ function CastEmpowerRenderer:Show()
 	self.frame:Show()
 	self.separatorLayer:Show()
 	self.burstLayer:Show()
+	if self.holdGlowLayer then
+		self.holdGlowLayer:Show()
+	end
 end
 
 function CastEmpowerRenderer:Hide()
