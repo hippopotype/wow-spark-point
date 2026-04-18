@@ -225,6 +225,22 @@ function DonutWidget:SetThickness(thickness)
 end
 
 --------------------------------------------------------------------------------
+-- SetBackgroundTextureBase: Swap background texture family at runtime
+--------------------------------------------------------------------------------
+function DonutWidget:SetBackgroundTextureBase(base)
+	self.backgroundBase = base
+	self:SetThickness(self.thickness)
+end
+
+--------------------------------------------------------------------------------
+-- SetProgressTextureBase: Swap progress texture family at runtime
+--------------------------------------------------------------------------------
+function DonutWidget:SetProgressTextureBase(base)
+	self.progressBase = base or self.progressBase
+	self:SetThickness(self.thickness)
+end
+
+--------------------------------------------------------------------------------
 -- SetOverlayTextureBase: Swap overlay texture family at runtime
 --------------------------------------------------------------------------------
 function DonutWidget:SetOverlayTextureBase(base)

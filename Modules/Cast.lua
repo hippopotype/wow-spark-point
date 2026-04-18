@@ -6,6 +6,8 @@ local L = addon.L
 local API = addon.API
 local IconMask = addon.IconMask
 local DonutWidget = addon.DonutWidget
+local EmpowerStageLayout = addon.EmpowerStageLayout
+local CastEmpowerRenderer = addon.CastEmpowerRenderer
 local CallbackRegistry = addon.CallbackRegistry
 local AnchorFrame = addon.AnchorFrame
 local HUDLayers = addon.HUDLayers
@@ -28,6 +30,7 @@ local SPELL_ICON_FRAME_PATH = addon.addonFolder .. "\\Textures\\spell_icon_frame
 local CAST_FEEDBACK_PATH = addon.addonFolder .. "\\Textures\\cast_feedback.png"
 local CAST_BACKGROUND_SHADOW_PATH = addon.addonFolder .. "\\Textures\\cast_background_shadow.png"
 local SPELL_ICON_MASK_BASE_EXPAND = 6
+local CAST_BACKGROUND_TEXTURE_BASE = "cast_background"
 local CAST_FILL_TEXTURE_BASE = "cast_fill"
 
 --------------------------------------------------------------------------------
@@ -48,6 +51,7 @@ local SLOT_SPARK_RADIUS_RATIOS = { 0.5929, 0.4875, 0.3819 }
 local castFrame
 local castShadowFrame
 local castDonut, latencyDonut
+local empowerRenderer
 local isCasting = false
 local isChanneling = false
 local isEmpowering = false
@@ -123,6 +127,58 @@ local empowerNumStages = 0
 local empowerCurrentStage = 0
 local empowerHoldAtMaxMS = 0
 local empowerStagePercents = {}
+
+--------------------------------------------------------------------------------
+-- Empower diagnostic logging. Toggle with /run SparkPoint.Cast.DebugEmpower =
+-- true/false; defaults on while we track down the alternate-cast visibility
+-- bug. The logger deliberately captures cast-frame/donut state alongside each
+-- lifecycle event so we can correlate the fade animation with the fill
+-- rendering.
+--------------------------------------------------------------------------------
+local debugEmpower = true
+local function SPDiag(fmt, ...)
+	if not debugEmpower then
+		return
+	end
+	local ok, msg = pcall(string.format, fmt, ...)
+	if ok and DEFAULT_CHAT_FRAME then
+		DEFAULT_CHAT_FRAME:AddMessage("|cffffcc66[SP cast]|r " .. msg)
+	end
+end
+
+local function SPDiagCastDonutState(label)
+	if not debugEmpower then
+		return
+	end
+	local cfShown = castFrame and castFrame:IsShown() or false
+	local cfVis = castFrame and castFrame:IsVisible() or false
+	local cfAlpha = (castFrame and castFrame:GetAlpha()) or -1
+	-- bgFrame is the DonutWidget's root frame; if it's hidden, every inner
+	-- texture (cooldown swipe, foreground) is invisible regardless of its own
+	-- IsShown state. Track it explicitly so a "cd shown=true" with the fill
+	-- invisible on screen becomes visible in the log.
+	local bgShown = (castDonut and castDonut.bgFrame and castDonut.bgFrame:IsShown()) or false
+	local bgVis = (castDonut and castDonut.bgFrame and castDonut.bgFrame:IsVisible()) or false
+	local cdShown = (castDonut and castDonut.cooldown and castDonut.cooldown:IsShown()) or false
+	local cdVis = (castDonut and castDonut.cooldown and castDonut.cooldown:IsVisible()) or false
+	local fgShown = (castDonut and castDonut.foreground and castDonut.foreground:IsShown()) or false
+	SPDiag(
+		"%s :: cf[s=%s v=%s a=%.2f] bg[s=%s v=%s] cd[s=%s v=%s] fg[s=%s]",
+		label,
+		tostring(cfShown),
+		tostring(cfVis),
+		cfAlpha,
+		tostring(bgShown),
+		tostring(bgVis),
+		tostring(cdShown),
+		tostring(cdVis),
+		tostring(fgShown)
+	)
+end
+
+Cast.SetDebugEmpower = function(enabled)
+	debugEmpower = enabled and true or false
+end
 
 local issecretvalue = _G.issecretvalue
 local ShouldShowPlayerInstantCasts
@@ -539,6 +595,19 @@ function Empower.BuildStagePercents(unit, numStages)
 	return Empower.NormalizeStagePercents(percents, numStages)
 end
 
+local function BuildEmpowerLayoutForUnit(unit, numStages)
+	if not EmpowerStageLayout then
+		return nil
+	end
+
+	local stageDurations = {}
+	for stage = 1, tonumber(numStages) or 0 do
+		stageDurations[stage] = GetUnitEmpowerStageDuration(unit, stage - 1)
+	end
+
+	return EmpowerStageLayout:Build(stageDurations, GetUnitEmpowerHoldAtMaxTime(unit))
+end
+
 local function IsCastVisibilityAllowed()
 	return (not Visibility) or Visibility:ShouldShow("cast")
 end
@@ -594,6 +663,26 @@ local function GetCastProgressTextureBase()
 	return CAST_FILL_TEXTURE_BASE
 end
 
+local function GetCastBackgroundTextureBase()
+	return CAST_BACKGROUND_TEXTURE_BASE
+end
+
+local function UpdateCastBackgroundTexture()
+	if not castDonut then
+		return
+	end
+
+	local desiredBase = GetCastBackgroundTextureBase()
+	if castDonut.backgroundBase ~= desiredBase then
+		if castDonut.SetBackgroundTextureBase then
+			castDonut:SetBackgroundTextureBase(desiredBase)
+		else
+			castDonut.backgroundBase = desiredBase
+			castDonut:SetThickness(castDonut.thickness)
+		end
+	end
+end
+
 local function UpdateCastProgressTexture()
 	if not castDonut then
 		return
@@ -601,8 +690,12 @@ local function UpdateCastProgressTexture()
 
 	local desiredBase = GetCastProgressTextureBase()
 	if castDonut.progressBase ~= desiredBase then
-		castDonut.progressBase = desiredBase
-		castDonut:SetThickness(castDonut.thickness)
+		if castDonut.SetProgressTextureBase then
+			castDonut:SetProgressTextureBase(desiredBase)
+		else
+			castDonut.progressBase = desiredBase
+			castDonut:SetThickness(castDonut.thickness)
+		end
 	end
 end
 
@@ -825,6 +918,10 @@ function Empower.HideStageVisuals()
 		return
 	end
 
+	if empowerRenderer then
+		empowerRenderer:Hide()
+	end
+
 	if castFrame.empowerStageFrame then
 		castFrame.empowerStageFrame:Hide()
 	end
@@ -938,6 +1035,13 @@ function Empower.LayoutStageVisuals()
 		return
 	end
 
+	if empowerRenderer and empowerRenderer.layout then
+		castFrame.empowerStageFrame:Show()
+		empowerRenderer:SetRadius(Empower.GetCastRingRadius())
+		empowerRenderer:Show()
+		return
+	end
+
 	local radius = Empower.GetCastRingRadius()
 	for i = 1, stageCount do
 		local progress = empowerStagePercents[i]
@@ -970,6 +1074,9 @@ function Empower.ResetState()
 	empowerCurrentStage = 0
 	empowerHoldAtMaxMS = 0
 	Empower.ClearSequentialTable(empowerStagePercents)
+	if empowerRenderer then
+		empowerRenderer:Finish()
+	end
 	Empower.HideStageVisuals()
 end
 
@@ -1464,6 +1571,7 @@ local function ShowCastFrame(opts)
 	if not castFrame then
 		return
 	end
+	SPDiag("ShowCastFrame() cf shown=%s a=%.2f dur=%s", tostring(castFrame:IsShown()), castFrame:GetAlpha() or -1, tostring(opts and opts.duration))
 	AnchorFrame:Show("cast")
 	if castShadowFrame then
 		if Transition and Transition.ShowFrame then
@@ -1488,7 +1596,10 @@ local function HideCastFrame(onComplete)
 		return
 	end
 
+	SPDiag("HideCastFrame() cf shown=%s a=%.2f", tostring(castFrame:IsShown()), castFrame:GetAlpha() or -1)
+
 	local function Finish()
+		SPDiag("HideCastFrame.Finish() (fade-out completed)")
 		AnchorFrame:Hide("cast")
 		if onComplete then
 			onComplete()
@@ -1512,6 +1623,8 @@ local function HideCastFrame(onComplete)
 end
 
 local function ClearCastShellVisuals()
+	SPDiag("ClearCastShellVisuals() (fade-out onComplete) emp=%s isCasting=%s", tostring(isEmpowering), tostring(isCasting))
+	SPDiagCastDonutState("  before clear")
 	if castDonut then
 		castDonut:Hide()
 		castDonut:SetOverlayShown(false)
@@ -2272,22 +2385,67 @@ local function OnUpdate(self, elapsed)
 		end
 
 		if castDonut then
+			-- During empower we reuse the main cast donut as the progress fill
+			-- (session 20 redesign: single recoloured fill instead of N stacked
+			-- band arcs). The donut's swipe is driven by the same cast+hold
+			-- progress as the spark, so fill and spark advance at the same
+			-- rate. The fill reaches 360deg at the end of hold-at-max. Cap
+			-- strictly below 360 to stay on the cooldown-swipe path;
+			-- DonutWidget's 360 branch swaps in a static foreground texture
+			-- that did not render reliably in runtime testing.
+			if isEmpowering then
+				angle = math.min(359.5, clampedPerc * 360)
+			end
 			castDonut:SetAngle(angle)
+			if isEmpowering and debugEmpower then
+				local tnow = GetTime()
+				if not Cast._spDiagLastTick or tnow - Cast._spDiagLastTick >= 0.25 then
+					Cast._spDiagLastTick = tnow
+					SPDiag("update angle=%.1f clampedPerc=%.3f", angle, clampedPerc)
+					SPDiagCastDonutState("  donut")
+				end
+			end
+
+			-- Recolour the donut per-frame. During empower the fill takes the
+			-- current rank's tier colour; outside empower we restore the normal
+			-- cast-bar colour so the tier tint does not bleed into the next
+			-- non-empower cast.
+			if isEmpowering and empowerRenderer and empowerRenderer.GetActiveTierColor then
+				local tier = empowerRenderer:GetActiveTierColor()
+				if tier then
+					castDonut:SetBarColor({ r = tier.r, g = tier.g, b = tier.b, a = 1 })
+				end
+			else
+				castDonut:SetBarColor(GetActiveCastBarColor())
+			end
+
 			local overlayAlpha = castGlowMaxOpacity * clampedPerc
-			if isEmpowering and empowerCurrentStage >= Empower.GetVisualStageCount() and Empower.GetVisualStageCount() > 0 then
+			if isEmpowering then
+				overlayAlpha = 0
+			elseif empowerCurrentStage >= Empower.GetVisualStageCount() and Empower.GetVisualStageCount() > 0 then
 				overlayAlpha = math.max(overlayAlpha, castGlowMaxOpacity * 0.9)
 			end
 			castDonut:SetOverlayAlpha(overlayAlpha)
+			castDonut:SetOverlayShown(not isEmpowering)
 		end
 		-- Keep latency arc static (Cooldown swipe animates otherwise)
-		if latencyDonut then
+		if latencyDonut and not isEmpowering then
 			local latencyAngle = math.max(0.1, castLatency * 360)
 			latencyDonut:SetAngle(latencyAngle)
+			latencyDonut:Show()
+		elseif latencyDonut then
+			latencyDonut:Hide()
 		end
 
 		-- Update spark position (rotates around ring)
 		local radius = Empower.GetCastRingRadius()
-		local x, y, sparkAngle = Empower.GetRingPointForProgress(math.max(0, math.min(1, angle / 360)), radius)
+		local sparkProgress
+		if isEmpowering then
+			sparkProgress = clampedPerc
+		else
+			sparkProgress = math.max(0, math.min(1, angle / 360))
+		end
+		local x, y, sparkAngle = Empower.GetRingPointForProgress(sparkProgress, radius)
 
 		local spark = castFrame.sparkTexture
 		spark:SetRotation(math.rad(sparkAngle + 90))
@@ -2295,8 +2453,13 @@ local function OnUpdate(self, elapsed)
 		spark:SetPoint("CENTER", castFrame, "CENTER", x, y)
 		Empower.UpdateSparkAppearance()
 		if isEmpowering then
-			Empower.LayoutStageVisuals()
-			Empower.UpdateStageFromProgress(clampedPerc)
+			if empowerRenderer and empowerRenderer.layout then
+				empowerRenderer:SetRadius(radius)
+				empowerRenderer:ApplyProgress(clampedPerc, GetActiveCastBarColor())
+			else
+				Empower.LayoutStageVisuals()
+				Empower.UpdateStageFromProgress(clampedPerc)
+			end
 		else
 			Empower.HideStageVisuals()
 		end
@@ -2313,6 +2476,8 @@ function Cast:Show()
 		return
 	end
 
+	SPDiag("Cast:Show() entry emp=%s ch=%s isCasting=%s", tostring(isEmpowering), tostring(isChanneling), tostring(isCasting))
+	SPDiagCastDonutState("Cast:Show() before")
 	isCasting = true
 	if not IsCastVisibilityAllowed() then
 		if castFrame then
@@ -2322,8 +2487,19 @@ function Cast:Show()
 	end
 	ShowCastFrame()
 
+	UpdateCastBackgroundTexture()
 	UpdateCastProgressTexture()
 	if castDonut then
+		-- Always re-show the donut root frame. ClearCastShellVisuals (which
+		-- runs when HideCastFrame's fade-out completes) hides castDonut's
+		-- bgFrame. When Cast:Show() is first called for a new cast and the
+		-- visibility check momentarily returns false (e.g. Visibility module
+		-- hasn't updated yet), the HideCastFrame(ClearCastShellVisuals)
+		-- branch runs and hides bgFrame. A subsequent Cast:Show() then puts
+		-- castFrame back on screen but the empower path does not otherwise
+		-- re-show bgFrame, so the fill/spark render invisibly. Keep it
+		-- shown here so later SetAngle calls actually draw.
+		castDonut:Show()
 		castDonut:SetBarColor(GetActiveCastBarColor())
 	end
 	Empower.UpdateSparkAppearance()
@@ -2340,7 +2516,7 @@ function Cast:Show()
 	end
 
 	-- Show latency indicator
-	if latencyDonut and ShouldShowCurrentCastProgress() then
+	if latencyDonut and ShouldShowCurrentCastProgress() and not isEmpowering then
 		local latencyAngle = math.max(0.1, castLatency * 360)
 		latencyDonut:SetAngle(latencyAngle)
 		if castDonut then
@@ -2353,9 +2529,11 @@ function Cast:Show()
 			end
 			castDonut:SetOverlayTextureBase(CAST_OVERLAY_DEFAULT)
 			castDonut:Show()
-			castDonut:SetOverlayShown(true)
+			castDonut:SetOverlayShown(not isEmpowering)
 			castDonut:SetOverlayAlpha(0)
 		end
+	elseif latencyDonut and isEmpowering then
+		latencyDonut:Hide()
 	end
 	if castFrame.frameTexture then
 		castFrame.frameTexture:Show()
@@ -2379,6 +2557,7 @@ function Cast:Show()
 	UpdateAssignedSlotWidgetVisibility()
 
 	ShowCastFrame()
+	SPDiagCastDonutState("Cast:Show() exit")
 end
 
 function Cast:UpdateShellVisibility()
@@ -2450,6 +2629,8 @@ function Cast:Hide()
 		return
 	end
 
+	SPDiag("Cast:Hide() entry emp=%s ch=%s isCasting=%s", tostring(isEmpowering), tostring(isChanneling), tostring(isCasting))
+	SPDiagCastDonutState("Cast:Hide() before")
 	CancelRejectedAttemptFeedback()
 	ClearPendingInstantIntent()
 	interruptFlashToken = interruptFlashToken + 1
@@ -2457,6 +2638,7 @@ function Cast:Hide()
 	isCasting = false
 	isChanneling = false
 	Empower.ResetState()
+	UpdateCastBackgroundTexture()
 	UpdateCastProgressTexture()
 	currentCastGUID = nil
 	pendingVisuals = false
@@ -2493,6 +2675,7 @@ function Cast:Hide()
 	end
 
 	self:UpdateShellVisibility()
+	SPDiagCastDonutState("Cast:Hide() exit")
 end
 
 function Cast:ShowInterruptFlash(castGUID)
@@ -2659,6 +2842,15 @@ function Cast.StartChannelLikeCast(castGUID, spellID, forceEmpower)
 			end
 		end
 		empowerCurrentStage = 0
+		SPDiag("StartChannelLikeCast(empower=true) numStages=%d holdMs=%d castDuration=%d", empowerNumStages, empowerHoldAtMaxMS, castDuration)
+		if empowerRenderer then
+			empowerRenderer:Begin(BuildEmpowerLayoutForUnit("player", empowerNumStages))
+			SPDiag("  renderer:Begin() done, layout=%s", tostring(empowerRenderer.layout ~= nil))
+			if castFrame and castFrame.empowerStageFrame then
+				castFrame.empowerStageFrame:Show()
+			end
+			empowerRenderer:Show()
+		end
 	else
 		Empower.ResetState()
 	end
@@ -2898,6 +3090,7 @@ function Cast:UNIT_SPELLCAST_EMPOWER_UPDATE(event, unit, castGUID, spellID)
 		return
 	end
 
+	SPDiag("UNIT_SPELLCAST_EMPOWER_UPDATE stages=%s layoutAlready=%s", tostring(numEmpowerStages), tostring(empowerRenderer and empowerRenderer.layout ~= nil))
 	isChanneling = false
 	isEmpowering = true
 	empowerNumStages = tonumber(numEmpowerStages) or empowerNumStages
@@ -2914,6 +3107,19 @@ function Cast:UNIT_SPELLCAST_EMPOWER_UPDATE(event, unit, castGUID, spellID)
 	castStartTime = startTimeMS
 	castEndTime = endTimeMS + empowerHoldAtMaxMS
 	castDuration = castEndTime - castStartTime
+	if empowerRenderer then
+		-- Only (re)build the layout when the renderer does not already have one
+		-- for the current cast. UNIT_SPELLCAST_EMPOWER_UPDATE fires repeatedly
+		-- mid-cast and must not reset the achieved-band latch
+		-- (see docs/superpowers/specs/2026-04-18-empower-cast-ring-redesign-amendment-2.md §6).
+		if not empowerRenderer.layout then
+			empowerRenderer:Begin(BuildEmpowerLayoutForUnit("player", empowerNumStages))
+		end
+		if castFrame and castFrame.empowerStageFrame then
+			castFrame.empowerStageFrame:Show()
+		end
+		empowerRenderer:Show()
+	end
 	self:UpdateIconCooldown()
 	Empower.LayoutStageVisuals()
 end
@@ -3052,7 +3258,7 @@ function Cast:ApplyOptions()
 			useThicknessSuffix = false,
 			barColor = GetActiveCastBarColor(),
 			backgroundColor = backgroundColor,
-			backgroundTextureBase = "cast_background",
+			backgroundTextureBase = GetCastBackgroundTextureBase(),
 			progressTextureBase = GetCastProgressTextureBase(),
 			overlayTextureBase = CAST_OVERLAY_DEFAULT,
 			frameTextureBase = nil,
@@ -3060,6 +3266,7 @@ function Cast:ApplyOptions()
 		castDonut:AttachTo(castFrame)
 	else
 		-- Update existing donuts
+		UpdateCastBackgroundTexture()
 		UpdateCastProgressTexture()
 		castDonut:SetRadius(radius)
 		castDonut:SetThickness(thickness)
@@ -3199,6 +3406,7 @@ function Cast:Initialize()
 	castFrame.empowerStageFrame = CreateFrame("Frame", nil, castFrame.overlayFrame)
 	castFrame.empowerStageFrame:SetAllPoints()
 	castFrame.empowerStageFrame:Hide()
+	empowerRenderer = CastEmpowerRenderer and CastEmpowerRenderer:Create(castFrame.empowerStageFrame) or nil
 
 	-- Create spark texture (above rings)
 	castFrame.sparkTexture = castFrame.overlayFrame:CreateTexture(nil, "OVERLAY")

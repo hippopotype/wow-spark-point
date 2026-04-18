@@ -10,6 +10,7 @@
 # Core (load order matters)
 Core\Initialization.lua
 Core\API.lua
+Core\EmpowerStageLayout.lua
 Core\ResourceModel.lua
 Core\ClassResourceSystems.lua
 Core\IconMask.lua
@@ -37,6 +38,7 @@ Providers\ManaBar.lua
 Providers\ClassPower.lua
 
 # Modules
+Modules\CastEmpowerRenderer.lua
 Modules\Cast.lua
 Modules\BarSlots.lua
 Modules\ClassResourceSystems\GenericPips.lua
