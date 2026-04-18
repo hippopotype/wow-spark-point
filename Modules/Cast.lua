@@ -687,6 +687,14 @@ local function GetActiveEmpowerLayout()
 	return empowerLayout
 end
 
+local function GetEmpowerStageThreshold(index)
+	if empowerLayout and empowerLayout.stages and empowerLayout.stages[index] then
+		return tonumber(empowerLayout.stages[index].endProgress)
+	end
+
+	return tonumber(empowerStagePercents[index]) or 0
+end
+
 function Empower.HideStageVisuals()
 	if empowerRenderer then
 		empowerRenderer:Hide()
@@ -737,7 +745,7 @@ function Empower.UpdateStageFromProgress(progress)
 
 	local nextStage = 0
 	for i = 1, stageCount do
-		local threshold = empowerStagePercents[i]
+		local threshold = GetEmpowerStageThreshold(i)
 		if type(threshold) == "number" and progress >= threshold then
 			nextStage = i
 		else
@@ -2092,14 +2100,10 @@ local function OnUpdate(self, elapsed)
 		spark:ClearAllPoints()
 		spark:SetPoint("CENTER", castFrame, "CENTER", x, y)
 		Empower.UpdateSparkAppearance()
-		if isEmpowering then
-			if empowerRenderer and empowerRenderer.layout then
-				empowerRenderer:SetRadius(radius)
-				empowerRenderer:ApplyProgress(clampedPerc, GetActiveCastBarColor())
-			else
-				Empower.LayoutStageVisuals()
-				Empower.UpdateStageFromProgress(clampedPerc)
-			end
+		if isEmpowering and empowerRenderer and empowerLayout then
+			empowerRenderer:SetRadius(radius)
+			empowerRenderer:ApplyProgress(clampedPerc, GetActiveCastBarColor())
+			Empower.UpdateStageFromProgress(clampedPerc)
 		else
 			Empower.HideStageVisuals()
 		end
@@ -2482,10 +2486,11 @@ function Cast.StartChannelLikeCast(castGUID, spellID, forceEmpower)
 			end
 		end
 		empowerCurrentStage = 0
+		empowerLayout = BuildEmpowerLayoutForUnit("player", empowerNumStages)
 		SPDiag("StartChannelLikeCast(empower=true) numStages=%d holdMs=%d castDuration=%d", empowerNumStages, empowerHoldAtMaxMS, castDuration)
-		if empowerRenderer then
-			empowerRenderer:Begin(BuildEmpowerLayoutForUnit("player", empowerNumStages))
-			SPDiag("  renderer:Begin() done, layout=%s", tostring(empowerRenderer.layout ~= nil))
+		if empowerRenderer and empowerLayout then
+			empowerRenderer:Begin(empowerLayout)
+			SPDiag("  renderer:Begin() done, layout=%s", tostring(empowerLayout ~= nil))
 			if castFrame and castFrame.empowerStageFrame then
 				castFrame.empowerStageFrame:Show()
 			end
@@ -2730,7 +2735,7 @@ function Cast:UNIT_SPELLCAST_EMPOWER_UPDATE(event, unit, castGUID, spellID)
 		return
 	end
 
-	SPDiag("UNIT_SPELLCAST_EMPOWER_UPDATE stages=%s layoutAlready=%s", tostring(numEmpowerStages), tostring(empowerRenderer and empowerRenderer.layout ~= nil))
+	SPDiag("UNIT_SPELLCAST_EMPOWER_UPDATE stages=%s layoutAlready=%s", tostring(numEmpowerStages), tostring(empowerLayout ~= nil))
 	isChanneling = false
 	isEmpowering = true
 	empowerNumStages = tonumber(numEmpowerStages) or empowerNumStages
@@ -2747,14 +2752,13 @@ function Cast:UNIT_SPELLCAST_EMPOWER_UPDATE(event, unit, castGUID, spellID)
 	castStartTime = startTimeMS
 	castEndTime = endTimeMS + empowerHoldAtMaxMS
 	castDuration = castEndTime - castStartTime
-	if empowerRenderer then
-		-- Only (re)build the layout when the renderer does not already have one
-		-- for the current cast. UNIT_SPELLCAST_EMPOWER_UPDATE fires repeatedly
-		-- mid-cast and must not reset the achieved-band latch
-		-- (see docs/superpowers/specs/2026-04-18-empower-cast-ring-redesign-amendment-2.md §6).
-		if not empowerRenderer.layout then
-			empowerRenderer:Begin(BuildEmpowerLayoutForUnit("player", empowerNumStages))
-		end
+	if not empowerLayout then
+		empowerLayout = BuildEmpowerLayoutForUnit("player", empowerNumStages)
+	end
+	if empowerRenderer and empowerLayout then
+		-- UNIT_SPELLCAST_EMPOWER_UPDATE fires repeatedly mid-cast. Reuse the
+		-- per-cast layout object so the renderer does not rebuild achieved state.
+		empowerRenderer:SetLayout(empowerLayout)
 		if castFrame and castFrame.empowerStageFrame then
 			castFrame.empowerStageFrame:Show()
 		end
