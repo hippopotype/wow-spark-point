@@ -109,6 +109,7 @@ local empowerCurrentStage = 0
 local empowerHoldAtMaxMS = 0
 local empowerLayout = nil
 local empowerStagePercents = {}
+local empowerMarkersVisible = false
 
 local issecretvalue = _G.issecretvalue
 local ShouldShowPlayerInstantCasts
@@ -722,6 +723,20 @@ local function GetActiveEmpowerLayout()
 	return empowerLayout
 end
 
+local function SetEmpowerMarkersVisible(visible)
+	visible = visible and true or false
+	if empowerMarkersVisible == visible then
+		return
+	end
+
+	empowerMarkersVisible = visible
+	CallbackRegistry:Trigger("CastEmpowerMarkersVisibilityChanged", empowerMarkersVisible)
+end
+
+function Cast.AreEmpowerMarkersVisible()
+	return empowerMarkersVisible
+end
+
 local function GetEmpowerStageThreshold(index)
 	if empowerLayout and empowerLayout.stages and empowerLayout.stages[index] then
 		return tonumber(empowerLayout.stages[index].endProgress)
@@ -731,6 +746,8 @@ local function GetEmpowerStageThreshold(index)
 end
 
 function Empower.HideStageVisuals()
+	SetEmpowerMarkersVisible(false)
+
 	if empowerRenderer then
 		empowerRenderer:Hide()
 	end
@@ -2077,6 +2094,7 @@ local function OnUpdate(self, elapsed)
 		if empowerVisualsActive then
 			empowerRenderer:SetRadius(radius)
 			empowerRenderer:ApplyProgress(clampedPerc, activeCastColor, activeFrameColor)
+			SetEmpowerMarkersVisible(true)
 			Empower.UpdateStageFromProgress(clampedPerc)
 		else
 			Empower.HideStageVisuals()

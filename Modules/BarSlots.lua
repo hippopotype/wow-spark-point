@@ -27,6 +27,7 @@ addon.Modules.BarSlotsObj = BarSlots
 
 local isEnabled = false
 local activeProviders = {}
+local hideBottomForEmpowerMarkers = false
 
 --------------------------------------------------------------------------------
 -- Helpers
@@ -321,6 +322,10 @@ local function IsModuleVisibleByRules(def)
 	return Visibility:ShouldShow(def.prefix)
 end
 
+local function IsSuppressedByEmpowerMarkers(def)
+	return def.id == "bottom" and hideBottomForEmpowerMarkers
+end
+
 --------------------------------------------------------------------------------
 -- Color helpers
 --------------------------------------------------------------------------------
@@ -512,6 +517,11 @@ local function RefreshBar(def, state)
 		return
 	end
 
+	if IsSuppressedByEmpowerMarkers(def) then
+		HideModuleFrame(state)
+		return
+	end
+
 	local result = state.provider:GetStatus()
 	if not result or result.show == false or result.current == nil or result.max == nil then
 		HideModuleFrame(state)
@@ -602,6 +612,8 @@ local function EnableModule(enabled)
 	isEnabled = enabled and true or false
 
 	if enabled then
+		local castModule = addon.Modules and addon.Modules.CastObj
+		hideBottomForEmpowerMarkers = castModule and castModule.AreEmpowerMarkersVisible and castModule.AreEmpowerMarkersVisible() or false
 		BarSlots:Initialize()
 		RefreshProviderAssignments()
 		BarSlots:ApplyLayout()
@@ -813,6 +825,16 @@ end
 
 CallbackRegistry:Register("VisibilityContextChanged", function()
 	BarSlots:UpdateVisibility()
+end, BarSlots)
+
+CallbackRegistry:Register("CastEmpowerMarkersVisibilityChanged", function(_, visible)
+	hideBottomForEmpowerMarkers = visible and true or false
+	for _, def in ipairs(SLOT_DEFS) do
+		if def.id == "bottom" then
+			RefreshBar(def, slots[def.id])
+			return
+		end
+	end
 end, BarSlots)
 
 CallbackRegistry:RegisterSettingCallback("resourceColorOverrides", function()
