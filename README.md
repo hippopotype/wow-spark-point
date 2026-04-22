@@ -10,7 +10,7 @@
 
 <p align="center">
   <img alt="WoW Version" src="https://img.shields.io/badge/WoW-12.0%2F12.0.1-blue" />
-  <img alt="Version" src="https://img.shields.io/badge/version-1.4.2-green" />
+  <img alt="Version" src="https://img.shields.io/badge/version-1.4.3-green" />
   <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0-blue" />
   <a href="https://www.curseforge.com/wow/addons/sparkpoint">
     <img alt="CurseForge" src="https://img.shields.io/badge/CurseForge-SparkPoint-orange" />
@@ -32,10 +32,20 @@ It currently includes:
 - Decorative rotating ring
 - Spell icon with cast swipe, instant-cast feedback, and cooldown-blocked feedback
 - Assisted Highlight support for Blizzard's suggested-spell system
+- Optional performance stats HUD
 - Shared visibility rules, per-module overrides, and optional HUD transitions
 - Cursor-attached mode, fixed anchor mode, minimap button, and profile support
 
-## New In v1.4.2
+## New In v1.4.3
+
+- Added empowered cast support
+- Added a cast spell text anchor setting
+- Added an optional performance stats HUD module
+- Hid the bottom bar slot while empowered cast markers are visible to reduce overlap
+- Hardened hover visibility frame inspection
+- Defaulted class resources to the classic renderer mode
+
+## Previously In v1.4.x
 
 - Rebuilt class resources as a pluggable system with dedicated renderers for each class
 - Added dedicated resource systems for Death Knight Runes, Evoker Essences, Rogue and Druid Combo Points, Paladin Holy Power, Monk Chi, Arcane Charges, Soul Shards, and Maelstrom Weapon
@@ -44,9 +54,6 @@ It currently includes:
 - Added addon-wide resource color overrides for health, mana, class power, and class resource systems
 - Added visual style and fill color source settings for class resources
 - Added simple pip animation support for generic class resource pips
-
-## Previously In v1.4.x
-
 - Added a new bottom bar slot with dedicated fill texture and matching layout, text, and visibility controls
 - Refactored ring slot settings around named outer, middle, and inner slots with per-slot enable, provider, appearance, and shared visibility controls
 - Added a framed shell for the cast spell icon for cleaner HUD presentation
@@ -84,6 +91,7 @@ It currently includes:
 The main cast ring renders around your cursor and supports:
 
 - Cast progress with spark
+- Empowered cast stages with breakpoint markers and rank-aware fill coloring
 - Reverse fill for channeled spells
 - Latency arc
 - Interrupt/failure flash
@@ -161,6 +169,10 @@ Displays Blizzard Assisted Highlight's suggested spell near the SparkPoint HUD.
 - Optional keybind text with compact/full format, font, outline, size, opacity, color, and offsets
 - Hidden automatically if Blizzard Assisted Highlight is disabled
 - Per-module visibility override
+
+### Performance Stats
+
+Optional performance readout for local development and lightweight HUD diagnostics.
 
 ### Visibility And Transitions
 
