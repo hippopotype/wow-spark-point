@@ -10,6 +10,8 @@ local UnitPartialPower = UnitPartialPower
 local UnitPower = UnitPower
 local UnitPowerMax = UnitPowerMax
 local math_abs = math.abs
+local canaccessvalue = _G.canaccessvalue
+local issecretvalue = _G.issecretvalue
 
 local ESSENCE_POINT_SIZE = 24
 local ESSENCE_SPACING = -1
@@ -86,7 +88,14 @@ end
 
 local function GetEssenceAnimationSpeedMultiplier()
 	local regen = GetPowerRegenForPowerType and GetPowerRegenForPowerType(Enum.PowerType.Essence)
-	if regen == nil or regen == 0 then
+
+	if type(regen) ~= "number" then
+		regen = 0.2
+	elseif issecretvalue and issecretvalue(regen) then
+		regen = 0.2
+	elseif canaccessvalue and not canaccessvalue(regen) then
+		regen = 0.2
+	elseif regen == 0 then
 		regen = 0.2
 	end
 
