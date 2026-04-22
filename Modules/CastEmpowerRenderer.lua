@@ -8,25 +8,17 @@ addon.CastEmpowerRenderer = CastEmpowerRenderer
 -- recoloured on-the-fly to match the current rank's tier, so the single
 -- advancing arc communicates both "how far into the cast" and "which rank is
 -- currently being charged". Tier boundaries are marked by unified breakpoint
--- markers on the ring. Burst flashes at rank-up transitions; a hold-glow
--- overlay shows once hold-at-max begins. The stacked-band / reverse-z design
+-- markers on the ring. Rank-up transitions are reported to Cast.lua for
+-- spell-icon feedback. The stacked-band / reverse-z design
 -- was abandoned because CooldownFrame instances at overlapping ranges did not
 -- render reliably (session 20 runtime testing confirmed a middle band
 -- dropping its swipe entirely even with all state flags correct).
 local MARKER_TEXTURE_PATH = addon.addonFolder .. "\\Textures\\cast_empower_marker.png"
-local BURST_TEXTURE_PATH = addon.addonFolder .. "\\Textures\\cast_empower_burst.png"
-local HOLD_GLOW_TEXTURE_PATH = addon.addonFolder .. "\\Textures\\cast_empower_hold_glow.png"
+local MARKER_FRAME_TEXTURE_PATH = addon.addonFolder .. "\\Textures\\cast_empower_marker_frame.png"
 
--- Tier colours applied to the cast donut fill while the corresponding rank is
--- the active rank. Index 1 is the windup stage (pre-rank-1); indices 2..N are
--- the N-1 rank transitions. Index 5 is a fallback for >4-rank future specs.
-local BAND_TIER_COLORS = {
-	[1] = { r = 0.55, g = 0.55, b = 0.60 },
-	[2] = { r = 0.95, g = 0.65, b = 0.30 },
-	[3] = { r = 1.00, g = 0.50, b = 0.18 },
-	[4] = { r = 1.00, g = 0.85, b = 0.30 },
-	[5] = { r = 0.95, g = 0.95, b = 0.85 },
-}
+local TIER_HUE_STEP = 24 / 360
+local TIER_SATURATION_STEP = 0.14
+local TIER_LIGHTNESS_STEP = 0.12
 
 local nextLayoutID = 1
 local function AllocateLayoutID()
@@ -67,8 +59,78 @@ local function NormalizeColor(color)
 	}
 end
 
-local function GetTierColor(bandIndex)
-	return BAND_TIER_COLORS[bandIndex] or BAND_TIER_COLORS[5]
+local function RGBToHSL(r, g, b)
+	local maxValue = math.max(r, g, b)
+	local minValue = math.min(r, g, b)
+	local lightness = (maxValue + minValue) / 2
+
+	if maxValue == minValue then
+		return 0, 0, lightness
+	end
+
+	local delta = maxValue - minValue
+	local saturation
+	if lightness > 0.5 then
+		saturation = delta / (2 - maxValue - minValue)
+	else
+		saturation = delta / (maxValue + minValue)
+	end
+
+	local hue
+	if maxValue == r then
+		hue = ((g - b) / delta) % 6
+	elseif maxValue == g then
+		hue = ((b - r) / delta) + 2
+	else
+		hue = ((r - g) / delta) + 4
+	end
+
+	return hue / 6, saturation, lightness
+end
+
+local function HueToRGB(p, q, t)
+	if t < 0 then
+		t = t + 1
+	elseif t > 1 then
+		t = t - 1
+	end
+
+	if t < 1 / 6 then
+		return p + (q - p) * 6 * t
+	end
+	if t < 1 / 2 then
+		return q
+	end
+	if t < 2 / 3 then
+		return p + (q - p) * (2 / 3 - t) * 6
+	end
+
+	return p
+end
+
+local function HSLToRGB(hue, saturation, lightness)
+	if saturation <= 0 then
+		return lightness, lightness, lightness
+	end
+
+	local q
+	if lightness < 0.5 then
+		q = lightness * (1 + saturation)
+	else
+		q = lightness + saturation - lightness * saturation
+	end
+	local p = 2 * lightness - q
+
+	return HueToRGB(p, q, hue + 1 / 3), HueToRGB(p, q, hue), HueToRGB(p, q, hue - 1 / 3)
+end
+
+local function GetTierColor(baseColor, bandIndex)
+	local color = NormalizeColor(baseColor)
+	local hue, saturation, lightness = RGBToHSL(Clamp01(color.r), Clamp01(color.g), Clamp01(color.b))
+	local step = math.max(0, (tonumber(bandIndex) or 1) - 1)
+	local r, g, b = HSLToRGB((hue + TIER_HUE_STEP * step) % 1, Clamp01(saturation + TIER_SATURATION_STEP * step), Clamp01(lightness + TIER_LIGHTNESS_STEP * step))
+
+	return { r = r, g = g, b = b, a = color.a }
 end
 
 local function SetTextureSmooth(texture, texturePath)
@@ -127,8 +189,7 @@ local function BuildBands(layout)
 	end
 
 	-- The last rank is achieved at the cast/hold boundary; clamp to
-	-- holdStartProgress so the separator for it would never land in the hold
-	-- zone.
+	-- holdStartProgress so its marker never lands in the hold zone.
 	bands[#bands].endProgress = holdStart
 	return bands
 end
@@ -168,52 +229,6 @@ end
 -- Overlay primitives
 --------------------------------------------------------------------------------
 
-local function CreateBurstAnimation(texture)
-	local animation = texture:CreateAnimationGroup()
-
-	local fadeIn = animation:CreateAnimation("Alpha")
-	fadeIn:SetOrder(1)
-	fadeIn:SetFromAlpha(0)
-	fadeIn:SetToAlpha(1)
-	fadeIn:SetDuration(0.08)
-
-	local scaleUp = animation:CreateAnimation("Scale")
-	scaleUp:SetOrder(1)
-	scaleUp:SetScale(1.12, 1.12)
-	scaleUp:SetDuration(0.08)
-	scaleUp:SetOrigin("CENTER", 0, 0)
-
-	local fadeOut = animation:CreateAnimation("Alpha")
-	fadeOut:SetOrder(2)
-	fadeOut:SetFromAlpha(1)
-	fadeOut:SetToAlpha(0)
-	fadeOut:SetDuration(0.22)
-
-	local scaleDown = animation:CreateAnimation("Scale")
-	scaleDown:SetOrder(2)
-	scaleDown:SetScale(0.94, 0.94)
-	scaleDown:SetDuration(0.22)
-	scaleDown:SetOrigin("CENTER", 0, 0)
-
-	animation:SetScript("OnFinished", function()
-		texture:Hide()
-	end)
-
-	return animation
-end
-
-local function CreateBurstVisual(parent)
-	local texture = parent:CreateTexture(nil, "OVERLAY", nil, 6)
-	SetTextureSmooth(texture, BURST_TEXTURE_PATH)
-	texture:SetBlendMode("ADD")
-	texture:SetAllPoints(parent)
-	texture:Hide()
-	return {
-		texture = texture,
-		animation = CreateBurstAnimation(texture),
-	}
-end
-
 -- Place a breakpoint marker texture at the ring angle that corresponds to
 -- `progress` (cast-only, 0..1). Matches Empower.GetProgressPolarAngle in
 -- Modules/Cast.lua: progress 0 = 12 o'clock, clockwise positive.
@@ -225,7 +240,7 @@ local function PositionOnRing(texture, parent, progress, ringRadius)
 	local y = math.sin(rad) * ringRadius
 	texture:ClearAllPoints()
 	texture:SetPoint("CENTER", parent, "CENTER", x, y)
-	texture:SetRotation(math.rad(polar - 90))
+	texture:SetRotation(math.rad(polar + 90))
 end
 
 --------------------------------------------------------------------------------
@@ -246,27 +261,10 @@ function CastEmpowerRenderer:Create(parent)
 	markerLayer:SetAllPoints(ringFrame)
 	markerLayer:SetFrameLevel(ringFrame:GetFrameLevel() + 10)
 
-	local burstLayer = CreateFrame("Frame", nil, ringFrame)
-	burstLayer:SetAllPoints(ringFrame)
-	burstLayer:SetFrameLevel(ringFrame:GetFrameLevel() + 15)
-
-	local holdGlowLayer = CreateFrame("Frame", nil, frame)
-	holdGlowLayer:SetAllPoints(ringFrame)
-	holdGlowLayer:SetFrameLevel(burstLayer:GetFrameLevel() + 5)
-
-	local holdGlow = holdGlowLayer:CreateTexture(nil, "OVERLAY", nil, 0)
-	SetTextureSmooth(holdGlow, HOLD_GLOW_TEXTURE_PATH)
-	holdGlow:SetBlendMode("ADD")
-	holdGlow:SetAllPoints(holdGlowLayer)
-	holdGlow:Hide()
-
 	local renderer = {
 		frame = frame,
 		ringFrame = ringFrame,
 		markerLayer = markerLayer,
-		burstLayer = burstLayer,
-		holdGlowLayer = holdGlowLayer,
-		holdGlow = holdGlow,
 
 		layout = nil,
 		layoutID = 0,
@@ -278,44 +276,44 @@ function CastEmpowerRenderer:Create(parent)
 		isHoldingAtMax = false,
 
 		markers = {},
-		bursts = {},
+		onBandAchieved = nil,
 	}
 
 	return setmetatable(renderer, { __index = CastEmpowerRenderer })
 end
 
 -- Allocate or reuse pooled primitives up to `count` bands' worth of
--- markers (one breakpoint per band) and bursts (one per band for rank-up
--- flash).
+-- markers (one breakpoint per band).
 function CastEmpowerRenderer:EnsurePoolCapacity(count)
-	for index = 1, count do
-		if not self.bursts[index] then
-			self.bursts[index] = CreateBurstVisual(self.burstLayer)
-		end
-	end
-
 	for index = 1, math.max(count, #self.markers) do
 		if not self.markers[index] then
-			local texture = self.markerLayer:CreateTexture(nil, "ARTWORK", nil, 0)
-			SetTextureSmooth(texture, MARKER_TEXTURE_PATH)
-			texture:SetSize(16, 16)
-			texture:Hide()
+			local fill = self.markerLayer:CreateTexture(nil, "ARTWORK", nil, 0)
+			SetTextureSmooth(fill, MARKER_TEXTURE_PATH)
+			fill:SetSize(16, 16)
+			fill:Hide()
 
-			self.markers[index] = texture
+			local frame = self.markerLayer:CreateTexture(nil, "OVERLAY", nil, 1)
+			SetTextureSmooth(frame, MARKER_FRAME_TEXTURE_PATH)
+			frame:SetSize(16, 16)
+			frame:Hide()
+
+			self.markers[index] = { fill = fill, frame = frame }
 		end
 	end
 end
 
 function CastEmpowerRenderer:HideAll()
 	for _, marker in ipairs(self.markers) do
-		marker:Hide()
+		marker.fill:Hide()
+		marker.frame:Hide()
 	end
-	for _, burst in ipairs(self.bursts) do
-		burst.texture:Hide()
-		burst.animation:Stop()
-	end
-	if self.holdGlow then
-		self.holdGlow:Hide()
+end
+
+function CastEmpowerRenderer:SetBandAchievedCallback(callback)
+	if type(callback) == "function" then
+		self.onBandAchieved = callback
+	else
+		self.onBandAchieved = nil
 	end
 end
 
@@ -338,7 +336,8 @@ function CastEmpowerRenderer:Begin(layout)
 
 	for index = count + 1, #self.markers do
 		if self.markers[index] then
-			self.markers[index]:Hide()
+			self.markers[index].fill:Hide()
+			self.markers[index].frame:Hide()
 		end
 	end
 
@@ -388,29 +387,16 @@ function CastEmpowerRenderer:SetRadius(radius)
 	end
 end
 
-function CastEmpowerRenderer:PlayBandBurst(bandIndex, color)
-	local visual = self.bursts[bandIndex]
-	if not visual then
-		return
-	end
-
-	local safeColor = NormalizeColor(color)
-	visual.texture:SetVertexColor(safeColor.r, safeColor.g, safeColor.b, 1)
-	visual.texture:Show()
-	visual.animation:Stop()
-	visual.animation:Play()
-end
-
 local function GetMarkerAlpha(index, achievedCount, activeIndex)
 	if index == activeIndex then
-		return 1.0, 1.0
+		return 1.0
 	end
 
 	if index <= achievedCount then
-		return 0.45, 0.55
+		return 0.55
 	end
 
-	return 0.20, 0.35
+	return 0.35
 end
 
 --------------------------------------------------------------------------------
@@ -419,28 +405,28 @@ end
 
 -- Return the tier colour that the main cast donut should render during the
 -- current cast progress. Cast.lua calls this from its per-frame donut update.
-function CastEmpowerRenderer:GetActiveTierColor()
+function CastEmpowerRenderer:GetActiveTierColor(baseColor)
 	if not self.bands then
 		return nil
 	end
 
 	-- While holding-at-max we lock to the last band's tier (max rank reached).
 	if self.isHoldingAtMax then
-		return GetTierColor(#self.bands)
+		return GetTierColor(baseColor, #self.bands)
 	end
 
 	local index = self.activeBandIndex
 	if index <= 0 then
 		index = 1
 	end
-	return GetTierColor(index)
+	return GetTierColor(baseColor, index)
 end
 
 --------------------------------------------------------------------------------
 -- Per-frame update
 --------------------------------------------------------------------------------
 
-function CastEmpowerRenderer:ApplyProgress(progress, color)
+function CastEmpowerRenderer:ApplyProgress(progress, color, frameColor)
 	if not self.bands or not self.layout or self.radius <= 0 then
 		self:Hide()
 		return
@@ -452,14 +438,16 @@ function CastEmpowerRenderer:ApplyProgress(progress, color)
 
 	local previousAchievedCount = self.achievedBandCount
 	local achievedCount, activeIndex = ResolveBandStates(self.bands, clamped, previousAchievedCount, isHoldingAtMax)
-	local burstColor = NormalizeColor(color)
+	local baseColor = NormalizeColor(color)
 
-	self:UpdateMarkers(achievedCount, activeIndex)
+	self:UpdateMarkers(achievedCount, activeIndex, baseColor, frameColor)
 
 	if previousAchievedCount < achievedCount then
 		for index = previousAchievedCount + 1, achievedCount do
-			local tierColor = GetTierColor(index)
-			self:PlayBandBurst(index, tierColor)
+			local tierColor = GetTierColor(baseColor, index)
+			if self.onBandAchieved then
+				self.onBandAchieved(index, tierColor)
+			end
 		end
 	end
 
@@ -467,47 +455,44 @@ function CastEmpowerRenderer:ApplyProgress(progress, color)
 	self.isHoldingAtMax = isHoldingAtMax and true or false
 	self.activeBandIndex = self.isHoldingAtMax and 0 or activeIndex
 
-	if self.isHoldingAtMax then
-		self.holdGlow:SetVertexColor(burstColor.r, burstColor.g, burstColor.b, 0.6)
-		self.holdGlow:Show()
-	else
-		self.holdGlow:Hide()
-	end
-
 	self.frame:Show()
 	self.markerLayer:Show()
-	self.burstLayer:Show()
 end
 
-function CastEmpowerRenderer:UpdateMarkers(achievedCount, activeIndex)
+function CastEmpowerRenderer:UpdateMarkers(achievedCount, activeIndex, baseColor, frameColor)
 	local bands = self.bands
 	local count = #bands
 	local ringRadius = self.radius
 	if ringRadius <= 0 or count <= 0 then
 		for _, marker in ipairs(self.markers) do
-			marker:Hide()
+			marker.fill:Hide()
+			marker.frame:Hide()
 		end
 		return
 	end
 
 	-- Markers sit at each stage breakpoint, including the final breakpoint
-	-- at the cast/hold boundary. Each breakpoint is attributed to the band that
-	-- ends there, so marker i lights in band i's tier colour once band i is
-	-- achieved.
+	-- at the cast/hold boundary. Each marker inherits the derived tier colour
+	-- for the band that ends there.
 	for index = 1, count do
 		local marker = self.markers[index]
 		if marker then
-			PositionOnRing(marker, self.markerLayer, bands[index].endProgress, ringRadius)
-			local tierColor = GetTierColor(index)
-			local _unusedSeparatorAlpha, markerAlpha = GetMarkerAlpha(index, achievedCount, activeIndex)
-			marker:SetVertexColor(tierColor.r, tierColor.g, tierColor.b, markerAlpha)
-			marker:Show()
+			PositionOnRing(marker.fill, self.markerLayer, bands[index].endProgress, ringRadius)
+			PositionOnRing(marker.frame, self.markerLayer, bands[index].endProgress, ringRadius)
+			local tierColor = GetTierColor(baseColor, index)
+			local markerAlpha = GetMarkerAlpha(index, achievedCount, activeIndex)
+			local normalizedFrameColor = NormalizeColor(frameColor)
+			marker.fill:SetVertexColor(tierColor.r, tierColor.g, tierColor.b, markerAlpha)
+			marker.frame:SetVertexColor(normalizedFrameColor.r, normalizedFrameColor.g, normalizedFrameColor.b, (normalizedFrameColor.a or 1) * markerAlpha)
+			marker.fill:Show()
+			marker.frame:Show()
 		end
 	end
 
 	for index = count + 1, #self.markers do
 		if self.markers[index] then
-			self.markers[index]:Hide()
+			self.markers[index].fill:Hide()
+			self.markers[index].frame:Hide()
 		end
 	end
 end
@@ -515,10 +500,6 @@ end
 function CastEmpowerRenderer:Show()
 	self.frame:Show()
 	self.markerLayer:Show()
-	self.burstLayer:Show()
-	if self.holdGlowLayer then
-		self.holdGlowLayer:Show()
-	end
 end
 
 function CastEmpowerRenderer:Hide()

@@ -27,6 +27,7 @@ local SPELL_ICON_BACKGROUND_PATH = addon.addonFolder .. "\\Textures\\spell_icon_
 local SPELL_ICON_COOLDOWN_SWIPE_PATH = addon.addonFolder .. "\\Textures\\spell_icon_cooldown_swipe.png"
 local SPELL_ICON_ERROR_PATH = addon.addonFolder .. "\\Textures\\spell_icon_error.png"
 local SPELL_ICON_FRAME_PATH = addon.addonFolder .. "\\Textures\\spell_icon_frame.png"
+local SPELL_ICON_GLOW_PATH = addon.addonFolder .. "\\Textures\\spell_icon_glow.png"
 local CAST_FEEDBACK_PATH = addon.addonFolder .. "\\Textures\\cast_feedback.png"
 local CAST_BACKGROUND_SHADOW_PATH = addon.addonFolder .. "\\Textures\\cast_background_shadow.png"
 local SPELL_ICON_MASK_BASE_EXPAND = 6
@@ -84,6 +85,7 @@ local pendingInstantCastGUID
 local pendingInstantSource
 local interruptFlashToken = 0
 local interruptFlashActive = false
+local PlayEmpowerIconGlow
 local INTERRUPT_FLASH_DURATION = 0.2
 local CHANNEL_INTERRUPT_EARLY_STOP_GRACE_MS = 150
 local INSTANT_PENDING_WINDOW = 0.75
@@ -351,6 +353,91 @@ local function SetTextureSmooth(texture, texturePath)
 	if texture.SetTexelSnappingBias then
 		texture:SetTexelSnappingBias(0)
 	end
+end
+
+local function NormalizeVisualColor(color)
+	if type(color) ~= "table" then
+		return 1, 1, 1
+	end
+
+	return color.r or 1, color.g or 1, color.b or 1
+end
+
+local function CreateEmpowerIconGlowAnimation(texture)
+	local animation = texture:CreateAnimationGroup()
+
+	local fadeIn = animation:CreateAnimation("Alpha")
+	fadeIn:SetOrder(1)
+	fadeIn:SetFromAlpha(0.15)
+	fadeIn:SetToAlpha(1)
+	fadeIn:SetDuration(0.08)
+
+	local scaleUp = animation:CreateAnimation("Scale")
+	scaleUp:SetOrder(1)
+	scaleUp:SetScale(1.08, 1.08)
+	scaleUp:SetDuration(0.08)
+	scaleUp:SetOrigin("CENTER", 0, 0)
+
+	local fadeOut = animation:CreateAnimation("Alpha")
+	fadeOut:SetOrder(2)
+	fadeOut:SetFromAlpha(1)
+	fadeOut:SetToAlpha(0)
+	fadeOut:SetDuration(0.24)
+
+	local scaleDown = animation:CreateAnimation("Scale")
+	scaleDown:SetOrder(2)
+	scaleDown:SetScale(0.96, 0.96)
+	scaleDown:SetDuration(0.24)
+	scaleDown:SetOrigin("CENTER", 0, 0)
+
+	animation:SetScript("OnFinished", function()
+		texture:SetAlpha(0)
+		texture:Hide()
+	end)
+
+	return animation
+end
+
+local function HideEmpowerIconGlow()
+	if not (castFrame and castFrame.iconFrame and castFrame.iconFrame.glow) then
+		return
+	end
+
+	local glow = castFrame.iconFrame.glow
+	if glow.empowerAnimation then
+		glow.empowerAnimation:Stop()
+	end
+	glow:SetAlpha(0)
+	glow:Hide()
+end
+
+local function IsEmpowerIconGlowAllowed()
+	return castFrame
+		and castFrame.iconFrame
+		and castFrame.iconFrame.icon
+		and castFrame.iconFrame.glow
+		and spellIconEnabled
+		and castFrame.iconFrame:IsShown()
+		and castFrame.iconFrame.icon:IsShown()
+end
+
+PlayEmpowerIconGlow = function(color)
+	if not IsEmpowerIconGlowAllowed() then
+		HideEmpowerIconGlow()
+		return
+	end
+
+	local glow = castFrame.iconFrame.glow
+	if not glow.empowerAnimation then
+		glow.empowerAnimation = CreateEmpowerIconGlowAnimation(glow)
+	end
+
+	local r, g, b = NormalizeVisualColor(color)
+	glow.empowerAnimation:Stop()
+	glow:SetVertexColor(r, g, b, 1)
+	glow:SetAlpha(1)
+	glow:Show()
+	glow.empowerAnimation:Play()
 end
 
 function Empower.IsSafeNumericValue(value)
@@ -719,14 +806,8 @@ function Empower.UpdateSparkAppearance()
 		r, g, b, a = GetDBColor("cast_sparkColor")
 	end
 
-	if isEmpowering and castFrame.sparkTexture.SetAtlas then
-		castFrame.sparkTexture:SetAtlas("ui-castingbar-empower-cursor")
-		local sparkScale = Empower.IsHoldingAtMax() and 0.44 or 0.38
-		castFrame.sparkTexture:SetSize(math.max(18, radius * sparkScale), math.max(18, radius * sparkScale))
-	else
-		castFrame.sparkTexture:SetTexture("Interface\\CastingBar\\UI-CastingBar-Spark")
-		castFrame.sparkTexture:SetSize(radius * 0.5, radius * 0.5)
-	end
+	castFrame.sparkTexture:SetTexture("Interface\\CastingBar\\UI-CastingBar-Spark")
+	castFrame.sparkTexture:SetSize(radius * 0.5, radius * 0.5)
 
 	castFrame.sparkTexture:SetVertexColor(r, g, b, a)
 end
@@ -1244,6 +1325,7 @@ local function ClearCastShellVisuals()
 		if castFrame.iconFrame.errorIcon then
 			castFrame.iconFrame.errorIcon:Hide()
 		end
+		HideEmpowerIconGlow()
 		castFrame.iconFrame:Hide()
 		if castFrame.iconFrame.cooldown then
 			castFrame.iconFrame.cooldown:Hide()
@@ -1302,6 +1384,9 @@ function Cast.LayoutSpellIconShell()
 
 	if castFrame.iconFrame.background then
 		IconMask:LayoutToIcon(castFrame.iconFrame.background, castFrame.iconFrame.icon, SPELL_ICON_MASK_BASE_EXPAND)
+	end
+	if castFrame.iconFrame.glow then
+		IconMask:LayoutToIcon(castFrame.iconFrame.glow, castFrame.iconFrame.icon, SPELL_ICON_MASK_BASE_EXPAND)
 	end
 	if castFrame.iconFrame.frame then
 		IconMask:LayoutToIcon(castFrame.iconFrame.frame, castFrame.iconFrame.icon, SPELL_ICON_MASK_BASE_EXPAND)
@@ -1371,6 +1456,7 @@ function Cast:SetSpellIconEnabled(enabled)
 		if spellIconEnabled and (isCasting or instantIconActive) and IsCastVisibilityAllowed() and castFrame:IsShown() then
 			castFrame.iconFrame:Show()
 		else
+			HideEmpowerIconGlow()
 			castFrame.iconFrame:Hide()
 		end
 	end
@@ -1413,6 +1499,12 @@ function Cast:ApplyIconOptions()
 		castFrame.iconFrame.background:SetVertexColor(1, 1, 1, 1)
 		castFrame.iconFrame.background:Show()
 	end
+	if castFrame.iconFrame.glow then
+		SetTextureSmooth(castFrame.iconFrame.glow, SPELL_ICON_GLOW_PATH)
+		castFrame.iconFrame.glow:SetVertexColor(1, 1, 1, 1)
+		castFrame.iconFrame.glow:SetAlpha(0)
+		castFrame.iconFrame.glow:Hide()
+	end
 	if castFrame.iconFrame.frame then
 		SetTextureSmooth(castFrame.iconFrame.frame, SPELL_ICON_FRAME_PATH)
 		castFrame.iconFrame.frame:SetVertexColor(1, 1, 1, 1)
@@ -1453,14 +1545,17 @@ function Cast:UpdateSpellIcon()
 		spellIconEnabled = true
 	end
 	if not spellIconEnabled then
+		HideEmpowerIconGlow()
 		castFrame.iconFrame:Hide()
 		return
 	end
 	if not IsInstantIconVisibilityAllowed() or not castFrame:IsShown() then
+		HideEmpowerIconGlow()
 		castFrame.iconFrame:Hide()
 		return
 	end
 	if not isCasting and not instantIconActive then
+		HideEmpowerIconGlow()
 		castFrame.iconFrame:Hide()
 		return
 	end
@@ -1469,12 +1564,14 @@ function Cast:UpdateSpellIcon()
 		currentSpellTexture = info and info.iconID or currentSpellTexture
 	end
 	if not currentSpellTexture then
+		HideEmpowerIconGlow()
 		castFrame.iconFrame:Hide()
 		return
 	end
 	if not castFrame.iconMaskReady then
 		castFrame.iconMaskReady = Cast.ApplySpellIconMask()
 		if not castFrame.iconMaskReady then
+			HideEmpowerIconGlow()
 			castFrame.iconFrame:Hide()
 			return
 		end
@@ -1968,6 +2065,22 @@ local function OnUpdate(self, elapsed)
 	if castPerc < 1 then
 		local angle = castPerc * 360
 		local clampedPerc = math.max(0, math.min(1, castPerc))
+		local radius = Empower.GetCastRingRadius()
+		local activeCastColor = GetActiveCastBarColor()
+		local frameOpacity = GetDBValue("cast_frameOpacity")
+		if frameOpacity == nil then
+			frameOpacity = 0.8
+		end
+		local activeFrameColor = { r = 1, g = 1, b = 1, a = frameOpacity }
+		local empowerVisualsActive = isEmpowering and empowerRenderer and empowerLayout
+
+		if empowerVisualsActive then
+			empowerRenderer:SetRadius(radius)
+			empowerRenderer:ApplyProgress(clampedPerc, activeCastColor, activeFrameColor)
+			Empower.UpdateStageFromProgress(clampedPerc)
+		else
+			Empower.HideStageVisuals()
+		end
 
 		-- Reverse for channeled spells if enabled
 		if GetDBBool("cast_reverseChanneling") and isChanneling and not isEmpowering then
@@ -1992,23 +2105,32 @@ local function OnUpdate(self, elapsed)
 			-- current rank's tier colour; outside empower we restore the normal
 			-- cast-bar colour so the tier tint does not bleed into the next
 			-- non-empower cast.
+			local castColor = activeCastColor
 			if isEmpowering and empowerRenderer and empowerRenderer.GetActiveTierColor then
-				local tier = empowerRenderer:GetActiveTierColor()
-				if tier then
-					castDonut:SetBarColor({ r = tier.r, g = tier.g, b = tier.b, a = 1 })
-				end
+				castColor = empowerRenderer:GetActiveTierColor(activeCastColor) or castColor
+			end
+			if isEmpowering then
+				castDonut:SetBarColor({ r = castColor.r, g = castColor.g, b = castColor.b, a = 1 })
 			else
-				castDonut:SetBarColor(GetActiveCastBarColor())
+				castDonut:SetBarColor(castColor)
 			end
 
 			local overlayAlpha = castGlowMaxOpacity * clampedPerc
+			local overlayShown = true
 			if isEmpowering then
-				overlayAlpha = 0
+				overlayShown = Empower.IsHoldingAtMax()
+				overlayAlpha = overlayShown and castGlowMaxOpacity or 0
 			elseif empowerCurrentStage >= Empower.GetVisualStageCount() and Empower.GetVisualStageCount() > 0 then
 				overlayAlpha = math.max(overlayAlpha, castGlowMaxOpacity * 0.9)
 			end
+			castDonut:SetOverlayColor({
+				r = castColor.r or 1,
+				g = castColor.g or 1,
+				b = castColor.b or 1,
+				a = overlayAlpha,
+			})
 			castDonut:SetOverlayAlpha(overlayAlpha)
-			castDonut:SetOverlayShown(not isEmpowering)
+			castDonut:SetOverlayShown(overlayShown)
 		end
 		-- Keep latency arc static (Cooldown swipe animates otherwise)
 		if latencyDonut and not isEmpowering then
@@ -2020,7 +2142,6 @@ local function OnUpdate(self, elapsed)
 		end
 
 		-- Update spark position (rotates around ring)
-		local radius = Empower.GetCastRingRadius()
 		local sparkProgress
 		if isEmpowering then
 			sparkProgress = clampedPerc
@@ -2034,13 +2155,6 @@ local function OnUpdate(self, elapsed)
 		spark:ClearAllPoints()
 		spark:SetPoint("CENTER", castFrame, "CENTER", x, y)
 		Empower.UpdateSparkAppearance()
-		if isEmpowering and empowerRenderer and empowerLayout then
-			empowerRenderer:SetRadius(radius)
-			empowerRenderer:ApplyProgress(clampedPerc, GetActiveCastBarColor())
-			Empower.UpdateStageFromProgress(clampedPerc)
-		else
-			Empower.HideStageVisuals()
-		end
 	else
 		Cast:Hide()
 	end
@@ -2241,6 +2355,7 @@ function Cast:Hide()
 		if castFrame.iconFrame.errorIcon then
 			castFrame.iconFrame.errorIcon:Hide()
 		end
+		HideEmpowerIconGlow()
 		castFrame.iconFrame:Hide()
 		if castFrame.iconFrame.cooldown then
 			castFrame.iconFrame.cooldown:Hide()
@@ -2795,7 +2910,13 @@ function Cast:ApplyOptions()
 		a = backgroundOpacity,
 	}
 	local frameColor = { r = 1, g = 1, b = 1, a = frameOpacity }
-	local glowColor = { r = 1, g = 1, b = 1, a = glowOpacity }
+	local activeCastColor = GetActiveCastBarColor()
+	local glowColor = {
+		r = activeCastColor.r or 1,
+		g = activeCastColor.g or 1,
+		b = activeCastColor.b or 1,
+		a = glowOpacity,
+	}
 	local shadowColor = { r = 1, g = 1, b = 1, a = backgroundOpacity }
 
 	-- Update spark
@@ -2976,6 +3097,11 @@ function Cast:Initialize()
 	castFrame.empowerStageFrame:SetAllPoints()
 	castFrame.empowerStageFrame:Hide()
 	empowerRenderer = CastEmpowerRenderer and CastEmpowerRenderer:Create(castFrame.empowerStageFrame) or nil
+	if empowerRenderer and empowerRenderer.SetBandAchievedCallback then
+		empowerRenderer:SetBandAchievedCallback(function(_bandIndex, tierColor)
+			PlayEmpowerIconGlow(tierColor)
+		end)
+	end
 
 	-- Create spark texture (above rings)
 	castFrame.sparkTexture = castFrame.overlayFrame:CreateTexture(nil, "OVERLAY")
@@ -3014,6 +3140,13 @@ function Cast:Initialize()
 	castFrame.iconFrame.icon:SetPoint("CENTER")
 	castFrame.iconFrame.icon:SetTexCoord(0, 1, 0, 1)
 
+	castFrame.iconFrame.glow = castFrame.iconFrame:CreateTexture(nil, "ARTWORK")
+	castFrame.iconFrame.glow:SetDrawLayer("ARTWORK", 1)
+	castFrame.iconFrame.glow:SetBlendMode("BLEND")
+	castFrame.iconFrame.glow:SetPoint("CENTER", castFrame.iconFrame.icon, "CENTER")
+	castFrame.iconFrame.glow:SetAlpha(0)
+	castFrame.iconFrame.glow:Hide()
+
 	castFrame.iconFrame.errorIcon = castFrame.iconFrame:CreateTexture(nil, "ARTWORK")
 	castFrame.iconFrame.errorIcon:SetDrawLayer("ARTWORK", 5)
 	castFrame.iconFrame.errorIcon:SetBlendMode("BLEND")
@@ -3035,6 +3168,7 @@ function Cast:Initialize()
 		castFrame.iconFrame.icon:SetTexelSnappingBias(0)
 	end
 	castFrame.iconFrame.icon:Hide()
+	SetTextureSmooth(castFrame.iconFrame.glow, SPELL_ICON_GLOW_PATH)
 	SetTextureSmooth(castFrame.iconFrame.errorIcon, SPELL_ICON_ERROR_PATH)
 	SetTextureSmooth(castFrame.iconFrame.frame, SPELL_ICON_FRAME_PATH)
 
