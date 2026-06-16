@@ -9,8 +9,8 @@
 </p>
 
 <p align="center">
-  <img alt="WoW Version" src="https://img.shields.io/badge/WoW-12.0%2F12.0.1-blue" />
-  <img alt="Version" src="https://img.shields.io/badge/version-1.4.3-green" />
+  <img alt="WoW Version" src="https://img.shields.io/badge/WoW-12.0.7-blue" />
+  <img alt="Version" src="https://img.shields.io/badge/version-1.4.4-green" />
   <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0-blue" />
   <a href="https://www.curseforge.com/wow/addons/sparkpoint">
     <img alt="CurseForge" src="https://img.shields.io/badge/CurseForge-SparkPoint-orange" />
@@ -36,7 +36,11 @@ It currently includes:
 - Shared visibility rules, per-module overrides, and optional HUD transitions
 - Cursor-attached mode, fixed anchor mode, minimap button, and profile support
 
-## New In v1.4.3
+## New In v1.4.4
+
+- Updated addon metadata for WoW 12.0.7
+
+## Previously In v1.4.x
 
 - Added empowered cast support
 - Added a cast spell text anchor setting
@@ -44,8 +48,6 @@ It currently includes:
 - Hid the bottom bar slot while empowered cast markers are visible to reduce overlap
 - Hardened hover visibility frame inspection
 - Defaulted class resources to the classic renderer mode
-
-## Previously In v1.4.x
 
 - Rebuilt class resources as a pluggable system with dedicated renderers for each class
 - Added dedicated resource systems for Death Knight Runes, Evoker Essences, Rogue and Druid Combo Points, Paladin Holy Power, Monk Chi, Arcane Charges, Soul Shards, and Maelstrom Weapon
