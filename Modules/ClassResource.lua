@@ -270,9 +270,9 @@ function ClassResource:UNIT_MAXPOWER(event, unit, powerToken)
 	end
 end
 
-function ClassResource:UNIT_AURA(event, unit)
+function ClassResource:UNIT_AURA(event)
 	if CallPredicate(activeSystem, "WantsEvent", event) then
-		CallMethod(activeSystem, "HandleEvent", event, unit)
+		CallMethod(activeSystem, "HandleEvent", event)
 	end
 end
 

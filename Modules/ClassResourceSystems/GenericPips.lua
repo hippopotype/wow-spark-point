@@ -625,7 +625,7 @@ function GenericPips:HandleEvent(event, unit, powerToken)
 	end
 
 	if event == "UNIT_AURA" then
-		if unit == "player" and self.activeResource.needsUnitAura then
+		if self.activeResource.needsUnitAura then
 			self:Sync()
 		end
 		return

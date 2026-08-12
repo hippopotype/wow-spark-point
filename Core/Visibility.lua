@@ -69,6 +69,7 @@ local instantVisibilityStates = {
 
 local GetMouseFoci = GetMouseFoci
 local GetMouseFocus = GetMouseFocus
+local issecretvalue = _G.issecretvalue
 local UIParent = UIParent
 local WorldFrame = WorldFrame
 local STABLE_PREFIX_GLOBAL = "__global__"
@@ -333,6 +334,24 @@ local INTERACTIVE_MOUSE_SCRIPTS = {
 	OnReceiveDrag = true,
 }
 
+local function CanAccessFrameSafe(frame)
+	if not frame then
+		return false
+	end
+	if not frame.CanBeAccessedInContext then
+		return true
+	end
+
+	local ok, canAccess = pcall(frame.CanBeAccessedInContext, frame)
+	if not ok then
+		return false
+	end
+	if issecretvalue and issecretvalue(canAccess) then
+		return false
+	end
+	return canAccess == true
+end
+
 local function HasInteractiveMouseScript(frame)
 	if not (frame and frame.HasScript and frame.GetScript) then
 		return false
@@ -395,6 +414,10 @@ local function IsFrameMouseInteractive(frame)
 	local depth = 0
 
 	while current and depth < 12 do
+		if not CanAccessFrameSafe(current) then
+			return true
+		end
+
 		if IsForbiddenSafe(current) then
 			return true
 		end

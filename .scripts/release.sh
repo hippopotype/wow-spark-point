@@ -50,6 +50,7 @@ rsync -r \
     --exclude='.releases' \
     --exclude='.github' \
     --exclude='.scripts' \
+    --exclude='docs' \
     --exclude='SparkPoint_Dev.toc' \
     --exclude='CLAUDE.md' \
     --exclude='AGENTS.md' \

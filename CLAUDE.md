@@ -12,7 +12,7 @@ SparkPoint is a World of Warcraft addon that displays cast rings, bar slots, and
 Domain-specific guidance lives in `.claude/skills/`. Key skills:
 - `/sparkpoint-architecture` — Core systems, module lifecycle, load order, templates
 - `/wow-api` — WoW API patterns, events, power types, Blizzard Settings API
-- `/secret-values` — Secret value handling, 11.x vs 12.0 differences, migration guide
+- `/secret-values` — Secret value handling, 12.0 foundations, and 12.1 aura restrictions
 - `/texture-guide` — Texture quality, format, and rendering guidance
 - `/wow-dev-tooling` — luacheck, stylua, and lua-language-server usage
 
@@ -172,7 +172,7 @@ This addon uses new WoW APIs (C_Spell.*, etc.) without polyfills:
 
 ## Secret Value Handling Policy (Non-Negotiable)
 
-See `/secret-values` skill for the complete reference (affected APIs, forbidden/allowed operations, 12.0 migration guide).
+See `/secret-values` skill for the complete reference (affected APIs, forbidden/allowed operations, and 12.1 aura restrictions).
 
 Key rules:
 - Secret values are **live in current retail** (12.0+ / Midnight).

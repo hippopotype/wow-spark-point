@@ -8,7 +8,7 @@
 - Include `.skills/secret-values.md` for secret value handling (12.0+).
 - Include `.skills/architecture.md` for architecture guidance.
 - Include `.skills/.private/` load every file in the `.private/` folder for guidance.
-- Reference `.clones/wow-ui-source/` for Blizzard's official UI source (12.0.1) — authoritative API docs, secret value annotations, and reference implementations.
+- Reference `.clones/wow-ui-source/` for Blizzard's official UI source (12.1.0) — authoritative API docs, secret value annotations, and reference implementations.
 
 ## Project Structure & Module Organization
 
@@ -118,7 +118,7 @@ stylua .          # Apply formatting
 
 ## Secret Value Handling Policy (Non-Negotiable)
 
-Full reference: `.skills/secret-values.md` (affected APIs, forbidden/allowed operations, 12.0 migration guide).
+Full reference: `.skills/secret-values.md` (affected APIs, forbidden/allowed operations, and 12.1 aura restrictions).
 
 Key rules:
 - Secret values are **live in current retail** (12.0+ / Midnight).

@@ -26,7 +26,7 @@ end
 
 ## Secret Values
 
-See `.skills/secret-values.md` for the complete reference — affected APIs, forbidden/allowed operations, 11.x vs 12.0 differences, SparkPoint migration guide, and replacement APIs.
+See `.skills/secret-values.md` for the complete reference — affected APIs, forbidden/allowed operations, 12.0 foundations, 12.1 aura restrictions, and replacement APIs.
 
 Key rules: never boolean-test, compare, or do arithmetic on potentially secret fields. `tostring`/`tonumber` do not work on secrets (12.0+ is current retail) — use widget APIs, Curves, or Blizzard formatting functions instead.
 
@@ -38,11 +38,14 @@ These events can be filtered to specific units:
 - `UNIT_SPELLCAST_INTERRUPTED`, `UNIT_SPELLCAST_DELAYED`
 - `UNIT_SPELLCAST_EMPOWER_START`, `UNIT_SPELLCAST_EMPOWER_STOP` (Evoker)
 - `UNIT_POWER_UPDATE`, `UNIT_MAXPOWER`
+- `UNIT_AURA`
 
 ```lua
 -- Correct: unit event with filter
 EL:RegisterUnitEvent("UNIT_SPELLCAST_START", "player")
 ```
+
+In 12.1, the full `UNIT_AURA` payload becomes secret while aura restrictions are active. For addon handlers registered with `RegisterUnitEvent("UNIT_AURA", "player")`, ignore the payload and use the event only to re-read an explicitly non-secret aura by spell ID or name.
 
 ### Regular Events (use RegisterEvent)
 These cannot be filtered and require unit check in handler:

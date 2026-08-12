@@ -9,8 +9,8 @@
 </p>
 
 <p align="center">
-  <img alt="WoW Version" src="https://img.shields.io/badge/WoW-12.0.7-blue" />
-  <img alt="Version" src="https://img.shields.io/badge/version-1.4.4-green" />
+  <img alt="WoW Version" src="https://img.shields.io/badge/WoW-12.1.0-blue" />
+  <img alt="Version" src="https://img.shields.io/badge/version-1.4.5-green" />
   <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0-blue" />
   <a href="https://www.curseforge.com/wow/addons/sparkpoint">
     <img alt="CurseForge" src="https://img.shields.io/badge/CurseForge-SparkPoint-orange" />
@@ -36,12 +36,15 @@ It currently includes:
 - Shared visibility rules, per-module overrides, and optional HUD transitions
 - Cursor-attached mode, fixed anchor mode, minimap button, and profile support
 
-## New In v1.4.4
+## New In v1.4.5
 
-- Updated addon metadata for WoW 12.0.7
+- Added compatibility for WoW 12.1.0
+- Updated aura-driven class resources for secret `UNIT_AURA` payloads
+- Hardened hover visibility checks for restricted UI objects
 
 ## Previously In v1.4.x
 
+- Updated addon metadata for WoW 12.0.7
 - Added empowered cast support
 - Added a cast spell text anchor setting
 - Added an optional performance stats HUD module
@@ -259,7 +262,7 @@ Open the Blizzard Settings panel via `/sparkpoint`. SparkPoint provides sections
 
 ## Compatibility
 
-- Supported interface versions: `12.0.0` and `12.0.1`
+- Supported interface versions: `12.0.x` and `12.1.0`
 - No external libraries required
 
 ## License

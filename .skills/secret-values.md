@@ -9,8 +9,11 @@ Secret values are a Blizzard security mechanism that wraps certain API return va
 ### 11.x (The War Within) — Previous
 Secret values did not exist in 11.x. All APIs returned normal values.
 
-### 12.0+ (Midnight) — Current Retail
+### 12.0 (Midnight) — Secret Value Foundation
 Secret values are **live in production**. The `tostring`/`tonumber` workaround **no longer works** — these functions cannot convert secret values. Blizzard provides new APIs (Curves, Duration objects, widget secret support) as replacements.
+
+### 12.1.0 (Curse of Ula'tek) — Current Retail
+Aura restrictions are stricter. While auras are restricted, the complete `UNIT_AURA` payload is secret and index-, slot-, or instance-based aura queries require unit-aura access that addons do not have. Spell ID and spell name queries remain callable, but only explicitly non-secret auras are returned to addon code.
 
 ---
 
@@ -49,6 +52,7 @@ These will error or return nil when performed on a secret value:
 | `canaccesstable(table)` | Returns `true` if the table is accessible |
 | `secretwrap(values)` | Wraps values as secrets (for testing) |
 | `dropsecretaccess()` | Removes secret access from the calling function |
+| `FrameScriptObject:CanBeAccessedInContext()` | Checks whether the current execution context may inspect a UI object (12.1+) |
 
 ---
 
@@ -84,9 +88,14 @@ These are explicitly whitelisted and remain non-secret:
 
 | API | Secret? | Notes |
 |---|---|---|
-| `C_UnitAuras.GetAuraDataByIndex()` | **Yes** in combat | Timing fields secret |
-| `C_UnitAuras.GetPlayerAuraBySpellID()` | **Yes** in combat | Timing fields secret |
+| `UNIT_AURA` payload | **Fully secret** while restricted | Register for the correct unit and treat the event as a signal only |
+| `C_UnitAuras.GetAuraDataByIndex()` | **Unavailable** while restricted | Addon calls requiring unit-aura access Lua error |
+| `C_UnitAuras.GetAuraDataBySlot()` | **Unavailable** while restricted | Same restriction as index access |
+| `C_UnitAuras.GetAuraDataByAuraInstanceID()` | **Unavailable** while restricted | Same restriction as index access |
+| `C_UnitAuras.GetPlayerAuraBySpellID()` | **Conditional** | Callable, but returns only explicitly non-secret auras |
 | Aura `applications` field | **Varies** | Some whitelisted spells remain non-secret |
+
+For player-filtered `UNIT_AURA` handlers, never inspect `unitTarget` or `updateInfo` in addon code. `RegisterUnitEvent("UNIT_AURA", "player")` supplies the required scope; use the notification to re-read an explicitly non-secret spell through its spell-ID API.
 
 ### Unit Identity
 
@@ -183,6 +192,8 @@ ActionButton_ApplyCooldown(cooldownFrame, actionSlot)  -- secure delegate
 
 ### New Aura Helpers
 
+These helpers are not a general replacement for restricted aura access in 12.1. Instance-based helpers require valid unit-aura access and may error for addon code while auras are restricted. Use Aura Containers for arbitrary aura displays, or spell-ID/name queries only for explicitly non-secret auras.
+
 ```lua
 C_UnitAuras.GetAuraDurationRemainingPercent(auraInstanceID)
 C_UnitAuras.GetAuraDurationRemainingColor(auraInstanceID)
@@ -277,6 +288,8 @@ local okValue = pcall(self.statusBar.SetValue, self.statusBar, value)
 1. **Never directly boolean-test a potentially secret field**: `if info.isEnabled then` is forbidden.
 2. **Never perform arithmetic on a potentially secret value**: `secret + 1` will error.
 3. **Never use secret values as table keys**: `cache[secretGUID] = data` will error.
+4. **Never inspect the 12.1 `UNIT_AURA` payload while restricted**: use a unit-filtered event as a signal only.
+5. **Never inspect a foreign UI object before checking access in 12.1**: use `CanBeAccessedInContext()` and reject secret results.
 
 ### Decision Flow When Encountering a Secret API
 
@@ -319,5 +332,6 @@ These CVars do not persist across sessions.
 
 - [Secret Values — Warcraft Wiki](https://warcraft.wiki.gg/wiki/Secret_Values)
 - [Patch 12.0.0 API Changes — Warcraft Wiki](https://warcraft.wiki.gg/wiki/Patch_12.0.0/API_changes)
+- [Patch 12.1.0 API Changes — Warcraft Wiki](https://warcraft.wiki.gg/wiki/Patch_12.1.0/API_changes)
 - [Combat Philosophy and Addon Disarmament — Blizzard](https://news.blizzard.com/en-us/article/24246290/combat-philosophy-and-addon-disarmament-in-midnight)
 - [issecretvalue API — Warcraft Wiki](https://warcraft.wiki.gg/wiki/API_issecretvalue)

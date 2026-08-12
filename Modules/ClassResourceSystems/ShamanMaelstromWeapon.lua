@@ -603,8 +603,8 @@ function ShamanMaelstromWeapon:WantsEvent(event)
 	return event == "UNIT_AURA"
 end
 
-function ShamanMaelstromWeapon:HandleEvent(event, unit)
-	if event ~= "UNIT_AURA" or unit ~= "player" then
+function ShamanMaelstromWeapon:HandleEvent(event)
+	if event ~= "UNIT_AURA" then
 		return
 	end
 
