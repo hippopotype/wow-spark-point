@@ -9,6 +9,7 @@ local ClassResourceSystems = addon.ClassResourceSystems
 local GetDBColor = addon.GetDBColor
 local GetDBValue = addon.GetDBValue
 local SetTextureSmooth = addon.Util.SetTextureSmooth
+local Clamp01 = addon.Util.Clamp01
 
 local PIP_TEXTURE_FRAME_PATH = "Interface\\AddOns\\SparkPoint\\Textures\\class_resource_frame.png"
 local PIP_TEXTURE_BG_PATH = "Interface\\AddOns\\SparkPoint\\Textures\\class_resource_background.png"
@@ -24,19 +25,6 @@ local STATE_SURGED = 3
 
 local ShamanMaelstromWeapon = {}
 ShamanMaelstromWeapon.__index = ShamanMaelstromWeapon
-
-local function Clamp01(value)
-	if value == nil then
-		return 0
-	end
-	if value < 0 then
-		return 0
-	end
-	if value > 1 then
-		return 1
-	end
-	return value
-end
 
 local function CreateAnimationGroup(parent, toFinalAlpha)
 	local group = parent:CreateAnimationGroup()

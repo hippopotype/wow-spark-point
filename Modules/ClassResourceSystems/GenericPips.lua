@@ -9,6 +9,7 @@ local ClassResourceSystems = addon.ClassResourceSystems
 local GetDBValue = addon.GetDBValue
 local GetDBColor = addon.GetDBColor
 local SetTextureSmooth = addon.Util.SetTextureSmooth
+local Clamp01 = addon.Util.Clamp01
 
 local UnitPower = UnitPower
 local UnitPowerMax = UnitPowerMax
@@ -41,19 +42,6 @@ local function NormalizePowerValue(value)
 
 	local token = s:match("[-+]?%d+%.?%d*")
 	return tonumber(token) or 0
-end
-
-local function Clamp01(value)
-	if value == nil then
-		return 0
-	end
-	if value < 0 then
-		return 0
-	end
-	if value > 1 then
-		return 1
-	end
-	return value
 end
 
 local function CreateAnimationGroup(parent, toFinalAlpha)

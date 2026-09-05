@@ -18,6 +18,7 @@ local MARKER_FRAME_TEXTURE_PATH = addon.addonFolder .. "\\Textures\\cast_empower
 
 local SafeCall = addon.Util.SafeCall
 local SetTextureSmooth = addon.Util.SetTextureSmooth
+local Clamp01 = addon.Util.Clamp01
 
 local TIER_HUE_STEP = 24 / 360
 local TIER_SATURATION_STEP = 0.14
@@ -33,19 +34,6 @@ end
 --------------------------------------------------------------------------------
 -- Helpers
 --------------------------------------------------------------------------------
-
-local function Clamp01(value)
-	if type(value) ~= "number" then
-		return 0
-	end
-	if value < 0 then
-		return 0
-	end
-	if value > 1 then
-		return 1
-	end
-	return value
-end
 
 local function NormalizeColor(color)
 	return {

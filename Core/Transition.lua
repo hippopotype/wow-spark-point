@@ -5,6 +5,7 @@ local _, addon = ...
 
 local GetDBBool = addon.GetDBBool
 local GetDBValue = addon.GetDBValue
+local Clamp01 = addon.Util.Clamp01
 
 local Transition = {}
 addon.Transition = Transition
@@ -13,19 +14,6 @@ local active = setmetatable({}, { __mode = "k" })
 local lifecycle = setmetatable({}, { __mode = "k" })
 local driver
 local EPSILON = 0.0001
-
-local function Clamp01(value)
-	if type(value) ~= "number" then
-		return 0
-	end
-	if value < 0 then
-		return 0
-	end
-	if value > 1 then
-		return 1
-	end
-	return value
-end
 
 local function EaseLinear(t)
 	return t

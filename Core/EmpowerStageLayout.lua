@@ -1,17 +1,9 @@
 local _, addon = ...
 
+local Clamp01 = addon.Util.Clamp01
+
 local EmpowerStageLayout = {}
 addon.EmpowerStageLayout = EmpowerStageLayout
-
-local function Clamp01(value)
-	if value < 0 then
-		return 0
-	end
-	if value > 1 then
-		return 1
-	end
-	return value
-end
 
 function EmpowerStageLayout:Build(stageDurationsMS, holdAtMaxMS)
 	local layout = {
