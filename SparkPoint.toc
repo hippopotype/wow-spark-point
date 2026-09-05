@@ -9,6 +9,7 @@
 
 # Core (load order matters)
 Core\Initialization.lua
+Core\Util.lua
 Core\API.lua
 Core\EmpowerStageLayout.lua
 Core\ResourceModel.lua
