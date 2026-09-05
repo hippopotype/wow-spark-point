@@ -9,6 +9,9 @@ addon.DonutWidget = DonutWidget
 
 local GetTime = GetTime
 
+local SafeCall = addon.Util.SafeCall
+local SetTextureSmooth = addon.Util.SetTextureSmooth
+
 local function ClampThickness(value)
 	local numericThickness = tonumber(value) or 25
 	local valid = { 15, 20, 25, 30, 35 }
@@ -22,28 +25,6 @@ local function ClampThickness(value)
 		end
 	end
 	return clamped
-end
-
-local function SafeCall(obj, method, ...)
-	if obj and obj[method] then
-		obj[method](obj, ...)
-	end
-end
-
-local function SetTextureSmooth(texture, texturePath)
-	if not texture then
-		return
-	end
-
-	-- Try trilinear sampling first; fallback to default if unsupported.
-	local ok = pcall(texture.SetTexture, texture, texturePath, nil, nil, "TRILINEAR")
-	if not ok then
-		texture:SetTexture(texturePath)
-	end
-
-	-- Avoid pixel-grid snapping for softer vector-derived edges.
-	SafeCall(texture, "SetSnapToPixelGrid", false)
-	SafeCall(texture, "SetTexelSnappingBias", 0)
 end
 
 local function BuildTexturePath(self, base)
