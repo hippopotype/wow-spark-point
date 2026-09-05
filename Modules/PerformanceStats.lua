@@ -10,6 +10,7 @@ local Visibility = addon.Visibility
 local Transition = addon.Transition
 local GetDBValue = addon.GetDBValue
 local GetDBColor = addon.GetDBColor
+local InheritLayering = addon.Util.InheritLayering
 
 local PerformanceStats = {}
 addon.Modules.PerformanceStatsObj = PerformanceStats
@@ -26,22 +27,6 @@ local CPU_UPDATE_INTERVAL = 0.5
 local MEMORY_UPDATE_INTERVAL = 10.0
 local MODULE_PREFIX = "performancestats"
 local DEFAULT_FONT = "Fonts\\ARIALN.TTF"
-
-local function ApplyLayering()
-	if not moduleFrame then
-		return
-	end
-
-	local parent = moduleFrame:GetParent()
-	if not parent then
-		return
-	end
-
-	if parent.GetFrameStrata then
-		moduleFrame:SetFrameStrata(parent:GetFrameStrata())
-	end
-	moduleFrame:SetFrameLevel(parent:GetFrameLevel() or 0)
-end
 
 local function FormatMemoryText(valueKB)
 	if type(valueKB) ~= "number" or valueKB < 0 then
@@ -287,7 +272,7 @@ function PerformanceStats:Initialize()
 	moduleFrame:Hide()
 	moduleFrame:SetScript("OnShow", OnShow)
 	moduleFrame:SetScript("OnHide", OnHide)
-	ApplyLayering()
+	InheritLayering(moduleFrame)
 
 	statsText = moduleFrame:CreateFontString(nil, "OVERLAY")
 	statsText:SetPoint("CENTER")
@@ -354,7 +339,7 @@ CallbackRegistry:Register("VisibilityContextChanged", function()
 end, PerformanceStats)
 
 CallbackRegistry:Register("HUDLayersChanged", function()
-	ApplyLayering()
+	InheritLayering(moduleFrame)
 end, PerformanceStats)
 
 addon.ControlCenter:AddModule({

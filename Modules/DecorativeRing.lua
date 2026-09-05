@@ -13,6 +13,7 @@ local GetDBValue = addon.GetDBValue
 local GetDBBool = addon.GetDBBool
 local GetDBColor = addon.GetDBColor
 local SetTextureSmooth = addon.Util.SetTextureSmooth
+local InheritLayering = addon.Util.InheritLayering
 
 --------------------------------------------------------------------------------
 -- Module State
@@ -48,22 +49,6 @@ end
 local DEFAULT_TEXTURE_KEY = (RING_TEXTURE_DEFINITIONS[1] and RING_TEXTURE_DEFINITIONS[1].key) or "decorative_ring_1"
 
 Ring.TEXTURE_OPTIONS = RING_TEXTURE_OPTIONS
-
-local function ApplyLayering()
-	if not ringFrame then
-		return
-	end
-
-	local parent = ringFrame:GetParent()
-	if not parent then
-		return
-	end
-
-	if parent.GetFrameStrata then
-		ringFrame:SetFrameStrata(parent:GetFrameStrata())
-	end
-	ringFrame:SetFrameLevel(parent:GetFrameLevel() or 0)
-end
 
 local function NormalizeTextureKey(textureValue)
 	local textureKey = tostring(textureValue or "")
@@ -216,7 +201,7 @@ function Ring:Initialize()
 	local layerRoot = (HUDLayers and HUDLayers:GetLayerFrame(HUDLayers.Names.DECORATIVE_RING)) or anchor
 	ringFrame = CreateFrame("Frame", nil, layerRoot)
 	ringFrame:SetAllPoints()
-	ApplyLayering()
+	InheritLayering(ringFrame)
 	ringFrame:Hide()
 
 	-- Initialize rotation state
@@ -284,7 +269,7 @@ CallbackRegistry:Register("VisibilityContextChanged", function()
 end, Ring)
 
 CallbackRegistry:Register("HUDLayersChanged", function()
-	ApplyLayering()
+	InheritLayering(ringFrame)
 end, Ring)
 
 --------------------------------------------------------------------------------

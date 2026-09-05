@@ -18,6 +18,9 @@ local GetDBBool = addon.GetDBBool
 local GetDBColor = addon.GetDBColor
 local GetDBColorTable = addon.GetDBColorTable
 local SetTextureSmooth = addon.Util.SetTextureSmooth
+local ClampOpacity = addon.Util.ClampOpacity
+local NormalizeVisualColor = addon.Util.NormalizeColor
+local InheritLayering = addon.Util.InheritLayering
 
 local SlotRingWidget = addon.SlotRingWidget
 local SlotProviders = addon.SlotProviders
@@ -228,32 +231,15 @@ local function GetCastBaseContentLevel()
 end
 
 local function ApplyLayering()
-	if castFrame and castFrame:GetParent() then
-		local parent = castFrame:GetParent()
-		if parent.GetFrameStrata then
-			castFrame:SetFrameStrata(parent:GetFrameStrata())
-		end
-		castFrame:SetFrameLevel(parent:GetFrameLevel() or 0)
-	end
+	InheritLayering(castFrame)
+	InheritLayering(castShadowFrame)
 
-	if castShadowFrame and castShadowFrame:GetParent() then
-		local parent = castShadowFrame:GetParent()
-		if parent.GetFrameStrata then
-			castShadowFrame:SetFrameStrata(parent:GetFrameStrata())
-		end
-		castShadowFrame:SetFrameLevel(parent:GetFrameLevel() or 0)
-	end
+	if castFrame then
+		InheritLayering(castFrame.feedbackFrame)
 
-	if castFrame and castFrame.feedbackFrame and castFrame.feedbackFrame:GetParent() then
-		local parent = castFrame.feedbackFrame:GetParent()
-		if parent.GetFrameStrata then
-			castFrame.feedbackFrame:SetFrameStrata(parent:GetFrameStrata())
+		if castFrame.overlayFrame then
+			castFrame.overlayFrame:SetFrameLevel(Cast:GetOverlayFrameLevel())
 		end
-		castFrame.feedbackFrame:SetFrameLevel(parent:GetFrameLevel() or 0)
-	end
-
-	if castFrame and castFrame.overlayFrame then
-		castFrame.overlayFrame:SetFrameLevel(Cast:GetOverlayFrameLevel())
 	end
 end
 
@@ -325,28 +311,6 @@ local function GetInnerSlotColorTable(slotIndex, suffix)
 		return { r = 1, g = 1, b = 1, a = 1 }
 	end
 	return GetDBColorTable(key)
-end
-
-local function ClampOpacity(value, fallback)
-	local opacity = tonumber(value)
-	if opacity == nil then
-		opacity = fallback
-	end
-	if opacity < 0 then
-		return 0
-	end
-	if opacity > 1 then
-		return 1
-	end
-	return opacity
-end
-
-local function NormalizeVisualColor(color)
-	if type(color) ~= "table" then
-		return 1, 1, 1
-	end
-
-	return color.r or 1, color.g or 1, color.b or 1
 end
 
 local function CreateEmpowerIconGlowAnimation(texture)

@@ -3,6 +3,8 @@
 
 local _, addon = ...
 
+local DeepCopy = addon.Util.DeepCopy
+
 local DB -- Active profile table (used by modules/settings)
 local RootDB -- SavedVariables root
 local ActiveProfileMode
@@ -10,17 +12,6 @@ local ActiveProfileMode
 --------------------------------------------------------------------------------
 -- Helpers
 --------------------------------------------------------------------------------
-local function DeepCopy(value)
-	if type(value) ~= "table" then
-		return value
-	end
-	local out = {}
-	for k, v in pairs(value) do
-		out[k] = DeepCopy(v)
-	end
-	return out
-end
-
 local function ApplyDefaults(target, defaults)
 	for dbKey, defaultValue in pairs(defaults or {}) do
 		if target[dbKey] == nil then

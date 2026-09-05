@@ -6,6 +6,7 @@ local _, addon = ...
 local ResourceModel = addon.ResourceModel
 local GetDBValue = addon.GetDBValue
 local SetDBValue = addon.SetDBValue
+local DeepCopy = addon.Util.DeepCopy
 
 local ResourceColors = {}
 addon.ResourceColors = ResourceColors
@@ -104,18 +105,6 @@ local function ColorsMatch(a, b)
 		and math.abs((a.g or 1) - (b.g or 1)) < 0.0001
 		and math.abs((a.b or 1) - (b.b or 1)) < 0.0001
 		and math.abs((a.a or 1) - (b.a or 1)) < 0.0001
-end
-
-local function DeepCopy(value)
-	if type(value) ~= "table" then
-		return value
-	end
-
-	local out = {}
-	for key, entry in pairs(value) do
-		out[key] = DeepCopy(entry)
-	end
-	return out
 end
 
 local function ResolveResourceDef(resource)
