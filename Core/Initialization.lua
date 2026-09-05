@@ -22,7 +22,6 @@ CallbackRegistry.events = {}
 addon.CallbackRegistry = CallbackRegistry
 
 local tinsert = table.insert
-local tremove = table.remove
 
 function CallbackRegistry:Register(event, func, owner)
 	if not self.events[event] then
@@ -54,33 +53,6 @@ end
 
 function CallbackRegistry:RegisterSettingCallback(dbKey, func, owner)
 	self:Register("SettingChanged." .. dbKey, func, owner)
-end
-
-function CallbackRegistry:UnregisterOwner(owner)
-	for event, callbacks in pairs(self.events) do
-		local i = 1
-		while callbacks[i] do
-			if callbacks[i][3] == owner then
-				tremove(callbacks, i)
-			else
-				i = i + 1
-			end
-		end
-	end
-end
-
-function CallbackRegistry:UnregisterCallback(event, owner)
-	if self.events[event] then
-		local callbacks = self.events[event]
-		local i = 1
-		while callbacks[i] do
-			if callbacks[i][3] == owner then
-				tremove(callbacks, i)
-			else
-				i = i + 1
-			end
-		end
-	end
 end
 
 --------------------------------------------------------------------------------

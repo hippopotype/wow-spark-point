@@ -88,10 +88,6 @@ local function EnsureLayerRoots()
 	ApplyRootStrata()
 end
 
-function HUDLayers:GetRootStrata()
-	return GetRootStrata()
-end
-
 function HUDLayers:GetLayerLevel(name)
 	return LAYER_LEVELS[name]
 end

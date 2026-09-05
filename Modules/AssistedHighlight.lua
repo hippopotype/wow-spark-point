@@ -400,10 +400,6 @@ local function UpdateGlowAlpha(elapsed)
 	iconFrame.glow:SetAlpha(scaled * colorAlpha)
 end
 
-function AssistedHighlight:IsCVarEnabled()
-	return cvarEnabled == true
-end
-
 function AssistedHighlight:RefreshCVarState()
 	cvarEnabled = IsAssistedCVarEnabled()
 end

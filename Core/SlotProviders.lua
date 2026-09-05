@@ -36,13 +36,6 @@ function SlotProviders:Get(id)
 end
 
 --------------------------------------------------------------------------------
--- Get all registered providers
---------------------------------------------------------------------------------
-function SlotProviders:GetAll()
-	return registry
-end
-
---------------------------------------------------------------------------------
 -- Build dropdown options for settings UI
 -- Returns array of {value, label} for AddDropdown
 --------------------------------------------------------------------------------

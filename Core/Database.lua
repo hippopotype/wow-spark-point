@@ -289,10 +289,6 @@ function addon.GetDBBool(dbKey)
 	return DB and DB[dbKey] == true
 end
 
-function addon.FlipDBBool(dbKey)
-	addon.SetDBValue(dbKey, not addon.GetDBBool(dbKey), true)
-end
-
 -- Color helpers
 function addon.GetDBColor(dbKey)
 	local c = DB and DB[dbKey]

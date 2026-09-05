@@ -81,30 +81,6 @@ function ControlCenter:DisableModule(dbKey)
 	end
 end
 
-function ControlCenter:ToggleModule(dbKey)
-	local moduleData = self.dbKeyToModule[dbKey]
-	if moduleData then
-		if moduleData.isEnabled then
-			self:DisableModule(dbKey)
-		else
-			self:EnableModule(dbKey)
-		end
-	end
-end
-
-function ControlCenter:IsModuleEnabled(dbKey)
-	local moduleData = self.dbKeyToModule[dbKey]
-	return moduleData and moduleData.isEnabled
-end
-
-function ControlCenter:GetModule(dbKey)
-	return self.dbKeyToModule[dbKey]
-end
-
-function ControlCenter:GetModuleByName(name)
-	return addon.Modules[name]
-end
-
 function ControlCenter:GetAllModules()
 	return self.modules
 end

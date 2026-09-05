@@ -6,7 +6,6 @@ SparkPointColorOverridesMixin = CreateFromMixins(SettingsListElementMixin)
 
 local DEFAULT_ROW_HEIGHT = 20
 local DEFAULT_PADDING = 5
-local DEFAULT_SPACING = 6
 
 local function wipeTable(tbl)
 	if not tbl then
@@ -68,17 +67,6 @@ function SparkPointColorOverridesMixin:Init(initializer)
 	end
 
 	self:RefreshRows()
-end
-
-function SparkPointColorOverridesMixin:GetSpacing()
-	local container = self.container
-	if self.fixedSpacing then
-		return self.fixedSpacing
-	end
-	if container and container.spacing then
-		return container.spacing
-	end
-	return self.fixedSpacing or DEFAULT_SPACING
 end
 
 function SparkPointColorOverridesMixin:RefreshRows()

@@ -35,13 +35,6 @@ function BarProviders:Get(id)
 end
 
 --------------------------------------------------------------------------------
--- Get all registered providers
---------------------------------------------------------------------------------
-function BarProviders:GetAll()
-	return registry
-end
-
---------------------------------------------------------------------------------
 -- Build dropdown options for settings UI
 --------------------------------------------------------------------------------
 function BarProviders:GetDropdownOptions()

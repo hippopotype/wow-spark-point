@@ -651,12 +651,6 @@ function ResourceModel:GetCurrentClassPower(unit)
 	return resource, resolved
 end
 
-function ResourceModel:GetCurrentFutureSpecial(unit)
-	local resolved = self:Resolve(unit)
-	local resource = FindResourceByOwner(resolved, OWNERS.FUTURE_SPECIAL)
-	return resource, resolved
-end
-
 function ResourceModel:GetResourceDefinition(key)
 	return RESOURCE_DEFS[key]
 end

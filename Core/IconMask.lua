@@ -10,10 +10,6 @@ local MASK_PATH = addon.addonFolder .. "\\Textures\\spell_icon_mask.png"
 local DEFAULT_BASE_SIZE = 32
 local DEFAULT_BASE_EXPAND = 6
 
-function IconMask:GetMaskPath()
-	return MASK_PATH
-end
-
 function IconMask:CalculateExpand(iconSize, baseExpand, baseSize)
 	local resolvedSize = tonumber(iconSize) or DEFAULT_BASE_SIZE
 	local resolvedBaseSize = tonumber(baseSize) or DEFAULT_BASE_SIZE

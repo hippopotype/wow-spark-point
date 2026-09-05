@@ -21,9 +21,6 @@ addon.CallbackRegistry:Trigger("EventName", arg1, arg2)
 addon.CallbackRegistry:RegisterSettingCallback("cast_radius", function(newValue, userInput)
     -- react to setting change
 end, owner)
-
--- Unregister all callbacks for an owner
-addon.CallbackRegistry:UnregisterOwner(owner)
 ```
 
 ### 2. Database System (Core/Defaults.lua + Core/Database.lua)
@@ -51,7 +48,6 @@ addon.SetDBValue("cast_radius", 30, true)  -- true = userInput
 
 -- Boolean helpers
 if addon.GetDBBool("cast_sparkOnly") then ... end
-addon.FlipDBBool("cast_sparkOnly")
 
 -- Color helpers
 local r, g, b, a = addon.GetDBColor("cast_barColor")
@@ -82,13 +78,8 @@ addon.ControlCenter:AddModule({
 -- Module lifecycle
 addon.ControlCenter:EnableModule("moduleEnabled_Cast")
 addon.ControlCenter:DisableModule("moduleEnabled_Cast")
-addon.ControlCenter:ToggleModule("moduleEnabled_Cast")
-
--- Query module state
-if addon.ControlCenter:IsModuleEnabled("moduleEnabled_Cast") then ... end
 
 -- Get module data
-local moduleData = addon.ControlCenter:GetModule("moduleEnabled_Cast")
 local allModules = addon.ControlCenter:GetModulesSorted()
 ```
 
@@ -142,9 +133,6 @@ addon.Transition:FadeTo(frame, targetAlpha, duration, easing)
 Shared helpers for masked circular icon rendering.
 
 ```lua
--- Get the mask texture path
-local maskPath = addon.IconMask:GetMaskPath()
-
 -- Calculate proportional expand for a given icon size
 local expand = addon.IconMask:CalculateExpand(iconSize, baseExpand, baseSize)
 
@@ -201,7 +189,6 @@ local bar = addon.BarSlotWidget:Create(parent, options)
 ```lua
 addon.SlotProviders:Register(id, provider)
 addon.SlotProviders:Get(id)
-addon.SlotProviders:GetAll()
 ```
 
 **BarProviders** (Core/BarProviders.lua) — Horizontal bar slot data:
@@ -215,7 +202,6 @@ addon.SlotProviders:GetAll()
 
 addon.BarProviders:Register(id, provider)
 addon.BarProviders:Get(id)
-addon.BarProviders:GetAll()
 ```
 
 ## Module Structure Template
