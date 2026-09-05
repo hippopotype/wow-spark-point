@@ -47,7 +47,7 @@ stylua --check .
 # Format in place
 stylua .
 
-# Verify both .toc files stay in sync (only ## Title may differ)
+# Verify both .toc files stay in sync (Title and validated icon folder may differ)
 bash .scripts/check-toc-sync.sh
 ```
 
