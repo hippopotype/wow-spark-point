@@ -5,6 +5,22 @@ SparkPoint uses a custom lightweight framework inspired by Plumber, DialogueUI, 
 
 ## Core Systems
 
+### Shared utilities (Core/Util.lua)
+
+`addon.Util` loads immediately after `Core/Initialization.lua`, before all consumers.
+Cache its helpers as file-local aliases. It does not access the database or module state.
+
+- `SetTextureSmooth(texture, path)` binds textures with trilinear sampling and disables pixel snapping.
+- `SafeCall(object, method, ...)` calls an available method; it neither catches errors nor returns its result.
+- `Clamp01(value)` clamps plain numbers to 0–1; non-numbers return 0.
+- `ClampOpacity(value, fallback)` converts a readable value and clamps it to 0–1. Always supply a numeric fallback.
+- `DeepCopy(value)` recursively copies plain table values for profiles and color settings.
+- `NormalizeColor(color)` returns RGB components, defaulting to white.
+- `InheritLayering(frame)` copies its parent's strata and level. Cast retains its separate overlay-level assignment.
+
+Numeric and color helpers do not accept secret values. Keep `NormalizeProviderID` local to
+its consumers: Cast uses a `"NONE"` sentinel, while BarSlots uses `nil`.
+
 ### 1. CallbackRegistry (Core/Initialization.lua)
 Plumber-style event system for decoupled communication.
 
@@ -331,6 +347,7 @@ addon.ControlCenter:AddModule({
 ## Load Order
 
 1. `Core/Initialization.lua` - Creates namespace, CallbackRegistry
+   - `Core/Util.lua` loads next, before `Core/API.lua` and every helper consumer.
 2. `Core/API.lua` - Utility functions
 3. `Core/IconMask.lua` - Shared masked icon rendering helpers
 4. `Core/Defaults.lua` - DefaultValues, RootDefaultValues, ProfileModes

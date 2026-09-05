@@ -43,7 +43,6 @@ function SparkPointColorOverridesMixin:Init(initializer)
 	self.basePadding = initializer.data.basePadding or DEFAULT_PADDING
 	self.minHeight = initializer.data.minHeight
 	self.fixedHeight = initializer.data.height
-	self.fixedSpacing = initializer.data.spacing
 	self.parentCheck = initializer.data.parentCheck
 	self.colorizeLabel = initializer.data.colorizeLabel or initializer.data.colorizeText
 	self.hasOpacity = initializer.data.hasOpacity == true

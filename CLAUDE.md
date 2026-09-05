@@ -61,6 +61,7 @@ Full usage guide: `/wow-dev-tooling` skill
 SparkPoint/
 ├── Core/
 │   ├── Initialization.lua   # Namespace, CallbackRegistry, event loading
+│   ├── Util.lua             # Shared texture, numeric, copy, and layering helpers
 │   ├── API.lua              # Utility functions (new WoW APIs)
 │   ├── IconMask.lua         # Shared masked icon rendering helpers
 │   ├── Defaults.lua         # DefaultValues, RootDefaultValues, ProfileModes
