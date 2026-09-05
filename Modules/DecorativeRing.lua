@@ -12,6 +12,7 @@ local Transition = addon.Transition
 local GetDBValue = addon.GetDBValue
 local GetDBBool = addon.GetDBBool
 local GetDBColor = addon.GetDBColor
+local SetTextureSmooth = addon.Util.SetTextureSmooth
 
 --------------------------------------------------------------------------------
 -- Module State
@@ -62,22 +63,6 @@ local function ApplyLayering()
 		ringFrame:SetFrameStrata(parent:GetFrameStrata())
 	end
 	ringFrame:SetFrameLevel(parent:GetFrameLevel() or 0)
-end
-
-local function SetTextureSmooth(texture, texturePath)
-	if not texture then
-		return
-	end
-	local ok = pcall(texture.SetTexture, texture, texturePath, nil, nil, "TRILINEAR")
-	if not ok then
-		texture:SetTexture(texturePath)
-	end
-	if texture.SetSnapToPixelGrid then
-		texture:SetSnapToPixelGrid(false)
-	end
-	if texture.SetTexelSnappingBias then
-		texture:SetTexelSnappingBias(0)
-	end
 end
 
 local function NormalizeTextureKey(textureValue)

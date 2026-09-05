@@ -8,6 +8,7 @@ local ResourceColors = addon.ResourceColors
 local ClassResourceSystems = addon.ClassResourceSystems
 local GetDBValue = addon.GetDBValue
 local GetDBColor = addon.GetDBColor
+local SetTextureSmooth = addon.Util.SetTextureSmooth
 
 local UnitPower = UnitPower
 local UnitPowerMax = UnitPowerMax
@@ -40,19 +41,6 @@ local function NormalizePowerValue(value)
 
 	local token = s:match("[-+]?%d+%.?%d*")
 	return tonumber(token) or 0
-end
-
-local function SetTextureSmooth(tex, path)
-	local ok = pcall(tex.SetTexture, tex, path, nil, nil, "TRILINEAR")
-	if not ok then
-		tex:SetTexture(path)
-	end
-	if tex.SetSnapToPixelGrid then
-		tex:SetSnapToPixelGrid(false)
-	end
-	if tex.SetTexelSnappingBias then
-		tex:SetTexelSnappingBias(0)
-	end
 end
 
 local function Clamp01(value)

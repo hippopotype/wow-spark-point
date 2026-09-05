@@ -16,6 +16,9 @@ addon.CastEmpowerRenderer = CastEmpowerRenderer
 local MARKER_TEXTURE_PATH = addon.addonFolder .. "\\Textures\\cast_empower_marker.png"
 local MARKER_FRAME_TEXTURE_PATH = addon.addonFolder .. "\\Textures\\cast_empower_marker_frame.png"
 
+local SafeCall = addon.Util.SafeCall
+local SetTextureSmooth = addon.Util.SetTextureSmooth
+
 local TIER_HUE_STEP = 24 / 360
 local TIER_SATURATION_STEP = 0.14
 local TIER_LIGHTNESS_STEP = 0.12
@@ -30,12 +33,6 @@ end
 --------------------------------------------------------------------------------
 -- Helpers
 --------------------------------------------------------------------------------
-
-local function SafeCall(object, method, ...)
-	if object and object[method] then
-		object[method](object, ...)
-	end
-end
 
 local function Clamp01(value)
 	if type(value) ~= "number" then
@@ -131,25 +128,6 @@ local function GetTierColor(baseColor, bandIndex)
 	local r, g, b = HSLToRGB((hue + TIER_HUE_STEP * step) % 1, Clamp01(saturation + TIER_SATURATION_STEP * step), Clamp01(lightness + TIER_LIGHTNESS_STEP * step))
 
 	return { r = r, g = g, b = b, a = color.a }
-end
-
-local function SetTextureSmooth(texture, texturePath)
-	if not texture then
-		return
-	end
-
-	if not texturePath then
-		texture:Hide()
-		return
-	end
-
-	local ok = pcall(texture.SetTexture, texture, texturePath, nil, nil, "TRILINEAR")
-	if not ok then
-		texture:SetTexture(texturePath)
-	end
-
-	SafeCall(texture, "SetSnapToPixelGrid", false)
-	SafeCall(texture, "SetTexelSnappingBias", 0)
 end
 
 --------------------------------------------------------------------------------

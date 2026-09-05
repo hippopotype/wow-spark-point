@@ -17,6 +17,7 @@ local GetDBValue = addon.GetDBValue
 local GetDBBool = addon.GetDBBool
 local GetDBColor = addon.GetDBColor
 local GetDBColorTable = addon.GetDBColorTable
+local SetTextureSmooth = addon.Util.SetTextureSmooth
 
 local SlotRingWidget = addon.SlotRingWidget
 local SlotProviders = addon.SlotProviders
@@ -338,22 +339,6 @@ local function ClampOpacity(value, fallback)
 		return 1
 	end
 	return opacity
-end
-
-local function SetTextureSmooth(texture, texturePath)
-	if not texture then
-		return
-	end
-	local ok = pcall(texture.SetTexture, texture, texturePath, nil, nil, "TRILINEAR")
-	if not ok then
-		texture:SetTexture(texturePath)
-	end
-	if texture.SetSnapToPixelGrid then
-		texture:SetSnapToPixelGrid(false)
-	end
-	if texture.SetTexelSnappingBias then
-		texture:SetTexelSnappingBias(0)
-	end
 end
 
 local function NormalizeVisualColor(color)

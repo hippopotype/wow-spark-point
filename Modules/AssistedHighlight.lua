@@ -12,6 +12,7 @@ local Transition = addon.Transition
 local GetDBValue = addon.GetDBValue
 local GetDBBool = addon.GetDBBool
 local GetDBColor = addon.GetDBColor
+local SetTextureSmooth = addon.Util.SetTextureSmooth
 
 local AssistedHighlight = {}
 addon.Modules.AssistedHighlightObj = AssistedHighlight
@@ -56,22 +57,6 @@ end
 
 local function IsVisibilityAllowed()
 	return (not Visibility) or Visibility:ShouldShow("assistedhighlight")
-end
-
-local function SetTextureSmooth(texture, texturePath)
-	if not texture then
-		return
-	end
-	local ok = pcall(texture.SetTexture, texture, texturePath, nil, nil, "TRILINEAR")
-	if not ok then
-		texture:SetTexture(texturePath)
-	end
-	if texture.SetSnapToPixelGrid then
-		texture:SetSnapToPixelGrid(false)
-	end
-	if texture.SetTexelSnappingBias then
-		texture:SetTexelSnappingBias(0)
-	end
 end
 
 local function IsAssistedCVarEnabled()

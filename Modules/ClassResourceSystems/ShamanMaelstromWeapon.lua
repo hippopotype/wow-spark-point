@@ -8,6 +8,7 @@ local ResourceColors = addon.ResourceColors
 local ClassResourceSystems = addon.ClassResourceSystems
 local GetDBColor = addon.GetDBColor
 local GetDBValue = addon.GetDBValue
+local SetTextureSmooth = addon.Util.SetTextureSmooth
 
 local PIP_TEXTURE_FRAME_PATH = "Interface\\AddOns\\SparkPoint\\Textures\\class_resource_frame.png"
 local PIP_TEXTURE_BG_PATH = "Interface\\AddOns\\SparkPoint\\Textures\\class_resource_background.png"
@@ -35,19 +36,6 @@ local function Clamp01(value)
 		return 1
 	end
 	return value
-end
-
-local function SetTextureSmooth(tex, path)
-	local ok = pcall(tex.SetTexture, tex, path, nil, nil, "TRILINEAR")
-	if not ok then
-		tex:SetTexture(path)
-	end
-	if tex.SetSnapToPixelGrid then
-		tex:SetSnapToPixelGrid(false)
-	end
-	if tex.SetTexelSnappingBias then
-		tex:SetTexelSnappingBias(0)
-	end
 end
 
 local function CreateAnimationGroup(parent, toFinalAlpha)
