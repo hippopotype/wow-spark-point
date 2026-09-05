@@ -65,9 +65,10 @@ SparkPoint/
 
 Run before every commit:
 ```bash
-luacheck .        # Must report 0 warnings / 0 errors
-stylua --check .  # Preview formatting changes
-stylua .          # Apply formatting
+luacheck .                          # Must report 0 warnings / 0 errors
+stylua --check .                    # Preview formatting changes
+stylua .                            # Apply formatting
+bash .scripts/check-toc-sync.sh     # SparkPoint.toc / SparkPoint_Dev.toc must match
 ```
 
 - Config: `.luacheckrc` (lint rules + WoW globals), `.luarc.json` (LSP), `.stylua.toml` (formatter)

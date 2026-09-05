@@ -46,6 +46,9 @@ stylua --check .
 
 # Format in place
 stylua .
+
+# Verify both .toc files stay in sync (only ## Title may differ)
+bash .scripts/check-toc-sync.sh
 ```
 
 Config files: `.luacheckrc`, `.luarc.json`, `.stylua.toml`
