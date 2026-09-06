@@ -94,6 +94,51 @@ local NEW_SETTINGS = {
 	performancestats_color = true,
 	performancestats_hideInPetBattle = true,
 	performancestats_hideInSpecialActionBarContext = true,
+	moduleEnabled_CooldownManager = true,
+	cooldownmanager_hideBlizzardViewers = true,
+	cooldownmanager_hideInPetBattle = true,
+	cooldownmanager_hideInSpecialActionBarContext = true,
+	cooldownmanager_iconOpacity = true,
+	cooldownmanager_showSwipe = true,
+	cooldownmanager_showTimerText = true,
+	cooldownmanager_desaturateOnCooldown = true,
+	cooldownmanager_glowOnReady = true,
+	cooldownmanager_glowColor = true,
+	cooldownmanager_timerFont = true,
+	cooldownmanager_timerFontOutline = true,
+	cooldownmanager_timerFontSize = true,
+	cooldownmanager_timerColor = true,
+	cooldownmanager_keybindFont = true,
+	cooldownmanager_keybindFontOutline = true,
+	cooldownmanager_keybindFontSize = true,
+	cooldownmanager_keybindColor = true,
+	cooldownmanager_essential_mode = true,
+	cooldownmanager_essential_enabled = true,
+	cooldownmanager_essential_offsetX = true,
+	cooldownmanager_essential_offsetY = true,
+	cooldownmanager_essential_iconSize = true,
+	cooldownmanager_essential_spacing = true,
+	cooldownmanager_essential_direction = true,
+	cooldownmanager_essential_wrapCount = true,
+	cooldownmanager_essential_showKeybind = true,
+	cooldownmanager_utility_mode = true,
+	cooldownmanager_utility_enabled = true,
+	cooldownmanager_utility_offsetX = true,
+	cooldownmanager_utility_offsetY = true,
+	cooldownmanager_utility_iconSize = true,
+	cooldownmanager_utility_spacing = true,
+	cooldownmanager_utility_direction = true,
+	cooldownmanager_utility_wrapCount = true,
+	cooldownmanager_utility_showKeybind = true,
+	cooldownmanager_trackedbuff_mode = true,
+	cooldownmanager_trackedbuff_enabled = true,
+	cooldownmanager_trackedbuff_offsetX = true,
+	cooldownmanager_trackedbuff_offsetY = true,
+	cooldownmanager_trackedbuff_iconSize = true,
+	cooldownmanager_trackedbuff_spacing = true,
+	cooldownmanager_trackedbuff_direction = true,
+	cooldownmanager_trackedbuff_wrapCount = true,
+	cooldownmanager_trackedbuff_showKeybind = true,
 }
 
 local function ApplyNewFeatureBadge(initializer, isNew)
@@ -1825,6 +1870,220 @@ local function BuildSettingsPanel()
 		L["Hide While In Special Action Bar Context Tooltip"]
 			or "Hide SparkPoint while Blizzard replaces your normal action bar with a special context such as vehicle, override, possess, or temporary shapeshift bars."
 	)
+
+	------------------------------------------------------------------------
+	-- Cooldown Manager Settings Subcategory
+	------------------------------------------------------------------------
+	local cooldownCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Cooldown Manager"] or "Cooldown Manager")
+
+	AddCheckbox(
+		cooldownCategory,
+		"cooldownmanager_hideBlizzardViewers",
+		L["Hide Blizzard Viewers"] or "Hide Blizzard's Cooldown Manager frames",
+		L["Hide Blizzard Viewers Tooltip"] or "Hide Blizzard's own Cooldown Manager frames regardless of the mode chosen for each category below. Works even in combat."
+	)
+
+	local cooldownVisibilityCategory = Settings.RegisterVerticalLayoutSubcategory(cooldownCategory, L["Visibility"] or "Visibility")
+	AddDropdown(
+		cooldownVisibilityCategory,
+		"cooldownmanager_visibilitySource",
+		L["Visibility Source"] or "Visibility Source",
+		visibilitySourceOptions,
+		L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility"
+	)
+	AddVisibilityRuleGroup(
+		cooldownVisibilityCategory,
+		"cooldownmanager_visibility",
+		nil,
+		L["Cooldown Manager Visibility Tooltip"] or "When to show the SparkPoint-mode cooldown manager icons"
+	)
+	local cooldownHideCategory = Settings.RegisterVerticalLayoutSubcategory(cooldownVisibilityCategory, L["Hide Overrides"] or "Hide Overrides")
+	AddCheckbox(
+		cooldownHideCategory,
+		"cooldownmanager_hideOnUIHover",
+		L["Hide While Hovering UI"] or "Hide While Hovering UI",
+		L["Hide While Hovering UI Tooltip"] or "Hide SparkPoint while cursor is over clickable UI frames. Keeps SparkPoint visible primarily for world targeting."
+	)
+	AddCheckbox(
+		cooldownHideCategory,
+		"cooldownmanager_hideInPetBattle",
+		L["Hide While In Pet Battle"] or "Hide While In Pet Battle",
+		L["Hide While In Pet Battle Tooltip"] or "Hide SparkPoint while you are in a pet battle."
+	)
+	AddCheckbox(
+		cooldownHideCategory,
+		"cooldownmanager_hideInSpecialActionBarContext",
+		L["Hide While In Special Action Bar Context"] or "Hide While In Special Action Bar Context",
+		L["Hide While In Special Action Bar Context Tooltip"]
+			or "Hide SparkPoint while Blizzard replaces your normal action bar with a special context such as vehicle, override, possess, or temporary shapeshift bars."
+	)
+
+	------------------------------------------------------------------------
+	-- Cooldown Manager Appearance (applies to SparkPoint-mode icons in every category)
+	------------------------------------------------------------------------
+	local cooldownAppearanceCategory = Settings.RegisterVerticalLayoutSubcategory(cooldownCategory, L["Appearance"] or "Appearance")
+	AddSlider(
+		cooldownAppearanceCategory,
+		"cooldownmanager_iconOpacity",
+		L["Cooldown Manager Icon Opacity"] or "Icon Opacity",
+		0,
+		1,
+		0.05,
+		L["Cooldown Manager Icon Opacity Tooltip"] or "Opacity of SparkPoint-mode cooldown icons"
+	)
+	AddCheckbox(
+		cooldownAppearanceCategory,
+		"cooldownmanager_showSwipe",
+		L["Cooldown Manager Show Swipe"] or "Show Cooldown Swipe",
+		L["Cooldown Manager Show Swipe Tooltip"] or "Show the radial cooldown swipe animation on icons"
+	)
+	AddCheckbox(
+		cooldownAppearanceCategory,
+		"cooldownmanager_showTimerText",
+		L["Cooldown Manager Show Timer Text"] or "Show Timer Text",
+		L["Cooldown Manager Show Timer Text Tooltip"] or "Show the remaining cooldown time as text on icons"
+	)
+	AddCheckbox(
+		cooldownAppearanceCategory,
+		"cooldownmanager_desaturateOnCooldown",
+		L["Cooldown Manager Desaturate On Cooldown"] or "Desaturate While On Cooldown",
+		L["Cooldown Manager Desaturate On Cooldown Tooltip"] or "Desaturate icon textures while the spell is on cooldown"
+	)
+	AddCheckbox(
+		cooldownAppearanceCategory,
+		"cooldownmanager_glowOnReady",
+		L["Cooldown Manager Glow On Ready"] or "Glow When Ready",
+		L["Cooldown Manager Glow On Ready Tooltip"] or "Briefly glow an icon when its cooldown finishes"
+	)
+	AddColor(
+		cooldownAppearanceCategory,
+		"cooldownmanager_glowColor",
+		L["Cooldown Manager Glow Color"] or "Glow Color",
+		L["Cooldown Manager Glow Color Tooltip"] or "Color and alpha used by the ready glow"
+	)
+
+	local cooldownTimerTextCategory = Settings.RegisterVerticalLayoutSubcategory(cooldownAppearanceCategory, L["Cooldown Manager Timer Text"] or "Timer Text")
+	AddDropdown(
+		cooldownTimerTextCategory,
+		"cooldownmanager_timerFont",
+		L["Cooldown Manager Timer Font"] or "Font",
+		fontOptions,
+		L["Cooldown Manager Timer Font Tooltip"] or "Choose the font used by the cooldown timer text"
+	)
+	AddDropdown(
+		cooldownTimerTextCategory,
+		"cooldownmanager_timerFontOutline",
+		L["Cooldown Manager Timer Font Outline"] or "Font Outline",
+		fontOutlineOptions,
+		L["Cooldown Manager Timer Font Outline Tooltip"] or "Choose the outline style used by the cooldown timer text"
+	)
+	AddSlider(cooldownTimerTextCategory, "cooldownmanager_timerFontSize", L["Font Size"] or "Font Size", 8, 24, 1)
+	AddColor(
+		cooldownTimerTextCategory,
+		"cooldownmanager_timerColor",
+		L["Cooldown Manager Timer Color"] or "Timer Text Color",
+		L["Cooldown Manager Timer Color Tooltip"] or "Color and alpha used by the cooldown timer text"
+	)
+
+	local cooldownKeybindTextCategory = Settings.RegisterVerticalLayoutSubcategory(cooldownAppearanceCategory, L["Cooldown Manager Keybind Text"] or "Keybind Text")
+	AddDropdown(
+		cooldownKeybindTextCategory,
+		"cooldownmanager_keybindFont",
+		L["Cooldown Manager Keybind Font"] or "Font",
+		fontOptions,
+		L["Cooldown Manager Keybind Font Tooltip"] or "Choose the font used by keybind text"
+	)
+	AddDropdown(
+		cooldownKeybindTextCategory,
+		"cooldownmanager_keybindFontOutline",
+		L["Cooldown Manager Keybind Font Outline"] or "Font Outline",
+		fontOutlineOptions,
+		L["Cooldown Manager Keybind Font Outline Tooltip"] or "Choose the outline style used by keybind text"
+	)
+	AddSlider(cooldownKeybindTextCategory, "cooldownmanager_keybindFontSize", L["Font Size"] or "Font Size", 8, 24, 1)
+	AddColor(
+		cooldownKeybindTextCategory,
+		"cooldownmanager_keybindColor",
+		L["Cooldown Manager Keybind Color"] or "Keybind Text Color",
+		L["Cooldown Manager Keybind Color Tooltip"] or "Color and alpha used by keybind text"
+	)
+
+	------------------------------------------------------------------------
+	-- Cooldown Manager Placement (per category: Essential / Utility / Tracked Buffs)
+	------------------------------------------------------------------------
+	local cooldownModeOptions = {
+		{ value = "SPARKPOINT", label = L["Mode SparkPoint"] or "SparkPoint icons" },
+		{ value = "BLIZZARD", label = L["Mode Blizzard"] or "Blizzard viewer (anchored)" },
+		{ value = "OFF", label = L["Mode Off"] or "Off" },
+	}
+	local cooldownDirectionOptions = {
+		{ value = "RIGHT", label = L["Anchor Right"] or "Right" },
+		{ value = "LEFT", label = L["Anchor Left"] or "Left" },
+	}
+
+	local function RegisterCooldownPlacementSettings(parentCategory, groupKey, groupLabelKey)
+		local prefix = "cooldownmanager_" .. groupKey .. "_"
+		local groupLabel = L[groupLabelKey] or groupLabelKey
+		local placementCategory = Settings.RegisterVerticalLayoutSubcategory(parentCategory, groupLabel)
+
+		AddDropdown(
+			placementCategory,
+			prefix .. "mode",
+			L["Render Mode"] or "Render Mode",
+			cooldownModeOptions,
+			L["Cooldown Manager Mode Tooltip"] or "Choose whether this category renders as SparkPoint icons, Blizzard's own viewer, or is turned off"
+		)
+		AddCheckbox(
+			placementCategory,
+			prefix .. "enabled",
+			L[groupLabelKey .. " Enabled"] or ("Enable " .. groupLabel),
+			L["Cooldown Manager Enabled Tooltip"] or ("Enable " .. groupLabel .. ".")
+		)
+		AddSlider(placementCategory, prefix .. "offsetX", L["Horizontal Offset"] or "Horizontal Offset", -240, 240, 1)
+		AddSlider(placementCategory, prefix .. "offsetY", L["Vertical Offset"] or "Vertical Offset", -240, 240, 1)
+		AddSlider(placementCategory, prefix .. "iconSize", L["Cooldown Manager Icon Size"] or "Icon Size", 12, 64, 1)
+		AddSlider(placementCategory, prefix .. "spacing", L["Cooldown Manager Icon Spacing"] or "Icon Spacing", 0, 32, 1)
+		AddSlider(placementCategory, prefix .. "wrapCount", L["Cooldown Manager Wrap Count"] or "Icons Per Row", 1, 20, 1)
+		AddDropdown(
+			placementCategory,
+			prefix .. "direction",
+			L["Cooldown Manager Direction"] or "Growth Direction",
+			cooldownDirectionOptions,
+			L["Cooldown Manager Direction Tooltip"] or "Direction additional icons grow in when there is more than one"
+		)
+		AddCheckbox(
+			placementCategory,
+			prefix .. "showKeybind",
+			L["Cooldown Manager Show Keybind"] or "Show Keybind Text",
+			L["Cooldown Manager Show Keybind Tooltip"] or "Show the bound keybind on each icon, when known"
+		)
+	end
+
+	RegisterCooldownPlacementSettings(cooldownCategory, "essential", "Essential Cooldowns")
+	RegisterCooldownPlacementSettings(cooldownCategory, "utility", "Utility Cooldowns")
+	RegisterCooldownPlacementSettings(cooldownCategory, "trackedbuff", "Tracked Buffs")
+
+	-- Per Step 3 of the task brief: only IsAvailable is checked here. IsBlizzardModeUsable
+	-- and IsUsingFallback (Core/CooldownViewerData.lua) have no other caller in the addon;
+	-- surfacing them is a design intent noted in that file's comments but not something
+	-- this task's instructions asked to wire up, so it is left for a follow-up rather than
+	-- risking a settings-panel notice that can go stale (moduleEnabled_CooldownManager
+	-- defaults to false, so IsUsingFallback would read as false-negative until the module
+	-- has been enabled and refreshed at least once this session).
+	if not addon.CooldownViewerData:IsAvailable() then
+		AddInfoText(cooldownCategory, L["Cooldown Manager Unavailable"] or "Blizzard's Cooldown Manager is unavailable or disabled.")
+	end
+
+	-- Settings.RegisterInitializer with an explicit GetExtent is the established
+	-- pattern in this file (see AddColor/AddInfoText above); there is no `layout`
+	-- local and no AddInitializer method in this codebase.
+	local cooldownFilterInitializer = Settings.CreateElementInitializer("SparkPointCooldownFilterPanelNoHead", {
+		name = L["Cooldown Manager"] or "Cooldown Manager",
+	})
+	cooldownFilterInitializer.GetExtent = function()
+		return 200
+	end
+	Settings.RegisterInitializer(cooldownCategory, cooldownFilterInitializer)
 
 	------------------------------------------------------------------------
 	-- Register main category
