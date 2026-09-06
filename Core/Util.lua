@@ -148,5 +148,8 @@ function Util.GetAccessibleBoolean(value, fallback)
 	if type(value) ~= "boolean" then
 		return fallback
 	end
+	if _G.canaccessvalue and not _G.canaccessvalue(value) then
+		return fallback
+	end
 	return value
 end

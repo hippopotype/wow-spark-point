@@ -70,7 +70,6 @@ local instantVisibilityStates = {
 
 local GetMouseFoci = GetMouseFoci
 local GetMouseFocus = GetMouseFocus
-local issecretvalue = _G.issecretvalue
 local UIParent = UIParent
 local WorldFrame = WorldFrame
 local STABLE_PREFIX_GLOBAL = "__global__"
