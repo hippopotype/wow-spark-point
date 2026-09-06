@@ -53,6 +53,7 @@ addon.DefaultValues = {
 	moduleEnabled_SpellIcon = true,
 	moduleEnabled_AssistedHighlight = true,
 	moduleEnabled_PerformanceStats = false,
+	moduleEnabled_CooldownManager = false,
 	resourceColorOverrides = {
 		HEALTH = { r = 0.12, g = 0.86, b = 0.20, a = 1.00 },
 		MANA = { r = 0.12, g = 0.36, b = 1.00, a = 1.00 },
@@ -287,6 +288,65 @@ addon.DefaultValues = {
 	assistedhighlight_hideOnUIHover = false,
 	assistedhighlight_hideInPetBattle = true,
 	assistedhighlight_hideInSpecialActionBarContext = true,
+
+	-- Cooldown Manager -----------------------------------------------------
+	cooldownmanager_hideBlizzardViewers = false,
+	cooldownmanager_visibilitySource = "INHERIT",
+	cooldownmanager_visibility = { ALWAYS = true },
+	cooldownmanager_hideOnUIHover = false,
+	cooldownmanager_hideInPetBattle = true,
+	cooldownmanager_hideInSpecialActionBarContext = true,
+	-- [specID] = { [cooldownID] = true }. Keyed on cooldownID because spell IDs
+	-- shift under talent overrides while the cooldown ID is stable.
+	cooldownmanager_hiddenEntries = {},
+
+	cooldownmanager_iconOpacity = 1,
+	cooldownmanager_showSwipe = true,
+	cooldownmanager_showTimerText = true,
+	cooldownmanager_desaturateOnCooldown = true,
+	cooldownmanager_glowOnReady = true,
+	cooldownmanager_glowColor = { r = 0.44, g = 0.98, b = 1, a = 1 },
+	cooldownmanager_timerFont = "Fonts\\FRIZQT__.TTF",
+	cooldownmanager_timerFontOutline = "OUTLINE",
+	cooldownmanager_timerFontSize = 13,
+	cooldownmanager_timerColor = { r = 1, g = 1, b = 1, a = 1 },
+	cooldownmanager_keybindFont = "Fonts\\FRIZQT__.TTF",
+	cooldownmanager_keybindFontOutline = "OUTLINE",
+	cooldownmanager_keybindFontSize = 13,
+	cooldownmanager_keybindColor = { r = 0.44, g = 0.98, b = 1, a = 1 },
+
+	cooldownmanager_essential_mode = "SPARKPOINT",
+	cooldownmanager_essential_enabled = true,
+	cooldownmanager_essential_offsetX = 46,
+	cooldownmanager_essential_offsetY = -34,
+	cooldownmanager_essential_iconSize = 28,
+	cooldownmanager_essential_spacing = 4,
+	cooldownmanager_essential_direction = "RIGHT",
+	cooldownmanager_essential_wrapCount = 5,
+	cooldownmanager_essential_showKeybind = true,
+
+	cooldownmanager_utility_mode = "SPARKPOINT",
+	cooldownmanager_utility_enabled = true,
+	cooldownmanager_utility_offsetX = 46,
+	cooldownmanager_utility_offsetY = -68,
+	cooldownmanager_utility_iconSize = 24,
+	cooldownmanager_utility_spacing = 4,
+	cooldownmanager_utility_direction = "RIGHT",
+	cooldownmanager_utility_wrapCount = 5,
+	cooldownmanager_utility_showKeybind = true,
+
+	-- Defaults to BLIZZARD because aura durations and stack counts are
+	-- unreachable from addon code (spec E8). Full SPARKPOINT placement values
+	-- are carried anyway so switching modes needs no reconfiguration.
+	cooldownmanager_trackedbuff_mode = "BLIZZARD",
+	cooldownmanager_trackedbuff_enabled = true,
+	cooldownmanager_trackedbuff_offsetX = 46,
+	cooldownmanager_trackedbuff_offsetY = -98,
+	cooldownmanager_trackedbuff_iconSize = 24,
+	cooldownmanager_trackedbuff_spacing = 4,
+	cooldownmanager_trackedbuff_direction = "RIGHT",
+	cooldownmanager_trackedbuff_wrapCount = 5,
+	cooldownmanager_trackedbuff_showKeybind = false,
 
 	-- PerformanceStats module settings
 	performancestats_offsetX = 0,

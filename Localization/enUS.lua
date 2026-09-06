@@ -408,6 +408,22 @@ L["Assisted Highlight"] = "Assisted Highlight"
 L["Assisted Highlight Description"] = "Shows the next suggested spell from Blizzard Assisted Highlight"
 
 --------------------------------------------------------------------------------
+-- Cooldown Manager
+--------------------------------------------------------------------------------
+L["Cooldown Manager"] = "Cooldown Manager"
+L["Cooldown Manager Description"] = "Mirrors Blizzard's Cooldown Manager into the SparkPoint HUD"
+L["Essential Cooldowns"] = "Essential Cooldowns"
+L["Utility Cooldowns"] = "Utility Cooldowns"
+L["Tracked Buffs"] = "Tracked Buffs"
+L["Render Mode"] = "Render Mode"
+L["Mode SparkPoint"] = "SparkPoint icons"
+L["Mode Blizzard"] = "Blizzard viewer (anchored)"
+L["Mode Off"] = "Off"
+L["Hide Blizzard Viewers"] = "Hide Blizzard's Cooldown Manager frames"
+L["Filter Blizzard Mode Notice"] = "Filtering applies to SparkPoint mode only. In Blizzard mode, configure which spells appear in Blizzard's Cooldown Manager settings."
+L["Cooldown Manager Unavailable"] = "Blizzard's Cooldown Manager is unavailable or disabled."
+
+--------------------------------------------------------------------------------
 -- Performance Stats
 --------------------------------------------------------------------------------
 L["Performance Stats"] = "Performance Stats"
