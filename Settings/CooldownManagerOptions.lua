@@ -12,6 +12,11 @@ local CallbackRegistry = addon.CallbackRegistry
 local GetDBValue = addon.GetDBValue
 
 local ROW_HEIGHT = 22
+local NOTICE_INDENT = 8
+local NOTICE_GAP_ABOVE = 4
+local NOTICE_GAP_BELOW = 8
+local CONTENT_RIGHT_PADDING = 16
+local MIN_NOTICE_WIDTH = 180
 
 local CATEGORY_ORDER = {
 	{ category = 0, groupKey = "essential", label = "Essential Cooldowns" },
@@ -32,8 +37,20 @@ function SparkPointCooldownFilterMixin:OnLoad()
 	-- otherwise anything that reaches Text:SetText draws it at an arbitrary position on
 	-- top of the list. It must still EXIST: DisplayEnabled calls Text:SetTextColor.
 	self.Text:Hide()
+	-- SettingsListElementTemplate puts a HoverBackground texture (white, alpha 0.1,
+	-- anchored across the whole element) inside its Tooltip frame, shown on mouse-over.
+	-- On a normal one-line setting row that reads as a highlight; across a 460px scroll
+	-- list it just washes the whole panel out. We set no tooltip func, so the frame has
+	-- no other purpose -- hide it, and zero the texture too in case anything re-shows it.
+	if self.Tooltip then
+		self.Tooltip:Hide()
+		if self.Tooltip.HoverBackground then
+			self.Tooltip.HoverBackground:SetAlpha(0)
+		end
+	end
 	self.rows = {}
 	self.headers = {}
+	self.notices = {}
 	CallbackRegistry:Register("CooldownViewer.EntriesChanged", function()
 		if self:IsShown() then
 			self:Refresh()
@@ -91,6 +108,43 @@ function SparkPointCooldownFilterMixin:AcquireHeader(index)
 	return header
 end
 
+-- Notices are body copy, not headings: GameFontHighlightSmall rather than the
+-- GameFontNormal used by AcquireHeader, which rendered them bold yellow and made them
+-- read as section titles.
+function SparkPointCooldownFilterMixin:AcquireNotice(index)
+	local notice = self.notices[index]
+	if notice then
+		return notice
+	end
+	notice = self.ScrollFrame.Content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	notice:SetWordWrap(true)
+	notice:SetJustifyH("LEFT")
+	notice:SetJustifyV("TOP")
+	self.notices[index] = notice
+	return notice
+end
+
+-- Draws one wrapped notice and returns the y cursor advanced past it.
+--
+-- The height MUST be measured, not assumed: these strings wrap to a different number of
+-- lines depending on width, locale and font. The previous code advanced a fixed
+-- ROW_HEIGHT * 2 (44px) while the Blizzard-mode notice actually wraps to four lines at
+-- roughly 60px, so the first checkbox underneath was drawn on top of it.
+function SparkPointCooldownFilterMixin:DrawNotice(index, content, availableWidth, text, y)
+	local notice = self:AcquireNotice(index)
+	notice:ClearAllPoints()
+	notice:SetWidth(availableWidth)
+	notice:SetText(text)
+	notice:SetPoint("TOPLEFT", content, "TOPLEFT", NOTICE_INDENT, -(y + NOTICE_GAP_ABOVE))
+	notice:Show()
+
+	-- GetStringHeight reflects the wrapped height once text and width are set. Floor it at
+	-- one row so a measurement of 0 (possible before the frame has laid out) cannot stack
+	-- the following rows on top of each other.
+	local measured = math.max(math.ceil(notice:GetStringHeight() or 0), ROW_HEIGHT)
+	return y + NOTICE_GAP_ABOVE + measured + NOTICE_GAP_BELOW
+end
+
 function SparkPointCooldownFilterMixin:Refresh()
 	for _, row in ipairs(self.rows) do
 		row:Hide()
@@ -98,10 +152,22 @@ function SparkPointCooldownFilterMixin:Refresh()
 	for _, header in ipairs(self.headers) do
 		header:Hide()
 	end
+	for _, notice in ipairs(self.notices) do
+		notice:Hide()
+	end
 
 	local content = self.ScrollFrame.Content
+	-- Wrap notices to the width we actually have. The old hardcoded 230 wrapped them into
+	-- a narrow column while the panel is far wider. GetWidth can be 0 before first layout,
+	-- so fall back to the template's own content width.
+	local scrollWidth = self.ScrollFrame:GetWidth() or 0
+	if scrollWidth < 50 then
+		scrollWidth = 250
+	end
+	content:SetWidth(scrollWidth)
+	local noticeWidth = math.max(scrollWidth - NOTICE_INDENT - CONTENT_RIGHT_PADDING, MIN_NOTICE_WIDTH)
 	local y = 0
-	local rowIndex, headerIndex = 0, 0
+	local rowIndex, headerIndex, noticeIndex = 0, 0, 0
 
 	for _, section in ipairs(CATEGORY_ORDER) do
 		local mode = tostring(GetDBValue("cooldownmanager_" .. section.groupKey .. "_mode") or "SPARKPOINT")
@@ -120,18 +186,15 @@ function SparkPointCooldownFilterMixin:Refresh()
 		-- FontString rather than appended to the header, which would clip inside the
 		-- 250px content frame.
 		if mode == "BLIZZARD" then
-			headerIndex = headerIndex + 1
-			local notice = self:AcquireHeader(headerIndex)
-			notice:ClearAllPoints()
-			notice:SetPoint("TOPLEFT", content, "TOPLEFT", 8, -y)
-			notice:SetWidth(230)
-			notice:SetJustifyH("LEFT")
-			notice:SetText(
+			noticeIndex = noticeIndex + 1
+			y = self:DrawNotice(
+				noticeIndex,
+				content,
+				noticeWidth,
 				L["Filter Blizzard Mode Notice"]
-					or "Filtering applies to SparkPoint mode only. In Blizzard mode, configure which spells appear in Blizzard's Cooldown Manager settings."
+					or "Filtering applies to SparkPoint mode only. In Blizzard mode, configure which spells appear in Blizzard's Cooldown Manager settings.",
+				y
 			)
-			notice:Show()
-			y = y + (ROW_HEIGHT * 2)
 
 			-- Spec Degradation row 2: BLIZZARD mode is silently dead when cooldownViewerEnabled
 			-- is off (the viewer frames exist but never update), and ApplyGroupMode
@@ -140,17 +203,14 @@ function SparkPointCooldownFilterMixin:Refresh()
 			-- stale the way a once-per-session panel notice would -- same reasoning the panel
 			-- comment at Settings/SettingsPanel.lua gives for siting the fallback notice there.
 			if not Data:IsBlizzardModeUsable() then
-				headerIndex = headerIndex + 1
-				local unusableNotice = self:AcquireHeader(headerIndex)
-				unusableNotice:ClearAllPoints()
-				unusableNotice:SetPoint("TOPLEFT", content, "TOPLEFT", 8, -y)
-				unusableNotice:SetWidth(230)
-				unusableNotice:SetJustifyH("LEFT")
-				unusableNotice:SetText(
-					L["Filter Blizzard Mode Unusable Notice"] or "Blizzard's Cooldown Manager is disabled, so this category is showing SparkPoint icons instead."
+				noticeIndex = noticeIndex + 1
+				y = self:DrawNotice(
+					noticeIndex,
+					content,
+					noticeWidth,
+					L["Filter Blizzard Mode Unusable Notice"] or "Blizzard's Cooldown Manager is disabled, so this category is showing SparkPoint icons instead.",
+					y
 				)
-				unusableNotice:Show()
-				y = y + (ROW_HEIGHT * 2)
 			end
 		end
 
@@ -162,18 +222,15 @@ function SparkPointCooldownFilterMixin:Refresh()
 		-- "CooldownViewer.EntriesChanged", so it can never go stale the way a
 		-- once-per-session panel notice would.
 		if Data:IsUsingFallback(section.category) then
-			headerIndex = headerIndex + 1
-			local fallbackNotice = self:AcquireHeader(headerIndex)
-			fallbackNotice:ClearAllPoints()
-			fallbackNotice:SetPoint("TOPLEFT", content, "TOPLEFT", 8, -y)
-			fallbackNotice:SetWidth(230)
-			fallbackNotice:SetJustifyH("LEFT")
-			fallbackNotice:SetText(
+			noticeIndex = noticeIndex + 1
+			y = self:DrawNotice(
+				noticeIndex,
+				content,
+				noticeWidth,
 				L["Filter Fallback Mode Notice"]
-					or "Showing Blizzard's raw category list because the ordered Cooldown Viewer data is unavailable. Order and your configured Cooldown Manager selections are not reflected here."
+					or "Showing Blizzard's raw category list because the ordered Cooldown Viewer data is unavailable. Order and your configured Cooldown Manager selections are not reflected here.",
+				y
 			)
-			fallbackNotice:Show()
-			y = y + (ROW_HEIGHT * 2)
 		end
 
 		for _, entry in ipairs(entries) do
