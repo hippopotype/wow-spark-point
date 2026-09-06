@@ -59,4 +59,33 @@
 			<OnLoad method="OnLoad"/>
 		</Scripts>
 	</Frame>
+
+	<!-- inherits="SettingsListElementTemplate" is REQUIRED. Blizzard's
+	     SettingsListElementMixin:Init asserts on self.cbrHandles (created only in its
+	     OnLoad) and then indexes self.Text (defined only by that template). Without the
+	     inherit, the panel nil-errors the first time it is opened.
+	     Matches SparkPointColorOverridesPanelNoHead above. -->
+	<Frame name="SparkPointCooldownFilterPanelNoHead"
+		mixin="SparkPointCooldownFilterMixin"
+		inherits="SettingsListElementTemplate"
+		virtual="true"
+	>
+		<Size x="280" y="200"/>
+		<Frames>
+			<ScrollFrame parentKey="ScrollFrame" inherits="ScrollFrameTemplate">
+				<Anchors>
+					<Anchor point="TOPLEFT" x="8" y="-8"/>
+					<Anchor point="BOTTOMRIGHT" x="-28" y="8"/>
+				</Anchors>
+				<ScrollChild>
+					<Frame parentKey="Content">
+						<Size x="250" y="1"/>
+					</Frame>
+				</ScrollChild>
+			</ScrollFrame>
+		</Frames>
+		<Scripts>
+			<OnLoad method="OnLoad"/>
+		</Scripts>
+	</Frame>
 </Ui>

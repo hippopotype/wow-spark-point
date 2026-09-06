@@ -67,6 +67,7 @@ Modules\PerformanceStats.lua
 # Settings
 Settings\SettingsTemplates.xml
 Settings\ColorOverrides.lua
+Settings\CooldownManagerOptions.lua
 Settings\SettingsPanel.lua
 
 # Localization
