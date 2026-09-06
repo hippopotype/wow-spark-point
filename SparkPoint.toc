@@ -34,6 +34,7 @@ Core\MinimapButton.lua
 Widgets\DonutWidget.lua
 Widgets\SlotRingWidget.lua
 Widgets\BarSlotWidget.lua
+Widgets\CooldownIconWidget.lua
 
 # Providers
 Providers\GCD.lua
