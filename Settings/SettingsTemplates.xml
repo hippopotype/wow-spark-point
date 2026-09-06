@@ -70,7 +70,7 @@
 		inherits="SettingsListElementTemplate"
 		virtual="true"
 	>
-		<Size x="280" y="200"/>
+		<Size x="280" y="460"/>
 		<Frames>
 			<ScrollFrame parentKey="ScrollFrame" inherits="ScrollFrameTemplate">
 				<Anchors>

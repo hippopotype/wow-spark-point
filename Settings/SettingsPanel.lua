@@ -2087,8 +2087,11 @@ local function BuildSettingsPanel()
 	-- the scroll list. Settings/ColorOverrides.lua uses the same base template and passes
 	-- no name for exactly this reason; the section already has its own category header.
 	local cooldownFilterInitializer = Settings.CreateElementInitializer("SparkPointCooldownFilterPanelNoHead", {})
+	-- Must match the template's own Size y: the settings list sizes the element from
+	-- GetExtent, and the panel's ScrollFrame fills its parent via TOPLEFT/BOTTOMRIGHT
+	-- anchors, so the two have to agree or the scroll viewport misreports its height.
 	cooldownFilterInitializer.GetExtent = function()
-		return 200
+		return 460
 	end
 	Settings.RegisterInitializer(cooldownCategory, cooldownFilterInitializer)
 
