@@ -42,6 +42,13 @@ local alphaGuard = {}
 local hooked = {}
 local globalHidden = false
 local editModeSuspended = false
+-- Whether ApplyGlobalHidden has actually run for the CURRENT globalHidden value.
+-- Without this, PLAYER_ENTERING_WORLD / PLAYER_REGEN_ENABLED / EDIT_MODE_LAYOUTS_UPDATED
+-- fire ApplyGlobalHidden unconditionally, and with no attached categories that resolves
+-- to SetAlpha(1) on all three CDM viewers on every login and combat exit -- even though
+-- the module defaults to disabled and hideBlizzardViewers defaults to off. See I2 in the
+-- cooldown-manager-hud fix wave.
+local globalHiddenApplied = false
 
 local function GetViewer(category)
 	local name = VIEWER_BY_CATEGORY[category]
@@ -63,8 +70,14 @@ local function ApplyPoint(category)
 
 	pcall(function()
 		viewer:ClearAllPoints()
-		-- Parent stays UIParent. See the header comment.
-		viewer:SetParent(UIParent)
+		-- Parent stays UIParent (see the header comment), but ApplyPoint runs from
+		-- Attach, SuspendForEditMode(false), the event handler below, AND Blizzard's own
+		-- RefreshLayout hook -- including in combat. After the first call the parent is
+		-- already UIParent, so guard the call rather than pay for it (and its exposure
+		-- to Blizzard's layout pass) on every one of those paths.
+		if viewer:GetParent() ~= UIParent then
+			viewer:SetParent(UIParent)
+		end
 		viewer:SetPoint("CENTER", anchor, "CENTER", state.offsetX, state.offsetY)
 	end)
 end
@@ -88,7 +101,10 @@ local function InstallHooks(category)
 		local wantHidden = (state and state.hidden) or (not state and globalHidden)
 		if wantHidden then
 			alphaGuard[frame] = true
-			frame:SetAlpha(0)
+			-- pcall, like every other alpha write in this file: an unguarded throw here
+			-- would leave alphaGuard[frame] permanently true, silently swallowing every
+			-- later alpha change on this frame.
+			pcall(frame.SetAlpha, frame, 0)
 			alphaGuard[frame] = nil
 		end
 	end)
@@ -134,7 +150,10 @@ function CooldownViewerAnchor:Detach(category)
 	end
 	viewer.ignoreFramePositionManager = nil
 	alphaGuard[viewer] = true
-	pcall(viewer.SetAlpha, viewer, 1)
+	-- Respect globalHidden: with hideBlizzardViewers on, forcing alpha 1 here would pop
+	-- this viewer back to its own screen position and leave it visible until the next
+	-- RefreshLayout or loading screen re-applies ApplyGlobalHidden.
+	pcall(viewer.SetAlpha, viewer, globalHidden and 0 or 1)
 	alphaGuard[viewer] = nil
 	-- Blizzard's position manager reclaims placement on its next layout pass.
 end
@@ -155,6 +174,12 @@ function CooldownViewerAnchor:SetGlobalHidden(hidden)
 end
 
 function CooldownViewerAnchor:ApplyGlobalHidden()
+	-- Nothing attached and nothing to hide or un-hide: skip the SetAlpha(1) that would
+	-- otherwise run on all three CDM viewers on every login and combat exit while this
+	-- module sits at its disabled default.
+	if not globalHidden and not globalHiddenApplied then
+		return
+	end
 	for category, name in pairs(VIEWER_BY_CATEGORY) do
 		local viewer = _G[name]
 		-- Attached categories have their own visibility driven by SetVisible.
@@ -169,6 +194,7 @@ function CooldownViewerAnchor:ApplyGlobalHidden()
 			end
 		end
 	end
+	globalHiddenApplied = globalHidden
 end
 
 function CooldownViewerAnchor:SetVisible(category, visible)
@@ -208,13 +234,16 @@ EL:RegisterEvent("PLAYER_ENTERING_WORLD")
 EL:RegisterEvent("PLAYER_REGEN_ENABLED")
 EL:SetScript("OnEvent", function()
 	local editing = AnchorFrame:IsBlizzardEditModeActive()
+	-- EditMode re-anchors managed systems on layout apply; SuspendForEditMode(false)
+	-- already re-asserts ApplyPoint for every attached category, so doing it again here
+	-- would be redundant.
 	CooldownViewerAnchor:SuspendForEditMode(editing)
 	if editing then
 		return
 	end
-	-- EditMode re-anchors managed systems on layout apply; re-assert ours.
-	for category in pairs(attached) do
-		ApplyPoint(category)
+	-- Nothing attached and nothing hidden to (re)apply: see the guard in ApplyGlobalHidden.
+	if not next(attached) and not globalHidden and not globalHiddenApplied then
+		return
 	end
 	CooldownViewerAnchor:ApplyGlobalHidden()
 end)
