@@ -29,6 +29,13 @@ local GROUPS = {
 	{ key = "trackedbuff", category = 2 },
 }
 
+-- SparkPoint's CallbackRegistry has no unregister (Core/Initialization.lua exposes only
+-- Register / RegisterSettingCallback / Trigger), so every callback this module installs is
+-- permanent. Without an enabled flag a DISABLED module would still react to setting writes
+-- and data events, re-attaching Blizzard's viewers and recreating widgets. moduleFrame is a
+-- useless guard for this: it is created once and never nil'd. Modules/AssistedHighlight.lua
+-- keeps the same flag for the same reason.
+local moduleEnabled = false
 local moduleFrame
 local groupFrames = {}
 local widgetPool = {}
@@ -138,7 +145,7 @@ local function ApplyGroupMode(group)
 end
 
 function CooldownManager:ApplyOptions()
-	if not moduleFrame then
+	if not moduleEnabled or not moduleFrame then
 		return
 	end
 	for _, group in ipairs(GROUPS) do
@@ -148,7 +155,7 @@ function CooldownManager:ApplyOptions()
 end
 
 function CooldownManager:UpdateVisibility()
-	if not moduleFrame then
+	if not moduleEnabled or not moduleFrame then
 		return
 	end
 	local show = Visibility:ShouldShow("cooldownmanager")
@@ -254,6 +261,7 @@ EL:SetScript("OnEvent", function(_, event)
 end)
 
 local function EnableModule(enabled)
+	moduleEnabled = enabled == true
 	if enabled then
 		if not moduleFrame then
 			CooldownManager:Initialize()
@@ -281,6 +289,12 @@ local function EnableModule(enabled)
 		CooldownManager:ApplyOptions()
 	else
 		EL:UnregisterAllEvents()
+		-- EventRegistry is a separate registry; EL:UnregisterAllEvents does not cover it,
+		-- and leaving it bound means Blizzard's CDM settings UI keeps waking a disabled
+		-- module. Same pairing as .clones/Cooldown-Companion/Core/Lifecycle.lua:175/312.
+		if EventRegistry then
+			EventRegistry:UnregisterCallback("CooldownViewerSettings.OnDataChanged", CooldownManager)
+		end
 		-- Restore Blizzard's own frames before letting go of them.
 		Anchor:SetGlobalHidden(false)
 		Anchor:DetachAll()
