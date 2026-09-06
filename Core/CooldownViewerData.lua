@@ -203,6 +203,13 @@ function CooldownViewerData:HasPendingRefresh()
 	return pendingRefresh
 end
 
+-- Passthrough to the Bridge for Tracked Buff, SPARKPOINT mode: true / false / nil.
+-- Widgets/CooldownIconWidget.lua branches on entry.hasAura (per-entry data) to call
+-- this instead of the cooldown-based on/off read used for every other entry.
+function CooldownViewerData:GetAuraActive(cooldownID)
+	return Bridge:GetAuraActive(cooldownID)
+end
+
 -- What the HUD renders (hidden entries removed).
 function CooldownViewerData:GetEntries(category)
 	return entriesByCategory[category] or {}

@@ -18,6 +18,7 @@
 local _, addon = ...
 local IconMask = addon.IconMask
 local Keybinds = addon.Keybinds
+local Data = addon.CooldownViewerData
 local SetTextureSmooth = addon.Util.SetTextureSmooth
 local GetDBValue = addon.GetDBValue
 local GetDBBool = addon.GetDBBool
@@ -53,12 +54,31 @@ local function IsSpellOnCooldown(spellID)
 	return okShown and shown == true
 end
 
+-- The Cooldown widget has no direct "set countdown text color" API (SetCountdownFont
+-- only takes font/size/outline), so the color is applied to the FontString region the
+-- widget creates for its own countdown text. Wrapped in pcall: GetRegions/SetTextColor
+-- are plain widget calls, not secret-value hazards, but the region layout is a
+-- Blizzard implementation detail this file does not otherwise depend on.
+local function ApplyCountdownTextColor(cooldown, r, g, b, a)
+	pcall(function()
+		for _, region in ipairs({ cooldown:GetRegions() }) do
+			if region.GetObjectType and region:GetObjectType() == "FontString" then
+				region:SetTextColor(r, g, b, a)
+			end
+		end
+	end)
+end
+
 local WidgetMixin = {}
 
 function WidgetMixin:SetEntry(entry)
 	self.entry = entry
 	if entry and entry.iconFileID then
 		self.icon:SetTexture(entry.iconFileID)
+	else
+		-- entry.iconFileID can be nil (icon texture lookup failed); without this the
+		-- recycled widget keeps showing whatever the previous occupant's icon was.
+		self.icon:SetTexture(nil)
 	end
 end
 
@@ -91,6 +111,8 @@ function WidgetMixin:ApplyOptions(opts)
 	local timerOutline = GetDBValue("cooldownmanager_timerFontOutline") or "OUTLINE"
 	local timerSize = tonumber(GetDBValue("cooldownmanager_timerFontSize")) or 13
 	pcall(self.cooldown.SetCountdownFont, self.cooldown, timerFont, timerSize, timerOutline)
+	local tr, tg, tb, ta = GetDBColor("cooldownmanager_timerColor")
+	ApplyCountdownTextColor(self.cooldown, tr, tg, tb, ta or 1)
 
 	local font = GetDBValue("cooldownmanager_keybindFont") or "Fonts\\FRIZQT__.TTF"
 	local outline = GetDBValue("cooldownmanager_keybindFontOutline") or "OUTLINE"
@@ -109,22 +131,35 @@ function WidgetMixin:UpdateState()
 		return
 	end
 
-	if GetDBBool("cooldownmanager_showSwipe") and C_Spell and C_Spell.GetSpellCooldownDuration then
-		local ok, duration = pcall(C_Spell.GetSpellCooldownDuration, entry.spellID)
-		if ok and duration then
-			pcall(self.cooldown.SetCooldownFromDurationObject, self.cooldown, duration)
-		else
-			pcall(self.cooldown.Clear, self.cooldown) -- Cooldown:Clear is a real widget method
-		end
-	end
-
-	local onCooldown = IsSpellOnCooldown(entry.spellID)
-	if GetDBBool("cooldownmanager_desaturateOnCooldown") then
-		self.icon:SetDesaturated(onCooldown)
+	if entry.hasAura then
+		-- Tracked Buff, SPARKPOINT mode is state-only per spec: aura durations and stack
+		-- counts are unreachable from addon code (see Core/CooldownViewerBridge.lua), so
+		-- this never touches the cooldown swipe/countdown path used below. Branches on
+		-- entry.hasAura -- per-ENTRY data, not per-category -- so Invariant 2 holds.
+		local active = Data:GetAuraActive(entry.cooldownID) -- true / false / nil
+		pcall(self.cooldown.Clear, self.cooldown) -- spec: no swipe, no countdown
+		if active ~= nil then
+			self.icon:SetDesaturated(not active)
+			self.glow:SetShown(GetDBBool("cooldownmanager_glowOnReady") and active)
+		end -- nil => leave unstyled (Degradation row 4)
 	else
-		self.icon:SetDesaturated(false)
+		if GetDBBool("cooldownmanager_showSwipe") and C_Spell and C_Spell.GetSpellCooldownDuration then
+			local ok, duration = pcall(C_Spell.GetSpellCooldownDuration, entry.spellID)
+			if ok and duration then
+				pcall(self.cooldown.SetCooldownFromDurationObject, self.cooldown, duration)
+			else
+				pcall(self.cooldown.Clear, self.cooldown) -- Cooldown:Clear is a real widget method
+			end
+		end
+
+		local onCooldown = IsSpellOnCooldown(entry.spellID)
+		if GetDBBool("cooldownmanager_desaturateOnCooldown") then
+			self.icon:SetDesaturated(onCooldown)
+		else
+			self.icon:SetDesaturated(false)
+		end
+		self.glow:SetShown(GetDBBool("cooldownmanager_glowOnReady") and not onCooldown)
 	end
-	self.glow:SetShown(GetDBBool("cooldownmanager_glowOnReady") and not onCooldown)
 
 	if self.showKeybind then
 		local key = Keybinds:GetBindingKeyForSpell(entry.spellID)
@@ -143,6 +178,11 @@ function WidgetMixin:Release()
 	self.entry = nil
 	self.frame:Hide()
 	self.frame:ClearAllPoints()
+	-- Without these a widget released mid-swipe (or with showSwipe off, which never
+	-- clears the cooldown) keeps drawing that swipe -- or the previous spell's icon --
+	-- the next time it is pulled from the pool for a different entry.
+	pcall(self.cooldown.Clear, self.cooldown)
+	self.icon:SetTexture(nil)
 end
 
 function CooldownIconWidget:Create(parent)
