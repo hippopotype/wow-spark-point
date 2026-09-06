@@ -95,7 +95,9 @@ local function InstallHooks(category)
 
 	hooksecurefunc(viewer, "RefreshLayout", function(frame)
 		Bridge:InvalidateFrameMap()
-		if attached[category] then
+		-- Do not re-anchor while the player is dragging in EditMode; a Blizzard
+		-- layout refresh mid-drag would fight them for the frame.
+		if attached[category] and not editModeSuspended then
 			ApplyPoint(category)
 		end
 		CooldownViewerAnchor:ApplyGlobalHidden()
