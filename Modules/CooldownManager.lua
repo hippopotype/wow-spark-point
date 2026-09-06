@@ -116,6 +116,15 @@ local function ApplyGroupMode(group)
 	local offsetX = tonumber(GroupSetting(group.key, "offsetX")) or 0
 	local offsetY = tonumber(GroupSetting(group.key, "offsetY")) or 0
 
+	-- Spec degradation: with cooldownViewerEnabled off the viewers exist but never
+	-- update, so BLIZZARD mode would render a frozen, empty frame. Fall back to our
+	-- own renderer rather than showing nothing. IsBlizzardModeUsable is a pure read
+	-- (IsAvailable + GetCVar), so it is safe to call here unconditionally, including
+	-- in combat.
+	if mode == "BLIZZARD" and not Data:IsBlizzardModeUsable() then
+		mode = "SPARKPOINT"
+	end
+
 	if not enabled or mode == "OFF" then
 		ReleaseWidgets(group.key)
 		Anchor:Detach(group.category)

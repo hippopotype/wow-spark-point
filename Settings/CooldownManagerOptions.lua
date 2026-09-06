@@ -111,6 +111,28 @@ function SparkPointCooldownFilterMixin:Refresh()
 			y = y + (ROW_HEIGHT * 2)
 		end
 
+		-- Bridge:IsSupported() failing (Core/CooldownViewerData.lua) means this list is
+		-- Blizzard's raw, unfiltered category set rather than the player's ordered,
+		-- configured Cooldown Manager selection -- a materially different set of
+		-- entries, not merely unordered. Surfaced here (rather than in the settings
+		-- panel) because this Refresh re-runs on both Init and
+		-- "CooldownViewer.EntriesChanged", so it can never go stale the way a
+		-- once-per-session panel notice would.
+		if Data:IsUsingFallback(section.category) then
+			headerIndex = headerIndex + 1
+			local fallbackNotice = self:AcquireHeader(headerIndex)
+			fallbackNotice:ClearAllPoints()
+			fallbackNotice:SetPoint("TOPLEFT", content, "TOPLEFT", 8, -y)
+			fallbackNotice:SetWidth(230)
+			fallbackNotice:SetJustifyH("LEFT")
+			fallbackNotice:SetText(
+				L["Filter Fallback Mode Notice"]
+					or "Showing Blizzard's raw category list because the ordered Cooldown Viewer data is unavailable. Order and your configured Cooldown Manager selections are not reflected here."
+			)
+			fallbackNotice:Show()
+			y = y + (ROW_HEIGHT * 2)
+		end
+
 		for _, entry in ipairs(entries) do
 			rowIndex = rowIndex + 1
 			local row = self:AcquireRow(rowIndex)

@@ -2063,13 +2063,17 @@ local function BuildSettingsPanel()
 	RegisterCooldownPlacementSettings(cooldownCategory, "utility", "Utility Cooldowns")
 	RegisterCooldownPlacementSettings(cooldownCategory, "trackedbuff", "Tracked Buffs")
 
-	-- Per Step 3 of the task brief: only IsAvailable is checked here. IsBlizzardModeUsable
-	-- and IsUsingFallback (Core/CooldownViewerData.lua) have no other caller in the addon;
-	-- surfacing them is a design intent noted in that file's comments but not something
-	-- this task's instructions asked to wire up, so it is left for a follow-up rather than
-	-- risking a settings-panel notice that can go stale (moduleEnabled_CooldownManager
-	-- defaults to false, so IsUsingFallback would read as false-negative until the module
-	-- has been enabled and refreshed at least once this session).
+	-- Only IsAvailable is checked here; this notice covers the API being missing or
+	-- disabled entirely, in which case SparkPoint mode has nothing to draw either.
+	-- IsBlizzardModeUsable is consumed in Modules/CooldownManager.lua (ApplyGroupMode
+	-- degrades BLIZZARD to SPARKPOINT when the cooldownViewerEnabled CVar is off, per
+	-- the spec's degradation matrix). IsUsingFallback is consumed in
+	-- Settings/CooldownManagerOptions.lua (SparkPointCooldownFilterMixin:Refresh),
+	-- not here, because that widget's Refresh re-runs on both Init and
+	-- "CooldownViewer.EntriesChanged" and so can never go stale the way a
+	-- once-per-session panel notice would (moduleEnabled_CooldownManager defaults to
+	-- false, so a static notice built here could read as a false negative for the
+	-- entire session).
 	if not addon.CooldownViewerData:IsAvailable() then
 		AddInfoText(cooldownCategory, L["Cooldown Manager Unavailable"] or "Blizzard's Cooldown Manager is unavailable or disabled.")
 	end
