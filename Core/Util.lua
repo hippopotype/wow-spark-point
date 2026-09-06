@@ -95,3 +95,58 @@ function Util.InheritLayering(frame)
 	end
 	frame:SetFrameLevel(parent:GetFrameLevel() or 0)
 end
+
+-- Reads a foreign (Blizzard-owned) frame's accessibility in the current execution
+-- context. Required by .skills/secret-values.md rule 5: never inspect a foreign UI
+-- object in 12.1 without checking access first. Moved here from Core/Visibility.lua
+-- so Core/CooldownViewerBridge.lua can use it without depending on Visibility.
+function Util.CanAccessFrameSafe(frame)
+	if not frame then
+		return false
+	end
+	if not frame.CanBeAccessedInContext then
+		return true
+	end
+
+	local ok, canAccess = pcall(frame.CanBeAccessedInContext, frame)
+	if not ok then
+		return false
+	end
+	if _G.issecretvalue and _G.issecretvalue(canAccess) then
+		return false
+	end
+	return canAccess == true
+end
+
+-- True only for a plain, readable number. Guards every value used as a table key
+-- or numeric operand. Spec E2 measured cooldown IDs as plain today, but the gate
+-- costs nothing and Invariant 1 makes a secret table key a hard defect.
+-- Pattern adapted from .clones/Cooldown-Companion/Config/Pickers.lua:38-43
+function Util.IsAccessibleNumber(value)
+	if _G.issecretvalue and _G.issecretvalue(value) then
+		return false
+	end
+	if type(value) ~= "number" then
+		return false
+	end
+	if _G.canaccessvalue and not _G.canaccessvalue(value) then
+		return false
+	end
+	return true
+end
+
+-- Same gate for booleans. cooldownInfo.isKnown / hasAura / charges were never
+-- measured as non-secret, and the prior art treats them as a live hazard:
+-- .clones/Cooldown-Companion/Config/Pickers.lua:31-36 has a purpose-built
+-- GetAccessibleBoolean, and EnhanceQoL pcall-wraps even an equality test on
+-- cooldownInfo fields (CooldownPanels_CDMAuras.lua:373). Returns `fallback`
+-- when the value cannot be safely inspected.
+function Util.GetAccessibleBoolean(value, fallback)
+	if _G.issecretvalue and _G.issecretvalue(value) then
+		return fallback
+	end
+	if type(value) ~= "boolean" then
+		return fallback
+	end
+	return value
+end

@@ -16,13 +16,17 @@ globals = {
 	-- WoW API
 	"C_ActionBar",
 	"C_AddOnProfiler",
+	"C_AddOns",
 	"C_AssistedCombat",
+	"C_CooldownViewer",
 	"C_CVar",
 	"C_ClassColor",
 	"C_Spell",
+	"C_SpecializationInfo",
 	"C_StringUtil",
 	"C_Timer",
 	"C_UnitAuras",
+	"CooldownViewerSettings",
 	"CVarCallbackRegistry",
 	"CreateColor",
 	"CreateFrame",
@@ -119,4 +123,5 @@ globals = {
 	"GameFontDisableSmall",
 	-- Addon XML mixin
 	"SparkPointColorOverridesMixin",
+	"SparkPointCooldownFilterMixin",
 }

@@ -7,6 +7,7 @@ local API = addon.API
 local CallbackRegistry = addon.CallbackRegistry
 local GetDBBool = addon.GetDBBool
 local Transition = addon.Transition
+local Util = addon.Util
 
 local Visibility = {}
 addon.Visibility = Visibility
@@ -58,7 +59,7 @@ local FALLBACK_AFTER_INSTANT_CAST_DURATION = 1.0
 local MAX_SYNTHETIC_AFTER_INSTANT_CAST_DURATION = 2.0
 local hoverWatcher
 local lastHoveringInteractiveUI = false
-local UI_HOVER_PREFIXES = { "cast", "innerslots", "barslot_top", "barslot_bottom", "classresource", "ring", "assistedhighlight", "performancestats" }
+local UI_HOVER_PREFIXES = { "cast", "innerslots", "barslot_top", "barslot_bottom", "classresource", "ring", "assistedhighlight", "performancestats", "cooldownmanager" }
 local hysteresisTokenByPrefix = {}
 local stableVisibilityByPrefix = {}
 local pendingVisibilityByPrefix = {}
@@ -334,23 +335,7 @@ local INTERACTIVE_MOUSE_SCRIPTS = {
 	OnReceiveDrag = true,
 }
 
-local function CanAccessFrameSafe(frame)
-	if not frame then
-		return false
-	end
-	if not frame.CanBeAccessedInContext then
-		return true
-	end
-
-	local ok, canAccess = pcall(frame.CanBeAccessedInContext, frame)
-	if not ok then
-		return false
-	end
-	if issecretvalue and issecretvalue(canAccess) then
-		return false
-	end
-	return canAccess == true
-end
+local CanAccessFrameSafe = Util.CanAccessFrameSafe
 
 local function HasInteractiveMouseScript(frame)
 	if not (frame and frame.HasScript and frame.GetScript) then
