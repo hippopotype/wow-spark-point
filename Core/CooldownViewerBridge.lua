@@ -141,15 +141,15 @@ local function BuildFrameMap()
 			end)
 			if ok and children then
 				for _, child in ipairs(children) do
-					-- luacheck: push ignore 221
-					-- luacheck cannot see that `info` receives TryCall's second return
-					-- when CanAccessFrameSafe(child) is true; the multres only flows
-					-- when this expression is used in the last position of the
-					-- assignment, which Lua does but luacheck's flow analysis misses.
-					local okInfo, info = Util.CanAccessFrameSafe(child) and TryCall(function()
-						return child.cooldownInfo
-					end)
-					-- luacheck: pop
+					-- Explicit if, NOT `guard and TryCall(...)`: `and` adjusts its right
+					-- operand to a single value, so the second return would always be
+					-- nil and frameMap would never populate.
+					local okInfo, info = false, nil
+					if Util.CanAccessFrameSafe(child) then
+						okInfo, info = TryCall(function()
+							return child.cooldownInfo
+						end)
+					end
 					if okInfo and info then
 						local okID, cooldownID = TryCall(function()
 							return info.cooldownID
@@ -182,7 +182,7 @@ function CooldownViewerBridge:GetAuraActive(cooldownID)
 	end
 
 	local okCD, cooldownFrame = TryCall(frame.GetCooldownFrame, frame)
-	if not okCD or not cooldownFrame then
+	if not okCD or not cooldownFrame or not Util.CanAccessFrameSafe(cooldownFrame) then
 		return nil
 	end
 
