@@ -336,6 +336,11 @@ CallbackRegistry:Register("CooldownViewer.EntriesChanged", function()
 end, CooldownManager)
 
 CallbackRegistry:RegisterSettingCallback("cooldownmanager_hideBlizzardViewers", function()
+	-- Guarded for the same reason as ApplyOptions: CallbackRegistry has no unregister, so a
+	-- write to this key while the module is disabled would still SetAlpha Blizzard's frames.
+	if not moduleEnabled then
+		return
+	end
 	Anchor:SetGlobalHidden(GetDBBool("cooldownmanager_hideBlizzardViewers"))
 end, CooldownManager)
 
