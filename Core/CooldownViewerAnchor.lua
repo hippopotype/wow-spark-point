@@ -48,20 +48,6 @@ local function GetViewer(category)
 	return name and _G[name] or nil
 end
 
--- Core/AnchorFrame.lua:68 defines the same check as a file-local function; it is
--- never assigned onto the AnchorFrame table, so `AnchorFrame:IsBlizzardEditModeActive()`
--- does not exist and would error if called. Mirrored here instead of widening
--- AnchorFrame's public surface for this file's single caller below.
-local function IsBlizzardEditModeActive()
-	if not EditModeManagerFrame then
-		return false
-	end
-	if EditModeManagerFrame.IsEditModeActive then
-		return EditModeManagerFrame:IsEditModeActive() and true or false
-	end
-	return EditModeManagerFrame:IsShown() and true or false
-end
-
 local function ApplyPoint(category)
 	local viewer = GetViewer(category)
 	local state = attached[category]
@@ -197,9 +183,7 @@ end
 
 -- While the player is in EditMode we must NOT re-assert our anchor -- doing so
 -- fights their drag and makes the frame impossible to position. Release it for the
--- duration and restore afterwards. IsBlizzardEditModeActive above mirrors the check
--- Core/AnchorFrame.lua:68 performs internally (that one is a file-local there, not a
--- method on AnchorFrame, so it cannot be reused directly).
+-- duration and restore afterwards.
 function CooldownViewerAnchor:SuspendForEditMode(suspended)
 	editModeSuspended = suspended and true or false
 	if editModeSuspended then
@@ -221,7 +205,9 @@ EL:RegisterEvent("EDIT_MODE_LAYOUTS_UPDATED")
 EL:RegisterEvent("PLAYER_ENTERING_WORLD")
 EL:RegisterEvent("PLAYER_REGEN_ENABLED")
 EL:SetScript("OnEvent", function()
-	if editModeSuspended or IsBlizzardEditModeActive() then
+	local editing = AnchorFrame:IsBlizzardEditModeActive()
+	CooldownViewerAnchor:SuspendForEditMode(editing)
+	if editing then
 		return
 	end
 	-- EditMode re-anchors managed systems on layout apply; re-assert ours.

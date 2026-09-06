@@ -120,6 +120,10 @@ function AnchorFrame:GetFrame()
 	return anchor
 end
 
+function AnchorFrame:IsBlizzardEditModeActive()
+	return IsBlizzardEditModeActive()
+end
+
 --------------------------------------------------------------------------------
 -- OnUpdate for cursor tracking
 --------------------------------------------------------------------------------
