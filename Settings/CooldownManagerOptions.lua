@@ -39,6 +39,20 @@ end
 -- reached from the EntriesChanged callback above, which is guarded on self:IsShown().
 function SparkPointCooldownFilterMixin:Init(initializer)
 	SettingsListElementMixin.Init(self, initializer)
+	-- Data:Refresh's only callers are module-side (Initialize, SetHidden), so with the
+	-- module disabled (the default) allEntriesByCategory is permanently empty and the
+	-- player sees three headers and zero rows with no explanation. Refresh self-gates
+	-- on combat, so it is safe to call unconditionally here.
+	local hasAny = false
+	for _, section in ipairs(CATEGORY_ORDER) do
+		if #Data:GetAllEntries(section.category) > 0 then
+			hasAny = true
+			break
+		end
+	end
+	if not hasAny then
+		Data:Refresh()
+	end
 	self:Refresh()
 end
 
@@ -106,9 +120,32 @@ function SparkPointCooldownFilterMixin:Refresh()
 			notice:SetPoint("TOPLEFT", content, "TOPLEFT", 8, -y)
 			notice:SetWidth(230)
 			notice:SetJustifyH("LEFT")
-			notice:SetText(L["Filter Blizzard Mode Notice"])
+			notice:SetText(
+				L["Filter Blizzard Mode Notice"]
+					or "Filtering applies to SparkPoint mode only. In Blizzard mode, configure which spells appear in Blizzard's Cooldown Manager settings."
+			)
 			notice:Show()
 			y = y + (ROW_HEIGHT * 2)
+
+			-- Spec Degradation row 2: BLIZZARD mode is silently dead when cooldownViewerEnabled
+			-- is off (the viewer frames exist but never update), and ApplyGroupMode
+			-- (Modules/CooldownManager.lua) silently rewrites it to SPARKPOINT. This Refresh
+			-- re-runs on both Init and "CooldownViewer.EntriesChanged" so it can never go
+			-- stale the way a once-per-session panel notice would -- same reasoning the panel
+			-- comment at Settings/SettingsPanel.lua gives for siting the fallback notice there.
+			if not Data:IsBlizzardModeUsable() then
+				headerIndex = headerIndex + 1
+				local unusableNotice = self:AcquireHeader(headerIndex)
+				unusableNotice:ClearAllPoints()
+				unusableNotice:SetPoint("TOPLEFT", content, "TOPLEFT", 8, -y)
+				unusableNotice:SetWidth(230)
+				unusableNotice:SetJustifyH("LEFT")
+				unusableNotice:SetText(
+					L["Filter Blizzard Mode Unusable Notice"] or "Blizzard's Cooldown Manager is disabled, so this category is showing SparkPoint icons instead."
+				)
+				unusableNotice:Show()
+				y = y + (ROW_HEIGHT * 2)
+			end
 		end
 
 		-- Bridge:IsSupported() failing (Core/CooldownViewerData.lua) means this list is

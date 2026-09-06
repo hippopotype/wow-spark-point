@@ -40,6 +40,11 @@ local moduleFrame
 local groupFrames = {}
 local widgetPool = {}
 local activeWidgets = {}
+-- The mode actually applied by ApplyGroupMode, per group, AFTER the BLIZZARD ->
+-- SPARKPOINT degradation and the enabled check -- "OFF" when disabled. UpdateVisibility
+-- reads this instead of the raw DB mode so it never fights the degradation applied
+-- there; see M10 in the cooldown-manager-hud fix wave.
+local resolvedModeByGroup = {}
 local structuralPending = false
 local stateDirty = false
 local elapsedAccum = 0
@@ -124,6 +129,7 @@ local function ApplyGroupMode(group)
 	if mode == "BLIZZARD" and not Data:IsBlizzardModeUsable() then
 		mode = "SPARKPOINT"
 	end
+	resolvedModeByGroup[group.key] = enabled and mode or "OFF"
 
 	if not enabled or mode == "OFF" then
 		ReleaseWidgets(group.key)
@@ -170,7 +176,7 @@ function CooldownManager:UpdateVisibility()
 	local show = Visibility:ShouldShow("cooldownmanager")
 	moduleFrame:SetShown(show)
 	for _, group in ipairs(GROUPS) do
-		if tostring(GroupSetting(group.key, "mode") or "") == "BLIZZARD" then
+		if resolvedModeByGroup[group.key] == "BLIZZARD" then
 			Anchor:SetVisible(group.category, show)
 		end
 	end
@@ -266,6 +272,13 @@ EL:SetScript("OnEvent", function(_, event)
 		CooldownManager:MarkStateDirty()
 		return
 	end
+	-- PLAYER_REGEN_ENABLED fires after every fight regardless of whether a Refresh was
+	-- actually dropped for combat; without this every combat exit paid for a full
+	-- rebuild (ReleaseWidgets + per-icon ApplyOptions) for nothing. This is an event
+	-- branch, not a per-category one -- Invariant 2 holds.
+	if event == "PLAYER_REGEN_ENABLED" and not Data:HasPendingRefresh() then
+		return
+	end
 	RequestStructuralRefresh()
 end)
 
@@ -324,6 +337,14 @@ local settingKeys = {
 	"cooldownmanager_desaturateOnCooldown",
 	"cooldownmanager_glowOnReady",
 	"cooldownmanager_glowColor",
+	"cooldownmanager_timerFont",
+	"cooldownmanager_timerFontOutline",
+	"cooldownmanager_timerFontSize",
+	"cooldownmanager_timerColor",
+	"cooldownmanager_keybindFont",
+	"cooldownmanager_keybindFontOutline",
+	"cooldownmanager_keybindFontSize",
+	"cooldownmanager_keybindColor",
 }
 for _, group in ipairs(GROUPS) do
 	for _, suffix in ipairs({ "mode", "enabled", "offsetX", "offsetY", "iconSize", "spacing", "direction", "wrapCount", "showKeybind" }) do

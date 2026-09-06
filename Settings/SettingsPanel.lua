@@ -1880,7 +1880,7 @@ local function BuildSettingsPanel()
 		cooldownCategory,
 		"cooldownmanager_hideBlizzardViewers",
 		L["Hide Blizzard Viewers"] or "Hide Blizzard's Cooldown Manager frames",
-		L["Hide Blizzard Viewers Tooltip"] or "Hide Blizzard's own Cooldown Manager frames regardless of the mode chosen for each category below. Works even in combat."
+		L["Hide Blizzard Viewers Tooltip"] or "Hide Blizzard's own Cooldown Manager frames for categories not anchored by SparkPoint. Works even in combat."
 	)
 
 	local cooldownVisibilityCategory = Settings.RegisterVerticalLayoutSubcategory(cooldownCategory, L["Visibility"] or "Visibility")
