@@ -55,6 +55,11 @@ local function GetSpecKey()
 end
 
 function CooldownViewerData:IsHidden(cooldownID)
+	-- Guard before the table-key use below; this is public API and later callers
+	-- source cooldownID from elsewhere. Invariant 1 makes a secret key a hard defect.
+	if not Util.IsAccessibleNumber(cooldownID) then
+		return false
+	end
 	local hidden = GetDBValue("cooldownmanager_hiddenEntries")
 	if type(hidden) ~= "table" then
 		return false
