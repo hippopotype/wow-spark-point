@@ -2081,9 +2081,12 @@ local function BuildSettingsPanel()
 	-- Settings.RegisterInitializer with an explicit GetExtent is the established
 	-- pattern in this file (see AddColor/AddInfoText above); there is no `layout`
 	-- local and no AddInitializer method in this codebase.
-	local cooldownFilterInitializer = Settings.CreateElementInitializer("SparkPointCooldownFilterPanelNoHead", {
-		name = L["Cooldown Manager"] or "Cooldown Manager",
-	})
+	-- Deliberately NO `name`: SettingsListElementMixin:Init renders initializer:GetName()
+	-- into the inherited Text FontString, which SettingsListElementTemplate declares with
+	-- NO anchors (Blizzard_SettingControls.xml:53). An unpositioned FontString draws over
+	-- the scroll list. Settings/ColorOverrides.lua uses the same base template and passes
+	-- no name for exactly this reason; the section already has its own category header.
+	local cooldownFilterInitializer = Settings.CreateElementInitializer("SparkPointCooldownFilterPanelNoHead", {})
 	cooldownFilterInitializer.GetExtent = function()
 		return 200
 	end

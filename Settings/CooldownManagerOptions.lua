@@ -26,6 +26,12 @@ function SparkPointCooldownFilterMixin:OnLoad()
 	-- which Init later asserts on. Settings/ColorOverrides.lua:20 does the same as its
 	-- first statement.
 	SettingsListElementMixin.OnLoad(self)
+	-- SettingsListElementTemplate declares Text with no anchors at all
+	-- (Blizzard_SettingControls.xml:53), leaving subclasses to position it. This panel is
+	-- a scroll frame with its own headers and has nowhere to put it, so keep it hidden --
+	-- otherwise anything that reaches Text:SetText draws it at an arbitrary position on
+	-- top of the list. It must still EXIST: DisplayEnabled calls Text:SetTextColor.
+	self.Text:Hide()
 	self.rows = {}
 	self.headers = {}
 	CallbackRegistry:Register("CooldownViewer.EntriesChanged", function()
