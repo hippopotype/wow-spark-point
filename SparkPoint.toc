@@ -28,6 +28,7 @@ Core\HUDLayers.lua
 Core\Keybinds.lua
 Core\CooldownViewerBridge.lua
 Core\CooldownViewerData.lua
+Core\CooldownViewerAnchor.lua
 Core\MinimapButton.lua
 
 # Widgets
