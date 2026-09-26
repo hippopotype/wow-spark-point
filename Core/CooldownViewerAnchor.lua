@@ -24,8 +24,11 @@
 -- Because the anchor shows and hides on every visibility change, that is a
 -- continuous error storm, not a one-off. Measured in game 2026-09-06.
 --
--- SetPoint and SetAlpha are pure widget calls that execute no Blizzard Lua, so
--- position and visibility are both safe. Parentage is safe only to UIParent (E13).
+-- SetAlpha is a pure widget call that executes no Blizzard Lua, so visibility is
+-- safe. Position is safe only through the native Frame SetPoint/ClearAllPoints
+-- (below): cooldown viewers are Edit Mode systems whose own SetPoint/ClearAllPoints
+-- are Lua overrides, so calling viewer:SetPoint directly runs Blizzard Lua under our
+-- taint. Parentage is safe only to UIParent (E13).
 -- =============================================================================
 
 -- E14 (measured 2026-09-26): writing viewer.ignoreFramePositionManager from addon code
@@ -33,12 +36,21 @@
 -- hidden->shown transition of an attached viewer (Edit Mode "In Combat" visibility)
 -- ran RefreshLayout tainted, and Edit Mode enter/exit read it too. Replaced by the
 -- BottomManagedFrameContainer:UpdateFrame post-hook below. Never write fields on a
--- Blizzard frame table.
+-- Blizzard frame table. Viewer SetPoint/ClearAllPoints are Edit Mode Lua overrides
+-- that write snappedToFrame; call the native Frame methods.
 
 local _, addon = ...
 local AnchorFrame = addon.AnchorFrame
 local Bridge = addon.CooldownViewerBridge
 local CallbackRegistry = addon.CallbackRegistry
+
+-- Cooldown viewers are Edit Mode systems: EditModeSystemMixin.OnSystemLoad replaces
+-- their SetPoint/ClearAllPoints with Lua overrides that write snappedToFrame and
+-- EditModeManagerFrame.editModeSystemAnchorDirty (EditModeSystemTemplates.lua:12-17,
+-- 147-156). Called from our code those writes are tainted. Always use the native
+-- Frame methods, taken from UIParent (not an Edit Mode system).
+local FrameSetPoint = UIParent.SetPoint
+local FrameClearAllPoints = UIParent.ClearAllPoints
 
 local CooldownViewerAnchor = {}
 addon.CooldownViewerAnchor = CooldownViewerAnchor
@@ -79,7 +91,7 @@ local function ApplyPoint(category)
 	end
 
 	pcall(function()
-		viewer:ClearAllPoints()
+		FrameClearAllPoints(viewer)
 		-- Take the viewer out of BottomManagedFrameContainer's layout (header). Guarded:
 		-- ApplyPoint runs from Attach, SuspendForEditMode(false), the event handler below
 		-- and Blizzard's own RefreshLayout hook, and after the first call the parent is
@@ -87,7 +99,7 @@ local function ApplyPoint(category)
 		if viewer:GetParent() ~= UIParent then
 			viewer:SetParent(UIParent)
 		end
-		viewer:SetPoint("CENTER", anchor, "CENTER", state.offsetX, state.offsetY)
+		FrameSetPoint(viewer, "CENTER", anchor, "CENTER", state.offsetX, state.offsetY)
 	end)
 end
 
@@ -261,8 +273,8 @@ end
 -- fights their drag. Pinning each attached viewer to its current screen position
 -- also breaks its dependency on the moving SparkPoint anchor, which otherwise keeps
 -- dragging it after the cursor and makes it impossible to click. GetCenter is a
--- plain geometry read and SetPoint runs no Blizzard Lua; nothing is written to the
--- viewer's table. Offsets from GetCenter and SetPoint share the viewer's own scale.
+-- plain geometry read and native SetPoint runs no Blizzard Lua; nothing is written to
+-- the viewer's table. Offsets from GetCenter and SetPoint share the viewer's own scale.
 function CooldownViewerAnchor:SuspendForEditMode(suspended)
 	editModeSuspended = suspended and true or false
 	if editModeSuspended then
@@ -272,8 +284,8 @@ function CooldownViewerAnchor:SuspendForEditMode(suspended)
 				pcall(function()
 					local x, y = viewer:GetCenter()
 					if x and y then
-						viewer:ClearAllPoints()
-						viewer:SetPoint("CENTER", UIParent, "BOTTOMLEFT", x, y)
+						FrameClearAllPoints(viewer)
+						FrameSetPoint(viewer, "CENTER", UIParent, "BOTTOMLEFT", x, y)
 					end
 				end)
 			end
