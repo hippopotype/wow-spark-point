@@ -28,6 +28,13 @@
 -- position and visibility are both safe. Parentage is safe only to UIParent (E13).
 -- =============================================================================
 
+-- E14 (measured 2026-09-26): writing viewer.ignoreFramePositionManager from addon code
+-- TAINTS. ManagedFrameMixin:OnShow reads it before CooldownViewerMixin:OnShow, so a
+-- hidden->shown transition of an attached viewer (Edit Mode "In Combat" visibility)
+-- ran RefreshLayout tainted, and Edit Mode enter/exit read it too. Replaced by the
+-- BottomManagedFrameContainer:UpdateFrame post-hook below. Never write fields on a
+-- Blizzard frame table.
+
 local _, addon = ...
 local AnchorFrame = addon.AnchorFrame
 local Bridge = addon.CooldownViewerBridge
@@ -71,8 +78,6 @@ local function ApplyPoint(category)
 		return
 	end
 
-	viewer.ignoreFramePositionManager = true
-
 	pcall(function()
 		viewer:ClearAllPoints()
 		-- Take the viewer out of BottomManagedFrameContainer's layout (header). Guarded:
@@ -86,6 +91,32 @@ local function ApplyPoint(category)
 	end)
 end
 
+-- Without ignoreFramePositionManager, Blizzard's bottom container re-adopts a viewer on
+-- every show (ManagedFrameMixin:OnShow -> AddManagedFrame -> UpdateFrame, which
+-- SetParents it back into the container). Undo that right after, from a post-hook: a
+-- hooksecurefunc body never taints the secure caller.
+local managedContainerHooked = false
+local function InstallManagedContainerHook()
+	if managedContainerHooked then
+		return
+	end
+	local container = _G.BottomManagedFrameContainer
+	if not container or type(container.UpdateFrame) ~= "function" then
+		return
+	end
+	managedContainerHooked = true
+	hooksecurefunc(container, "UpdateFrame", function(_, frame)
+		if editModeSuspended then
+			return
+		end
+		for category in pairs(attached) do
+			if GetViewer(category) == frame then
+				ApplyPoint(category)
+			end
+		end
+	end)
+end
+
 -- Blizzard recycles item frames (itemFramePool:ReleaseAll() then re-Acquire,
 -- CooldownViewer.lua:2026-2032), so any cached spell->frame lookup goes stale on
 -- every layout refresh. Hook pattern from
@@ -96,6 +127,7 @@ local function InstallHooks(category)
 		return
 	end
 	hooked[category] = true
+	InstallManagedContainerHook()
 
 	hooksecurefunc(viewer, "SetAlpha", function(frame)
 		if alphaGuard[frame] then
@@ -165,7 +197,6 @@ function CooldownViewerAnchor:Detach(category)
 	if not viewer then
 		return
 	end
-	viewer.ignoreFramePositionManager = nil
 	alphaGuard[viewer] = true
 	-- Respect globalHidden: with hideBlizzardViewers on, forcing alpha 1 here would pop
 	-- this viewer back to its own screen position and leave it visible until the next
@@ -227,15 +258,24 @@ function CooldownViewerAnchor:SetVisible(category, visible)
 end
 
 -- While the player is in EditMode we must NOT re-assert our anchor -- doing so
--- fights their drag and makes the frame impossible to position. Release it for the
--- duration and restore afterwards.
+-- fights their drag. Pinning each attached viewer to its current screen position
+-- also breaks its dependency on the moving SparkPoint anchor, which otherwise keeps
+-- dragging it after the cursor and makes it impossible to click. GetCenter is a
+-- plain geometry read and SetPoint runs no Blizzard Lua; nothing is written to the
+-- viewer's table. Offsets from GetCenter and SetPoint share the viewer's own scale.
 function CooldownViewerAnchor:SuspendForEditMode(suspended)
 	editModeSuspended = suspended and true or false
 	if editModeSuspended then
 		for category in pairs(attached) do
 			local viewer = GetViewer(category)
 			if viewer then
-				viewer.ignoreFramePositionManager = nil
+				pcall(function()
+					local x, y = viewer:GetCenter()
+					if x and y then
+						viewer:ClearAllPoints()
+						viewer:SetPoint("CENTER", UIParent, "BOTTOMLEFT", x, y)
+					end
+				end)
 			end
 		end
 		return
@@ -264,3 +304,14 @@ EL:SetScript("OnEvent", function()
 	end
 	CooldownViewerAnchor:ApplyGlobalHidden()
 end)
+
+-- Edit Mode enter/exit fire through EventRegistry (securecallfunction-isolated, so our
+-- callback cannot taint Blizzard's caller). Core/AnchorFrame.lua uses the same events.
+if EventRegistry then
+	EventRegistry:RegisterCallback("EditMode.Enter", function()
+		CooldownViewerAnchor:SuspendForEditMode(true)
+	end, CooldownViewerAnchor)
+	EventRegistry:RegisterCallback("EditMode.Exit", function()
+		CooldownViewerAnchor:SuspendForEditMode(false)
+	end, CooldownViewerAnchor)
+end
