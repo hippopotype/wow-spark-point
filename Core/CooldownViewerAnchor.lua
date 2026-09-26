@@ -5,8 +5,12 @@
 -- addon code cannot compute (see Core/CooldownViewerBridge.lua).
 --
 -- ============================ READ BEFORE EDITING ============================
--- NEVER call SetParent on a viewer. It looks like the obvious way to make the
--- viewer follow the HUD, and it is the broken one.
+-- NEVER parent a viewer to anything but UIParent. Parenting it to SparkPointAnchor
+-- looks like the obvious way to make it follow the HUD, and it is the broken one.
+-- SetParent(UIParent) is the one permitted reparent: it is how Blizzard's own
+-- BreakFromFrameManager (EditModeSystemTemplates.lua:336-343) takes a viewer out of
+-- BottomManagedFrameContainer's layout, and without it that container re-anchors the
+-- viewer on every Layout pass.
 --
 -- Reparenting onto SparkPointAnchor means SparkPoint's own anchor:Show() runs
 -- Blizzard's CooldownViewerMixin:OnShow inside OUR tainted execution context.
@@ -21,7 +25,7 @@
 -- continuous error storm, not a one-off. Measured in game 2026-09-06.
 --
 -- SetPoint and SetAlpha are pure widget calls that execute no Blizzard Lua, so
--- position and visibility are both safe. Parentage is not.
+-- position and visibility are both safe. Parentage is safe only to UIParent (E13).
 -- =============================================================================
 
 local _, addon = ...
@@ -71,11 +75,10 @@ local function ApplyPoint(category)
 
 	pcall(function()
 		viewer:ClearAllPoints()
-		-- Parent stays UIParent (see the header comment), but ApplyPoint runs from
-		-- Attach, SuspendForEditMode(false), the event handler below, AND Blizzard's own
-		-- RefreshLayout hook -- including in combat. After the first call the parent is
-		-- already UIParent, so guard the call rather than pay for it (and its exposure
-		-- to Blizzard's layout pass) on every one of those paths.
+		-- Take the viewer out of BottomManagedFrameContainer's layout (header). Guarded:
+		-- ApplyPoint runs from Attach, SuspendForEditMode(false), the event handler below
+		-- and Blizzard's own RefreshLayout hook, and after the first call the parent is
+		-- already UIParent.
 		if viewer:GetParent() ~= UIParent then
 			viewer:SetParent(UIParent)
 		end
