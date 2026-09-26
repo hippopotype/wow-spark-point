@@ -27,6 +27,7 @@
 local _, addon = ...
 local AnchorFrame = addon.AnchorFrame
 local Bridge = addon.CooldownViewerBridge
+local CallbackRegistry = addon.CallbackRegistry
 
 local CooldownViewerAnchor = {}
 addon.CooldownViewerAnchor = CooldownViewerAnchor
@@ -111,6 +112,10 @@ local function InstallHooks(category)
 
 	hooksecurefunc(viewer, "RefreshLayout", function(frame)
 		Bridge:InvalidateFrameMap()
+		-- Blizzard's RefreshLayout has just rebuilt its display data securely
+		-- (RefreshLayout :2028 -> GetCooldownIDs :2064-2067), so a Data refresh waiting
+		-- on PENDING can run now.
+		CallbackRegistry:Trigger("CooldownViewer.LayoutRefreshed")
 		-- Do not re-anchor while the player is dragging in EditMode; a Blizzard
 		-- layout refresh mid-drag would fight them for the frame.
 		if attached[category] and not editModeSuspended then
@@ -126,6 +131,15 @@ local function InstallHooks(category)
 			end
 		end
 	end)
+end
+
+-- Installed for every viewer when the module enables, not only attached ones: the
+-- LayoutRefreshed retry must also reach SPARKPOINT-only setups. The hooks are inert
+-- for unattached viewers unless hideBlizzardViewers is on.
+function CooldownViewerAnchor:InstallAllHooks()
+	for category in pairs(VIEWER_BY_CATEGORY) do
+		InstallHooks(category)
+	end
 end
 
 -- ApplyGlobalHidden is referenced by the hooks above before it is defined at load

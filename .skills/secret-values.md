@@ -307,6 +307,18 @@ When blocked by secret values during development:
 2. Propose supported alternatives (different API, event, or narrower feature scope).
 3. If no stable path exists, drop/disable the feature.
 
+### Blizzard Cooldown Manager: never build Blizzard state
+
+Taint is not only about secret values. Any Blizzard Lua that *writes* while our code
+is on the stack writes tainted values, and secure code that later reads them becomes
+tainted. The Cooldown Manager's `displayData` is built lazily by whoever calls first,
+so SparkPoint must never call `CheckBuildDisplayData`, `GetOrderedCooldownIDs`,
+`GetOrderedCooldownIDsForCategory`, `GetCooldownInfoForID`,
+`GetDefaultOrderedCooldownIDs`, or `CooldownViewerSettings:ShowUIPanel`/`TogglePanel`.
+Read `provider.displayData` raw; if `provider.displayDataDirty` is true, wait for
+Blizzard's own `RefreshLayout`. Symptom when violated:
+`CooldownViewer.lua:1865: attempted to index a table that cannot be accessed while tainted`.
+
 ---
 
 ## Testing CVars (Non-Persistent)

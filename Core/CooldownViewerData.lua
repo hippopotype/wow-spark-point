@@ -35,6 +35,9 @@ local allEntriesByCategory = {}
 -- iterated last, which is wrong whenever the three disagree.
 local usingFallbackByCategory = {}
 local pendingRefresh = false
+-- True while Blizzard's display data is dirty. We must not build it (see the Bridge
+-- header, rule 3); the RefreshLayout post-hook retries once Blizzard has built it.
+local pendingDisplayData = false
 
 -- Uses C_SpecializationInfo, NOT the global GetSpecialization/GetSpecializationInfo.
 -- Those globals exist only when the loadDeprecationFallbacks CVar is set
@@ -108,11 +111,19 @@ function CooldownViewerData:IsUsingFallback(category)
 	return usingFallbackByCategory[category] == true
 end
 
+-- Returns ids, or nil when Blizzard's display data is still being built. nil means
+-- "keep what you have" -- it must NOT fall through to the raw category set, which
+-- is a materially different display (header comment).
 local function ResolveIDs(category)
-	local ids = Bridge:IsSupported() and Bridge:GetOrderedIDs(category) or nil
-	if ids then
-		usingFallbackByCategory[category] = false
-		return ids
+	if Bridge:IsSupported() then
+		local ids, reason = Bridge:GetOrderedIDs(category)
+		if ids then
+			usingFallbackByCategory[category] = false
+			return ids
+		end
+		if reason == "PENDING" then
+			return nil
+		end
 	end
 
 	usingFallbackByCategory[category] = true
@@ -169,34 +180,41 @@ local function BuildEntry(cooldownID)
 	}
 end
 
--- The combat gate lives HERE, not in one caller: Refresh reaches
--- Bridge:GetOrderedIDs -> CheckBuildDisplayData, which lazily builds Blizzard's
--- cache. Running that under our taint writes tainted tables into it. Both direct
--- callers (Initialize, SetHidden) can fire mid-combat, so gating a single event
--- path is not enough. The dropped request is replayed on PLAYER_REGEN_ENABLED.
+-- The combat gate is kept as a conservative default: Refresh rebuilds every widget
+-- and nothing needs that mid-fight. It is NOT what prevents taint -- the Bridge's
+-- raw reads are (rule 3). The dropped request is replayed on PLAYER_REGEN_ENABLED.
 function CooldownViewerData:Refresh()
 	if InCombatLockdown() then
 		pendingRefresh = true
 		return
 	end
 	pendingRefresh = false
-	entriesByCategory = {}
-	allEntriesByCategory = {}
+	pendingDisplayData = false
 	for _, category in pairs(self.CATEGORY) do
-		local visible, all = {}, {}
-		for _, cooldownID in ipairs(ResolveIDs(category)) do
-			local entry = BuildEntry(cooldownID)
-			if entry then
-				all[#all + 1] = entry
-				if not self:IsHidden(cooldownID) then
-					visible[#visible + 1] = entry
+		local ids = ResolveIDs(category)
+		if ids == nil then
+			-- Keep this category's previous entries until Blizzard has built its data.
+			pendingDisplayData = true
+		else
+			local visible, all = {}, {}
+			for _, cooldownID in ipairs(ids) do
+				local entry = BuildEntry(cooldownID)
+				if entry then
+					all[#all + 1] = entry
+					if not self:IsHidden(cooldownID) then
+						visible[#visible + 1] = entry
+					end
 				end
 			end
+			entriesByCategory[category] = visible
+			allEntriesByCategory[category] = all
 		end
-		entriesByCategory[category] = visible
-		allEntriesByCategory[category] = all
 	end
 	CallbackRegistry:Trigger("CooldownViewer.EntriesChanged")
+end
+
+function CooldownViewerData:HasPendingDisplayData()
+	return pendingDisplayData
 end
 
 function CooldownViewerData:HasPendingRefresh()

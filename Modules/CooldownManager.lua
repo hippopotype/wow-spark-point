@@ -307,6 +307,7 @@ local function EnableModule(enabled)
 		if EventRegistry then
 			EventRegistry:RegisterCallback("CooldownViewerSettings.OnDataChanged", RequestStructuralRefresh, CooldownManager)
 		end
+		Anchor:InstallAllHooks()
 		Anchor:SetGlobalHidden(GetDBBool("cooldownmanager_hideBlizzardViewers"))
 		CooldownManager:ApplyOptions()
 	else
@@ -363,6 +364,14 @@ end
 -- and the corrected one would never be drawn. Relayout on the data event instead.
 CallbackRegistry:Register("CooldownViewer.EntriesChanged", function()
 	CooldownManager:ApplyOptions()
+end, CooldownManager)
+
+-- RefreshLayout fires constantly (every full aura update); only act while a Data
+-- refresh is actually waiting on Blizzard's display data.
+CallbackRegistry:Register("CooldownViewer.LayoutRefreshed", function()
+	if moduleEnabled and Data:HasPendingDisplayData() then
+		RequestStructuralRefresh()
+	end
 end, CooldownManager)
 
 CallbackRegistry:RegisterSettingCallback("cooldownmanager_hideBlizzardViewers", function()

@@ -18,6 +18,19 @@
 --     That is why GetAuraActive returns a bare boolean and nothing richer. The
 --     boolean is read off Blizzard's Cooldown region via IsShown(), which is a
 --     plain value that correctly tracks whether the aura is up.
+--
+--  3. NEVER call a data-provider or settings method that can BUILD Blizzard state:
+--     CheckBuildDisplayData, GetOrderedCooldownIDs, GetOrderedCooldownIDsForCategory,
+--     GetCooldownInfoForID, GetDefaultOrderedCooldownIDs, CooldownViewerSettings:
+--     ShowUIPanel / TogglePanel. When the provider is dirty, the first caller rebuilds
+--     `provider.displayData`; if that caller is us, every cooldownInfo table in it is
+--     written by tainted code. Blizzard item frames adopt those tables
+--     (CooldownViewerItemData.lua:60) and the next UNIT_AURA taints execution before
+--     it indexes the DisallowTaintedAccess aura map:
+--       CooldownViewer.lua:1865: attempted to index a table that cannot be accessed
+--       while tainted
+--     Out-of-combat gating does NOT help: taint persists. Read `displayData` raw
+--     and, if it is dirty, wait for Blizzard's own RefreshLayout to rebuild it.
 
 local _, addon = ...
 local Util = addon.Util
@@ -89,39 +102,63 @@ function CooldownViewerBridge:IsSupported()
 	return true
 end
 
--- Returns the player's configured, ordered set for a category, or nil.
+-- Blizzard hides isInvisible entries only when this global flag is set
+-- (CooldownViewerSettingsDataProvider.lua GetOrderedCooldownIDsForCategory).
+local function IsHiddenInvisible(info)
+	if not _G.CDM_HIDE_INVISIBLE_ITEMS then
+		return false
+	end
+	return Util.GetAccessibleBoolean(info.isInvisible, false) == true
+end
+
+-- Returns the player's configured, ordered set for a category, or nil plus a reason:
+--   "UNSUPPORTED" -- no provider / unexpected shape; caller should use the raw fallback
+--   "PENDING"     -- Blizzard has not built its display data yet; caller must WAIT
+-- A built category with nothing in it returns {} -- the player emptied it in Blizzard's
+-- settings, and that choice must be honoured (spec D11), never replaced by the raw set.
 --
--- This triggers Blizzard's CheckBuildDisplayData(), which lazily builds cached
--- tables. Running that under our taint writes tainted tables into Blizzard's
--- cache, so callers must only reach here out of combat and must cache the result.
--- Both prior-art addons agree: Cooldown-Companion calls it only from config UI
--- (Config/Pickers.lua:174-208); EnhanceQoL never calls it at all.
+-- Raw field reads only (rule 3). This replicates the filter in Blizzard's
+-- GetOrderedCooldownIDsForCategory in our own code so nothing is ever built or
+-- written on Blizzard's side.
 function CooldownViewerBridge:GetOrderedIDs(category)
 	local provider = GetSettingsDataProvider()
-	if not provider or not provider.GetOrderedCooldownIDsForCategory then
-		return nil
+	if not provider then
+		return nil, "UNSUPPORTED"
 	end
 
-	if provider.CheckBuildDisplayData then
-		TryCall(provider.CheckBuildDisplayData, provider)
+	local okDirty, dirty = TryCall(function()
+		return provider.displayDataDirty
+	end)
+	local okData, displayData = TryCall(function()
+		return provider.displayData
+	end)
+	if not okDirty or not okData then
+		return nil, "UNSUPPORTED"
+	end
+	if dirty == true or type(displayData) ~= "table" then
+		return nil, "PENDING"
 	end
 
-	local ok, ids = TryCall(provider.GetOrderedCooldownIDsForCategory, provider, category)
-	if not ok or type(ids) ~= "table" then
-		return nil
+	local ordered = displayData.orderedCooldownIDs
+	local infoByID = displayData.cooldownInfoByID
+	if type(ordered) ~= "table" or type(infoByID) ~= "table" then
+		return nil, "UNSUPPORTED"
 	end
 
 	local result = {}
-	for _, id in ipairs(ids) do
+	for _, id in ipairs(ordered) do
 		if Util.IsAccessibleNumber(id) then
-			result[#result + 1] = id
+			local info = infoByID[id]
+			if
+				type(info) == "table"
+				and Util.IsAccessibleNumber(info.category)
+				and info.category == category
+				and Util.GetAccessibleBoolean(info.isKnown, false) == true
+				and not IsHiddenInvisible(info)
+			then
+				result[#result + 1] = id
+			end
 		end
-	end
-	-- An empty table is indistinguishable from a half-failed CheckBuildDisplayData,
-	-- and returning it would make the caller's "nil -> fallback" branch unreachable.
-	-- A genuinely empty category costs one wasted fallback call and nothing else.
-	if #result == 0 then
-		return nil
 	end
 	return result
 end
