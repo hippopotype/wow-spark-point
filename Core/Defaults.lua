@@ -306,20 +306,20 @@ addon.DefaultValues = {
 	cooldownmanager_textSize = 13,
 
 	-- mode: SPARKPOINT | BLIZZARD | OFF. placement: RIGHT | LEFT | BELOW | ABOVE,
-	-- relative to the cast ring. offsetX/offsetY nudge from the preset anchor.
+	-- relative to the cast ring. nudgeX/nudgeY nudge from the preset anchor.
 	cooldownmanager_essential_mode = "SPARKPOINT",
 	cooldownmanager_essential_placement = "RIGHT",
 	cooldownmanager_essential_iconSize = 28,
 	cooldownmanager_essential_wrapCount = 5,
-	cooldownmanager_essential_offsetX = 0,
-	cooldownmanager_essential_offsetY = 0,
+	cooldownmanager_essential_nudgeX = 0,
+	cooldownmanager_essential_nudgeY = 0,
 
 	cooldownmanager_utility_mode = "SPARKPOINT",
 	cooldownmanager_utility_placement = "RIGHT",
 	cooldownmanager_utility_iconSize = 24,
 	cooldownmanager_utility_wrapCount = 5,
-	cooldownmanager_utility_offsetX = 0,
-	cooldownmanager_utility_offsetY = 0,
+	cooldownmanager_utility_nudgeX = 0,
+	cooldownmanager_utility_nudgeY = 0,
 
 	-- Defaults to BLIZZARD: aura durations and stack counts are unreachable from
 	-- addon code (spec E8), so SparkPoint icons can only show on/off for buffs.
@@ -327,8 +327,8 @@ addon.DefaultValues = {
 	cooldownmanager_trackedbuff_placement = "LEFT",
 	cooldownmanager_trackedbuff_iconSize = 24,
 	cooldownmanager_trackedbuff_wrapCount = 5,
-	cooldownmanager_trackedbuff_offsetX = 0,
-	cooldownmanager_trackedbuff_offsetY = 0,
+	cooldownmanager_trackedbuff_nudgeX = 0,
+	cooldownmanager_trackedbuff_nudgeY = 0,
 
 	-- PerformanceStats module settings
 	performancestats_offsetX = 0,

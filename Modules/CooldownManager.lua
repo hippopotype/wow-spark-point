@@ -178,8 +178,8 @@ end
 -- frame (our container, or a Blizzard viewer). No Blizzard geometry is ever read.
 local function ComputeAnchor(group, placement, previous)
 	local spec = SLOT_ANCHORS[placement]
-	local nudgeX = tonumber(GroupSetting(group.key, "offsetX")) or 0
-	local nudgeY = tonumber(GroupSetting(group.key, "offsetY")) or 0
+	local nudgeX = tonumber(GroupSetting(group.key, "nudgeX")) or 0
+	local nudgeY = tonumber(GroupSetting(group.key, "nudgeY")) or 0
 	if previous then
 		local c = spec.chain
 		return c[1], previous, c[2], c[3] * GAP + nudgeX, c[4] * GAP + nudgeY
@@ -397,7 +397,7 @@ local settingKeys = {
 	"cast_radius",
 }
 for _, group in ipairs(GROUPS) do
-	for _, suffix in ipairs({ "mode", "placement", "iconSize", "wrapCount", "offsetX", "offsetY" }) do
+	for _, suffix in ipairs({ "mode", "placement", "iconSize", "wrapCount", "nudgeX", "nudgeY" }) do
 		settingKeys[#settingKeys + 1] = "cooldownmanager_" .. group.key .. "_" .. suffix
 	end
 end

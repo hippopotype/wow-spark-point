@@ -107,20 +107,20 @@ local NEW_SETTINGS = {
 	cooldownmanager_essential_placement = true,
 	cooldownmanager_essential_iconSize = true,
 	cooldownmanager_essential_wrapCount = true,
-	cooldownmanager_essential_offsetX = true,
-	cooldownmanager_essential_offsetY = true,
+	cooldownmanager_essential_nudgeX = true,
+	cooldownmanager_essential_nudgeY = true,
 	cooldownmanager_utility_mode = true,
 	cooldownmanager_utility_placement = true,
 	cooldownmanager_utility_iconSize = true,
 	cooldownmanager_utility_wrapCount = true,
-	cooldownmanager_utility_offsetX = true,
-	cooldownmanager_utility_offsetY = true,
+	cooldownmanager_utility_nudgeX = true,
+	cooldownmanager_utility_nudgeY = true,
 	cooldownmanager_trackedbuff_mode = true,
 	cooldownmanager_trackedbuff_placement = true,
 	cooldownmanager_trackedbuff_iconSize = true,
 	cooldownmanager_trackedbuff_wrapCount = true,
-	cooldownmanager_trackedbuff_offsetX = true,
-	cooldownmanager_trackedbuff_offsetY = true,
+	cooldownmanager_trackedbuff_nudgeX = true,
+	cooldownmanager_trackedbuff_nudgeY = true,
 }
 
 local function ApplyNewFeatureBadge(initializer, isNew)
@@ -2023,7 +2023,7 @@ local function BuildSettingsPanel()
 		Settings.RegisterInitializer(cooldownAdvancedCategory, CreateSettingsListSectionHeaderInitializer(groupLabel))
 		AddSlider(
 			cooldownAdvancedCategory,
-			prefix .. "offsetX",
+			prefix .. "nudgeX",
 			L["Horizontal Offset"] or "Horizontal Offset",
 			-120,
 			120,
@@ -2032,7 +2032,7 @@ local function BuildSettingsPanel()
 		)
 		AddSlider(
 			cooldownAdvancedCategory,
-			prefix .. "offsetY",
+			prefix .. "nudgeY",
 			L["Vertical Offset"] or "Vertical Offset",
 			-120,
 			120,
