@@ -2025,8 +2025,8 @@ local function BuildSettingsPanel()
 			cooldownAdvancedCategory,
 			prefix .. "nudgeX",
 			L["Horizontal Offset"] or "Horizontal Offset",
-			-120,
-			120,
+			-240,
+			240,
 			1,
 			L["Cooldown Manager Advanced Nudge Tooltip"] or "Moves this group from its placement. Groups stacked after it on the same side move with it."
 		)
@@ -2034,8 +2034,8 @@ local function BuildSettingsPanel()
 			cooldownAdvancedCategory,
 			prefix .. "nudgeY",
 			L["Vertical Offset"] or "Vertical Offset",
-			-120,
-			120,
+			-240,
+			240,
 			1,
 			L["Cooldown Manager Advanced Nudge Tooltip"] or "Moves this group from its placement. Groups stacked after it on the same side move with it."
 		)
