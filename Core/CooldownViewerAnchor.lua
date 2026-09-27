@@ -165,9 +165,12 @@ local function InstallHooks(category)
 
 	hooksecurefunc(viewer, "RefreshLayout", function(frame)
 		Bridge:InvalidateFrameMap()
-		-- Blizzard's RefreshLayout has just rebuilt its display data securely
-		-- (RefreshLayout :2028 -> GetCooldownIDs :2064-2067), so a Data refresh waiting
-		-- on PENDING can run now.
+		-- Blizzard's RefreshLayout may have just rebuilt its display data securely
+		-- (RefreshLayout :2028 -> GetCooldownIDs :2064-2067, when the provider was
+		-- dirty), so a Data refresh waiting on PENDING can run now. Blizzard also
+		-- rebuilds via OnCooldownDataChanged without going through RefreshLayout; that
+		-- path is covered separately by the module's CooldownViewerSettings.OnDataChanged
+		-- registration -- keep both.
 		CallbackRegistry:Trigger("CooldownViewer.LayoutRefreshed")
 		-- Do not re-anchor while the player is dragging in EditMode; a Blizzard
 		-- layout refresh mid-drag would fight them for the frame.
@@ -195,9 +198,6 @@ function CooldownViewerAnchor:InstallAllHooks()
 	end
 end
 
--- ApplyGlobalHidden is referenced by the hooks above before it is defined at load
--- time; both run only after this file finishes loading, so the forward reference is
--- fine. Declared here for readability.
 -- relativeTo is a SparkPoint frame or another CDM viewer (stacked slots). Either way
 -- this stays one pure SetPoint -- never SetParent (header).
 function CooldownViewerAnchor:Attach(category, point, relativeTo, relativePoint, offsetX, offsetY)
@@ -321,6 +321,9 @@ function CooldownViewerAnchor:SetGlobalHidden(hidden)
 	self:ApplyGlobalHidden()
 end
 
+-- ApplyGlobalHidden is referenced by the hooks above before it is defined at load
+-- time; both run only after this file finishes loading, so the forward reference is
+-- fine. Declared here for readability.
 function CooldownViewerAnchor:ApplyGlobalHidden()
 	-- Nothing attached and nothing to hide or un-hide: skip the SetAlpha(1) that would
 	-- otherwise run on all three CDM viewers on every login and combat exit while this
