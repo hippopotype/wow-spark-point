@@ -304,6 +304,10 @@ addon.DefaultValues = {
 	cooldownmanager_showKeybind = true,
 	cooldownmanager_glowOnReady = true,
 	cooldownmanager_textSize = 13,
+	cooldownmanager_keybindColor = { r = 0.44, g = 0.98, b = 1, a = 1 },
+	cooldownmanager_timerColor = { r = 1, g = 1, b = 1, a = 1 },
+	cooldownmanager_countColor = { r = 1, g = 1, b = 1, a = 1 },
+	cooldownmanager_glowColor = { r = 0.44, g = 0.98, b = 1, a = 1 },
 
 	-- mode: SPARKPOINT | BLIZZARD | OFF. placement: RIGHT | LEFT | BELOW | ABOVE,
 	-- relative to the cast ring. nudgeX/nudgeY nudge from the preset anchor.

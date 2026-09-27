@@ -22,6 +22,9 @@ local Data = addon.CooldownViewerData
 local SetTextureSmooth = addon.Util.SetTextureSmooth
 local GetDBValue = addon.GetDBValue
 local GetDBBool = addon.GetDBBool
+local GetDBColor = addon.GetDBColor
+local IconGlow = addon.IconGlow
+local Util = addon.Util
 
 local CooldownIconWidget = {}
 addon.CooldownIconWidget = CooldownIconWidget
@@ -35,9 +38,6 @@ local SWIPE_PATH = addon.addonFolder .. "\\Textures\\spell_icon_cooldown_swipe.p
 -- Fixed text style (spec D3): matches the SparkPoint HUD's other text.
 local TEXT_FONT = "Fonts\\FRIZQT__.TTF"
 local TEXT_OUTLINE = "OUTLINE"
-local TIMER_COLOR = { 1, 1, 1, 1 }
-local KEYBIND_COLOR = { 0.44, 0.98, 1, 1 }
-local GLOW_COLOR = { 0.44, 0.98, 1, 1 }
 
 -- Hidden probe: converts a duration object into a plain boolean without arithmetic.
 local scratchParent = CreateFrame("Frame")
@@ -60,19 +60,24 @@ local function IsSpellOnCooldown(spellID)
 	return okShown and shown == true
 end
 
--- The Cooldown widget has no direct "set countdown text color" API (SetCountdownFont
--- only takes font/size/outline), so the color is applied to the FontString region the
--- widget creates for its own countdown text. Wrapped in pcall: GetRegions/SetTextColor
--- are plain widget calls, not secret-value hazards, but the region layout is a
--- Blizzard implementation detail this file does not otherwise depend on.
-local function ApplyCountdownTextColor(cooldown, r, g, b, a)
-	pcall(function()
-		for _, region in ipairs({ cooldown:GetRegions() }) do
-			if region.GetObjectType and region:GetObjectType() == "FontString" then
-				region:SetTextColor(r, g, b, a)
-			end
+-- true = the current cooldown is only the GCD, false = a real cooldown, nil = unknown
+-- (isOnGCD is secret in combat). Unknown is treated as "not a real cooldown", so the
+-- ready glow is skipped in combat -- a documented limitation of this renderer.
+local function IsOnGCD(spellID)
+	if not C_Spell or not C_Spell.GetSpellCooldown then
+		return nil
+	end
+	local ok, onGCD = pcall(function()
+		local info = C_Spell.GetSpellCooldown(spellID)
+		if type(info) ~= "table" then
+			return nil
 		end
+		return Util.GetAccessibleBoolean(info.isOnGCD, nil)
 	end)
+	if not ok then
+		return nil
+	end
+	return onGCD
 end
 
 local WidgetMixin = {}
@@ -108,15 +113,25 @@ function WidgetMixin:ApplyOptions(opts)
 
 	IconMask:LayoutToIcon(self.glow, self.icon, ICON_MASK_BASE_EXPAND)
 	SetTextureSmooth(self.glow, GLOW_PATH)
-	self.glow:SetVertexColor(unpack(GLOW_COLOR))
+	self.glowAnim:SetColor(GetDBColor("cooldownmanager_glowColor"))
+
+	-- The swipe texture is authored with the same baked inset as the mask, background
+	-- and border, so it must share their 6px expand (Modules/Cast.lua:1367 does the
+	-- same). SetAllPoints(icon) drew it undersized.
+	IconMask:LayoutToIcon(self.cooldown, self.icon, ICON_MASK_BASE_EXPAND)
 
 	local textSize = tonumber(GetDBValue("cooldownmanager_textSize")) or 13
 	self.cooldown:SetHideCountdownNumbers(not GetDBBool("cooldownmanager_showTimerText"))
-	pcall(self.cooldown.SetCountdownFont, self.cooldown, TEXT_FONT, textSize, TEXT_OUTLINE)
-	ApplyCountdownTextColor(self.cooldown, unpack(TIMER_COLOR))
+	-- The old countdown-font call passed (file, size, flags) to an API that takes a
+	-- Font object name; it errored inside its pcall, so text size never reached the timer.
+	local countdown = self.cooldown.GetCountdownFontString and self.cooldown:GetCountdownFontString()
+	if countdown then
+		countdown:SetFont(TEXT_FONT, textSize, TEXT_OUTLINE)
+		countdown:SetTextColor(GetDBColor("cooldownmanager_timerColor"))
+	end
 
 	self.keybindText:SetFont(TEXT_FONT, textSize, TEXT_OUTLINE)
-	self.keybindText:SetTextColor(unpack(KEYBIND_COLOR))
+	self.keybindText:SetTextColor(GetDBColor("cooldownmanager_keybindColor"))
 
 	self.showKeybind = opts.showKeybind == true
 	self.keybindFormat = opts.keybindFormat or "COMPACT"
@@ -137,7 +152,11 @@ function WidgetMixin:UpdateState()
 		pcall(self.cooldown.Clear, self.cooldown) -- spec: no swipe, no countdown
 		if active ~= nil then
 			self.icon:SetDesaturated(not active)
-			self.glow:SetShown(GetDBBool("cooldownmanager_glowOnReady") and active)
+			if active and GetDBBool("cooldownmanager_glowOnReady") then
+				self.glowAnim:StartProc()
+			else
+				self.glowAnim:StopProc()
+			end
 		end -- nil => leave unstyled (Degradation row 4)
 	else
 		if C_Spell and C_Spell.GetSpellCooldownDuration then
@@ -151,7 +170,15 @@ function WidgetMixin:UpdateState()
 
 		local onCooldown = IsSpellOnCooldown(entry.spellID)
 		self.icon:SetDesaturated(onCooldown)
-		self.glow:SetShown(GetDBBool("cooldownmanager_glowOnReady") and not onCooldown)
+		-- Brief pulse on the on-cooldown -> ready transition, only for real cooldowns.
+		if onCooldown then
+			if not self.wasOnCooldown then
+				self.cooldownIsReal = IsOnGCD(entry.spellID) == false
+			end
+		elseif self.wasOnCooldown and self.cooldownIsReal and GetDBBool("cooldownmanager_glowOnReady") then
+			self.glowAnim:PlayReady()
+		end
+		self.wasOnCooldown = onCooldown
 	end
 
 	if self.showKeybind and not entry.hasAura then
@@ -176,6 +203,9 @@ function WidgetMixin:Release()
 	-- the next time it is pulled from the pool for a different entry.
 	pcall(self.cooldown.Clear, self.cooldown)
 	self.icon:SetTexture(nil)
+	self.glowAnim:StopAll()
+	self.wasOnCooldown = nil
+	self.cooldownIsReal = nil
 end
 
 function CooldownIconWidget:Create(parent)
@@ -191,12 +221,12 @@ function CooldownIconWidget:Create(parent)
 	widget.icon:SetPoint("CENTER")
 	widget.background = frame:CreateTexture(nil, "BACKGROUND")
 	widget.glow = frame:CreateTexture(nil, "OVERLAY", nil, 1)
+	widget.glowAnim = IconGlow:Attach(widget.glow)
 	widget.border = frame:CreateTexture(nil, "OVERLAY", nil, 2)
 
 	-- IconMask keys on the lowercase `cooldown` field (Core/IconMask.lua:65).
 	-- Setup mirrors the house pattern at Modules/Cast.lua:3143-3146.
 	widget.cooldown = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
-	widget.cooldown:SetAllPoints(widget.icon)
 	widget.cooldown:SetDrawEdge(false)
 	pcall(widget.cooldown.SetSwipeTexture, widget.cooldown, SWIPE_PATH)
 	frame.cooldown = widget.cooldown

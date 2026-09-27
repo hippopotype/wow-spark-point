@@ -15,6 +15,7 @@ Core\EmpowerStageLayout.lua
 Core\ResourceModel.lua
 Core\ClassResourceSystems.lua
 Core\IconMask.lua
+Core\IconGlow.lua
 Core\Defaults.lua
 Core\Database.lua
 Core\ResourceColors.lua
