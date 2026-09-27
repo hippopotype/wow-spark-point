@@ -1861,9 +1861,8 @@ local function BuildSettingsPanel()
 	local cdmSlash = _G.SLASH_COOLDOWNMANAGER1 or "/cooldownmanager"
 	AddInfoText(
 		cooldownCategory,
-		string.format(L["Cooldown Manager Spell Selection"] or "Choose which spells appear in each group in Blizzard's Cooldown Manager: type %s.", cdmSlash)
+		string.format(L["Cooldown Manager Spell Selection"] or "Choose spells with %s. Icon size, spacing, rows and timers are set in Blizzard's Edit Mode.", cdmSlash)
 	)
-	AddInfoText(cooldownCategory, L["Cooldown Manager Layout Info"] or "Icon size, spacing, rows and timer visibility are set in Blizzard's Edit Mode.")
 
 	-- Shown predicates are evaluated whenever the page is displayed, so this never goes
 	-- stale the way a notice built once at load would.
@@ -1882,8 +1881,8 @@ local function BuildSettingsPanel()
 	AddCheckbox(
 		cooldownCategory,
 		"cooldownmanager_hideBlizzardViewers",
-		L["Hide Blizzard Viewers"] or "Hide Blizzard's frames for hidden groups",
-		L["Hide Blizzard Viewers Tooltip"] or "Hide Blizzard's own Cooldown Manager frames for groups set to Hidden. Shown groups are always moved to the cursor."
+		L["Hide Blizzard Viewers"] or "Hide Blizzard's bars",
+		L["Hide Blizzard Viewers Tooltip"] or "Hide Blizzard's own Cooldown Manager bars for groups set to Hidden. Shown groups always sit next to the cursor."
 	)
 
 	local cooldownModeOptions = {
@@ -1956,7 +1955,7 @@ local function BuildSettingsPanel()
 		8,
 		24,
 		1,
-		L["Cooldown Manager Text Size Tooltip"] or "Size of timer, count and keybind text, relative to Blizzard's Edit Mode icon size."
+		L["Cooldown Manager Text Size Tooltip"] or "Size of timer, count and keybind text relative to the icon, the same in every group."
 	)
 	AddCheckbox(
 		cooldownCategory,

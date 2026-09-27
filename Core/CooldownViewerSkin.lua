@@ -125,8 +125,16 @@ local function Contains(list, value)
 	return false
 end
 
-local function GetTextSize()
-	return tonumber(GetDBValue("cooldownmanager_textSize")) or 13
+-- "Text size" is defined at a BASE_SIZE (32px) icon and scaled to each item frame's own
+-- size, so it is the same proportion of the icon in every group (templates differ:
+-- Essential 50px, Utility 30px) and still follows Blizzard's Edit Mode icon scale.
+local function GetTextSize(frame)
+	local size = tonumber(GetDBValue("cooldownmanager_textSize")) or 13
+	local okWidth, width = pcall(frame.GetWidth, frame)
+	if not okWidth or not Util.IsAccessibleNumber(width) or width <= 0 then
+		return size
+	end
+	return math.max(6, math.floor(size * width / BASE_SIZE + 0.5))
 end
 
 local function RecordFont(fontString)
@@ -215,8 +223,7 @@ local function EnsureOwnLayers(frame, state)
 	state.glowTexture = state.glowTexture or state.overlay:CreateTexture(nil, "OVERLAY", nil, 1)
 	SetTextureSmooth(state.glowTexture, GLOW_PATH)
 	state.keybindText = state.keybindText or state.overlay:CreateFontString(nil, "OVERLAY")
-	state.keybindText:SetPoint("TOP", frame, "TOP", 0, 4)
-	state.keybindText:SetFont(TEXT_FONT, GetTextSize(), TEXT_OUTLINE)
+	state.keybindText:SetFont(TEXT_FONT, GetTextSize(frame), TEXT_OUTLINE)
 	state.glow = IconGlow:Attach(state.glowTexture)
 end
 
@@ -367,6 +374,10 @@ local function ApplyKeybind(frame, state, textSize)
 		end
 	end
 	local key = spellID and Keybinds:GetBindingKeyForSpell(spellID)
+	local okWidth, width = pcall(frame.GetWidth, frame)
+	local offset = (okWidth and Util.IsAccessibleNumber(width) and width > 0) and (4 * width / BASE_SIZE) or 4
+	text:ClearAllPoints()
+	text:SetPoint("TOP", frame, "TOP", 0, offset)
 	text:SetFont(TEXT_FONT, textSize, TEXT_OUTLINE)
 	text:SetTextColor(GetDBColor("cooldownmanager_keybindColor"))
 	text:SetText(key and Keybinds:FormatBindingText(key, "COMPACT") or "")
@@ -476,7 +487,7 @@ SkinFrame = function(frame, category)
 	if okLayers and state.glow then
 		pcall(InstallFrameHooks, frame, state)
 		state.applied = true
-		local textSize = GetTextSize()
+		local textSize = GetTextSize(frame)
 		for _, step in ipairs(STEPS) do
 			pcall(step, frame, state, textSize)
 		end
