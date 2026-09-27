@@ -415,9 +415,31 @@ L["Cooldown Manager Description"] = "Mirrors Blizzard's Cooldown Manager into th
 L["Essential Cooldowns"] = "Essential Cooldowns"
 L["Utility Cooldowns"] = "Utility Cooldowns"
 L["Tracked Buffs"] = "Tracked Buffs"
+L["Show As"] = "Show as"
+L["Show As Tooltip"] =
+	"SparkPoint icons use your SparkPoint appearance. Blizzard icons move Blizzard's own display next to the cursor and keep its timers and stack counts. Hidden leaves this group out of the HUD."
 L["Mode SparkPoint"] = "SparkPoint icons"
-L["Mode Blizzard"] = "Blizzard viewer (anchored)"
-L["Hide Blizzard Viewers"] = "Hide Blizzard's frames"
+L["Mode Blizzard"] = "Blizzard icons"
+L["Mode Hidden"] = "Hidden"
+L["Placement"] = "Placement"
+L["Placement Tooltip"] = "Side of the cast ring this group sits on. Groups on the same side stack outward: Essential, then Utility, then Tracked Buffs."
+L["Placement Right"] = "Right"
+L["Placement Left"] = "Left"
+L["Placement Below"] = "Below"
+L["Placement Above"] = "Above"
+L["Icons Per Row"] = "Icons per row"
+L["Hide Blizzard Viewers"] = "Hide Blizzard's original frames"
+L["Hide Blizzard Viewers Tooltip"] =
+	"Hide Blizzard's own Cooldown Manager frames for groups shown as SparkPoint icons or hidden. Groups shown as Blizzard icons are moved to the cursor instead."
+L["Cooldown Manager Spell Selection"] = "Choose which spells appear in each group in Blizzard's Cooldown Manager: type %s."
+L["Cooldown Manager Disabled Notice"] =
+	"SparkPoint needs Blizzard's Cooldown Manager turned on (Options > Gameplay > Combat) with its bars visible in Edit Mode. To hide Blizzard's bars, use 'Hide Blizzard's original frames' below instead."
+L["Cooldown Manager Appearance Tooltip"] = "Applies to groups shown as SparkPoint icons."
+L["Show Keybinds"] = "Show keybinds"
+L["Text Size"] = "Text size"
+L["Advanced"] = "Advanced"
+L["Cooldown Manager Advanced Tooltip"] = "Fine-tune each group's position from its placement."
+L["Cooldown Manager Advanced Nudge Tooltip"] = "Moves this group from its placement. Groups stacked after it on the same side move with it."
 
 --------------------------------------------------------------------------------
 -- Performance Stats

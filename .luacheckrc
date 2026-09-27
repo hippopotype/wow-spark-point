@@ -100,6 +100,7 @@ globals = {
 	"UnitUsingVehicle",
 	"UseAction",
 	"hooksecurefunc",
+	"CreateSettingsListSectionHeaderInitializer",
 	"UnitPower",
 	"UnitPowerDisplayMod",
 	"UnitPartialPower",

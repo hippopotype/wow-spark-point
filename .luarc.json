@@ -96,6 +96,7 @@
     "UnitUsingVehicle",
     "UseAction",
     "hooksecurefunc",
+    "CreateSettingsListSectionHeaderInitializer",
     "PowerBarColor",
     "AbbreviateNumbers",
     "BreakUpLargeNumbers",
