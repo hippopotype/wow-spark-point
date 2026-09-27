@@ -4,8 +4,9 @@
 -- routes events. It must never accumulate per-spell or per-category branches --
 -- that is the mistake recorded in .skills/.private/class-resource.md.
 --
--- SPARKPOINT mode draws our own icons through the render strategy in
--- Modules/CooldownManagerRenderer.lua. BLIZZARD mode positions Blizzard's viewer.
+-- Both styles show Blizzard's own viewer at the cursor. SPARKPOINT_STYLE is also
+-- skinned to the SparkPoint icon look by Core/CooldownViewerSkin.lua. The SparkPoint
+-- icon renderer (Modules/CooldownManagerRenderer.lua) is dormant: no mode routes to it.
 
 local _, addon = ...
 local L = addon.L
@@ -15,7 +16,7 @@ local HUDLayers = addon.HUDLayers
 local Visibility = addon.Visibility
 local Data = addon.CooldownViewerData
 local Anchor = addon.CooldownViewerAnchor
-local Renderer = addon.CooldownManagerRenderer
+local Skin = addon.CooldownViewerSkin
 local GetDBValue = addon.GetDBValue
 local GetDBBool = addon.GetDBBool
 
@@ -63,15 +64,14 @@ end
 
 local VALID_PLACEMENT = { RIGHT = true, LEFT = true, BELOW = true, ABOVE = true }
 
--- No BLIZZARD -> SPARKPOINT degradation (spec D10): with the Cooldown Manager off,
--- Blizzard never builds the data SparkPoint mode reads either. The settings page
--- notice explains the requirement instead.
+local VALID_MODE = { SPARKPOINT_STYLE = true, BLIZZARD_STYLE = true }
+
+-- No degradation (spec D10): with the Cooldown Manager off Blizzard builds no data
+-- for either style; the settings page notice explains the requirement. No migration
+-- of pre-skin values (never released): an unknown stored value resolves to OFF.
 local function ResolveMode(group)
-	local mode = tostring(GroupSetting(group.key, "mode") or "SPARKPOINT")
-	if mode ~= "SPARKPOINT" and mode ~= "BLIZZARD" then
-		mode = "OFF"
-	end
-	return mode
+	local mode = tostring(GroupSetting(group.key, "mode") or "SPARKPOINT_STYLE")
+	return VALID_MODE[mode] and mode or "OFF"
 end
 
 local function ResolvePlacement(group)
@@ -105,25 +105,15 @@ function CooldownManager:ApplyOptions()
 		resolvedModeByGroup[group.key] = mode
 
 		if mode == "OFF" then
-			Renderer:HideGroup(group.key)
+			Skin:SetCategoryEnabled(group.category, false)
 			Anchor:Detach(group.category)
 		else
 			local placement = ResolvePlacement(group)
 			local point, relativeTo, relativePoint, x, y = ComputeAnchor(group, placement, lastInSlot[placement])
-			if mode == "BLIZZARD" then
-				Renderer:HideGroup(group.key)
-				Anchor:Attach(group.category, point, relativeTo, relativePoint, x, y)
-				-- A missing viewer is treated as absent: the chain skips it.
-				lastInSlot[placement] = Anchor:GetViewer(group.category) or lastInSlot[placement]
-			else
-				Anchor:Detach(group.category)
-				local container = Renderer:ShowGroup(group, placement)
-				if container then
-					container:ClearAllPoints()
-					container:SetPoint(point, relativeTo, relativePoint, x, y)
-					lastInSlot[placement] = container
-				end
-			end
+			Anchor:Attach(group.category, point, relativeTo, relativePoint, x, y)
+			-- A missing viewer is treated as absent: the chain skips it.
+			lastInSlot[placement] = Anchor:GetViewer(group.category) or lastInSlot[placement]
+			Skin:SetCategoryEnabled(group.category, mode == "SPARKPOINT_STYLE")
 		end
 	end
 	self:UpdateVisibility()
@@ -136,7 +126,7 @@ function CooldownManager:UpdateVisibility()
 	local show = Visibility:ShouldShow("cooldownmanager")
 	moduleFrame:SetShown(show)
 	for _, group in ipairs(GROUPS) do
-		if resolvedModeByGroup[group.key] == "BLIZZARD" then
+		if resolvedModeByGroup[group.key] ~= "OFF" then
 			Anchor:SetVisible(group.category, show)
 		end
 	end
@@ -186,7 +176,7 @@ local KEYBIND_EVENTS = {
 EL:SetScript("OnEvent", function(_, event)
 	if KEYBIND_EVENTS[event] then
 		addon.Keybinds:InvalidateCaches()
-		Renderer:MarkStateDirty()
+		Skin:Refresh()
 		return
 	end
 	-- PLAYER_REGEN_ENABLED fires after every fight regardless of whether a Refresh was
@@ -195,6 +185,10 @@ EL:SetScript("OnEvent", function(_, event)
 	-- branch, not a per-category one -- Invariant 2 holds.
 	if event == "PLAYER_REGEN_ENABLED" and not Data:HasPendingRefresh() then
 		return
+	end
+	if event == "COOLDOWN_VIEWER_SPELL_OVERRIDE_UPDATED" then
+		-- Talent overrides change the spell (and so the keybind) in place.
+		Skin:Refresh()
 	end
 	RequestStructuralRefresh()
 end)
@@ -205,7 +199,7 @@ local function EnableModule(enabled)
 		if not moduleFrame then
 			CooldownManager:Initialize()
 		end
-		Renderer:Enable(moduleFrame)
+		Skin:SetModuleEnabled(true)
 		EL:RegisterEvent("COOLDOWN_VIEWER_DATA_LOADED")
 		EL:RegisterEvent("COOLDOWN_VIEWER_TABLE_HOTFIXED")
 		EL:RegisterEvent("COOLDOWN_VIEWER_SPELL_OVERRIDE_UPDATED")
@@ -231,10 +225,10 @@ local function EnableModule(enabled)
 		if EventRegistry then
 			EventRegistry:UnregisterCallback("CooldownViewerSettings.OnDataChanged", CooldownManager)
 		end
+		Skin:SetModuleEnabled(false)
 		-- Restore Blizzard's own frames before letting go of them.
 		Anchor:SetGlobalHidden(false)
 		Anchor:DetachAll()
-		Renderer:Disable()
 		if moduleFrame then
 			moduleFrame:Hide()
 		end
@@ -243,16 +237,18 @@ local function EnableModule(enabled)
 end
 
 local settingKeys = {
-	"cooldownmanager_iconOpacity",
-	"cooldownmanager_showTimerText",
 	"cooldownmanager_showKeybind",
 	"cooldownmanager_glowOnReady",
 	"cooldownmanager_textSize",
+	"cooldownmanager_keybindColor",
+	"cooldownmanager_timerColor",
+	"cooldownmanager_countColor",
+	"cooldownmanager_glowColor",
 	-- Groups are placed from the cast ring's outer edge; follow a resized ring.
 	"cast_radius",
 }
 for _, group in ipairs(GROUPS) do
-	for _, suffix in ipairs({ "mode", "placement", "iconSize", "wrapCount", "nudgeX", "nudgeY" }) do
+	for _, suffix in ipairs({ "mode", "placement", "nudgeX", "nudgeY" }) do
 		settingKeys[#settingKeys + 1] = "cooldownmanager_" .. group.key .. "_" .. suffix
 	end
 end

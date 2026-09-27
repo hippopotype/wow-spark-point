@@ -171,7 +171,7 @@ local function InstallHooks(category)
 		-- rebuilds via OnCooldownDataChanged without going through RefreshLayout; that
 		-- path is covered separately by the module's CooldownViewerSettings.OnDataChanged
 		-- registration -- keep both.
-		CallbackRegistry:Trigger("CooldownViewer.LayoutRefreshed")
+		CallbackRegistry:Trigger("CooldownViewer.LayoutRefreshed", category)
 		-- Do not re-anchor while the player is dragging in EditMode; a Blizzard
 		-- layout refresh mid-drag would fight them for the frame.
 		if attached[category] and not editModeSuspended then

@@ -297,10 +297,6 @@ addon.DefaultValues = {
 	cooldownmanager_hideInPetBattle = true,
 	cooldownmanager_hideInSpecialActionBarContext = true,
 
-	-- Appearance applies to groups shown as SparkPoint icons. Font, outline, colors,
-	-- swipe and desaturation are fixed in Widgets/CooldownIconWidget.lua.
-	cooldownmanager_iconOpacity = 1,
-	cooldownmanager_showTimerText = true,
 	cooldownmanager_showKeybind = true,
 	cooldownmanager_glowOnReady = true,
 	cooldownmanager_textSize = 13,
@@ -309,30 +305,36 @@ addon.DefaultValues = {
 	cooldownmanager_countColor = { r = 1, g = 1, b = 1, a = 1 },
 	cooldownmanager_glowColor = { r = 0.44, g = 0.98, b = 1, a = 1 },
 
-	-- mode: SPARKPOINT | BLIZZARD | OFF. placement: RIGHT | LEFT | BELOW | ABOVE,
-	-- relative to the cast ring. nudgeX/nudgeY nudge from the preset anchor.
-	cooldownmanager_essential_mode = "SPARKPOINT",
+	-- mode: SPARKPOINT_STYLE | BLIZZARD_STYLE | OFF. placement: RIGHT | LEFT | BELOW |
+	-- ABOVE, relative to the cast ring. nudgeX/nudgeY nudge from the preset anchor.
+	-- Both styles use Blizzard's viewer at the cursor; SPARKPOINT_STYLE is skinned by
+	-- Core/CooldownViewerSkin.lua.
+	cooldownmanager_essential_mode = "SPARKPOINT_STYLE",
 	cooldownmanager_essential_placement = "RIGHT",
-	cooldownmanager_essential_iconSize = 28,
-	cooldownmanager_essential_wrapCount = 5,
 	cooldownmanager_essential_nudgeX = 0,
 	cooldownmanager_essential_nudgeY = 0,
 
-	cooldownmanager_utility_mode = "SPARKPOINT",
+	cooldownmanager_utility_mode = "SPARKPOINT_STYLE",
 	cooldownmanager_utility_placement = "RIGHT",
-	cooldownmanager_utility_iconSize = 24,
-	cooldownmanager_utility_wrapCount = 5,
 	cooldownmanager_utility_nudgeX = 0,
 	cooldownmanager_utility_nudgeY = 0,
 
-	-- Defaults to BLIZZARD: aura durations and stack counts are unreachable from
-	-- addon code (spec E8), so SparkPoint icons can only show on/off for buffs.
-	cooldownmanager_trackedbuff_mode = "BLIZZARD",
+	cooldownmanager_trackedbuff_mode = "SPARKPOINT_STYLE",
 	cooldownmanager_trackedbuff_placement = "LEFT",
-	cooldownmanager_trackedbuff_iconSize = 24,
-	cooldownmanager_trackedbuff_wrapCount = 5,
 	cooldownmanager_trackedbuff_nudgeX = 0,
 	cooldownmanager_trackedbuff_nudgeY = 0,
+
+	-- Dormant SparkPoint icon renderer (Modules/CooldownManagerRenderer.lua) --------
+	-- Not shown in settings. Kept so the renderer can be plugged back in.
+	-- Appearance (SparkPoint style; also read by the dormant renderer). Font and outline are fixed.
+	cooldownmanager_iconOpacity = 1,
+	cooldownmanager_showTimerText = true,
+	cooldownmanager_essential_iconSize = 28,
+	cooldownmanager_essential_wrapCount = 5,
+	cooldownmanager_utility_iconSize = 24,
+	cooldownmanager_utility_wrapCount = 5,
+	cooldownmanager_trackedbuff_iconSize = 24,
+	cooldownmanager_trackedbuff_wrapCount = 5,
 
 	-- PerformanceStats module settings
 	performancestats_offsetX = 0,
