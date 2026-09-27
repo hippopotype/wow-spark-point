@@ -22,7 +22,6 @@ local Data = addon.CooldownViewerData
 local SetTextureSmooth = addon.Util.SetTextureSmooth
 local GetDBValue = addon.GetDBValue
 local GetDBBool = addon.GetDBBool
-local GetDBColor = addon.GetDBColor
 
 local CooldownIconWidget = {}
 addon.CooldownIconWidget = CooldownIconWidget
@@ -32,6 +31,13 @@ local BACKGROUND_PATH = addon.addonFolder .. "\\Textures\\spell_icon_background.
 local GLOW_PATH = addon.addonFolder .. "\\Textures\\spell_icon_glow.png"
 local FRAME_PATH = addon.addonFolder .. "\\Textures\\spell_icon_frame.png"
 local SWIPE_PATH = addon.addonFolder .. "\\Textures\\spell_icon_cooldown_swipe.png"
+
+-- Fixed text style (spec D3): matches the SparkPoint HUD's other text.
+local TEXT_FONT = "Fonts\\FRIZQT__.TTF"
+local TEXT_OUTLINE = "OUTLINE"
+local TIMER_COLOR = { 1, 1, 1, 1 }
+local KEYBIND_COLOR = { 0.44, 0.98, 1, 1 }
+local GLOW_COLOR = { 0.44, 0.98, 1, 1 }
 
 -- Hidden probe: converts a duration object into a plain boolean without arithmetic.
 local scratchParent = CreateFrame("Frame")
@@ -102,24 +108,15 @@ function WidgetMixin:ApplyOptions(opts)
 
 	IconMask:LayoutToIcon(self.glow, self.icon, ICON_MASK_BASE_EXPAND)
 	SetTextureSmooth(self.glow, GLOW_PATH)
-	local gr, gg, gb, ga = GetDBColor("cooldownmanager_glowColor")
-	self.glow:SetVertexColor(gr, gg, gb, ga or 1)
+	self.glow:SetVertexColor(unpack(GLOW_COLOR))
 
+	local textSize = tonumber(GetDBValue("cooldownmanager_textSize")) or 13
 	self.cooldown:SetHideCountdownNumbers(not GetDBBool("cooldownmanager_showTimerText"))
-	-- Wire the timer font keys, or they are unreachable settings rows.
-	local timerFont = GetDBValue("cooldownmanager_timerFont") or "Fonts\\FRIZQT__.TTF"
-	local timerOutline = GetDBValue("cooldownmanager_timerFontOutline") or "OUTLINE"
-	local timerSize = tonumber(GetDBValue("cooldownmanager_timerFontSize")) or 13
-	pcall(self.cooldown.SetCountdownFont, self.cooldown, timerFont, timerSize, timerOutline)
-	local tr, tg, tb, ta = GetDBColor("cooldownmanager_timerColor")
-	ApplyCountdownTextColor(self.cooldown, tr, tg, tb, ta or 1)
+	pcall(self.cooldown.SetCountdownFont, self.cooldown, TEXT_FONT, textSize, TEXT_OUTLINE)
+	ApplyCountdownTextColor(self.cooldown, unpack(TIMER_COLOR))
 
-	local font = GetDBValue("cooldownmanager_keybindFont") or "Fonts\\FRIZQT__.TTF"
-	local outline = GetDBValue("cooldownmanager_keybindFontOutline") or "OUTLINE"
-	local fontSize = tonumber(GetDBValue("cooldownmanager_keybindFontSize")) or 13
-	self.keybindText:SetFont(font, fontSize, outline)
-	local kr, kg, kb, ka = GetDBColor("cooldownmanager_keybindColor")
-	self.keybindText:SetTextColor(kr, kg, kb, ka or 1)
+	self.keybindText:SetFont(TEXT_FONT, textSize, TEXT_OUTLINE)
+	self.keybindText:SetTextColor(unpack(KEYBIND_COLOR))
 
 	self.showKeybind = opts.showKeybind == true
 	self.keybindFormat = opts.keybindFormat or "COMPACT"
@@ -143,7 +140,7 @@ function WidgetMixin:UpdateState()
 			self.glow:SetShown(GetDBBool("cooldownmanager_glowOnReady") and active)
 		end -- nil => leave unstyled (Degradation row 4)
 	else
-		if GetDBBool("cooldownmanager_showSwipe") and C_Spell and C_Spell.GetSpellCooldownDuration then
+		if C_Spell and C_Spell.GetSpellCooldownDuration then
 			local ok, duration = pcall(C_Spell.GetSpellCooldownDuration, entry.spellID)
 			if ok and duration then
 				pcall(self.cooldown.SetCooldownFromDurationObject, self.cooldown, duration)
@@ -153,15 +150,11 @@ function WidgetMixin:UpdateState()
 		end
 
 		local onCooldown = IsSpellOnCooldown(entry.spellID)
-		if GetDBBool("cooldownmanager_desaturateOnCooldown") then
-			self.icon:SetDesaturated(onCooldown)
-		else
-			self.icon:SetDesaturated(false)
-		end
+		self.icon:SetDesaturated(onCooldown)
 		self.glow:SetShown(GetDBBool("cooldownmanager_glowOnReady") and not onCooldown)
 	end
 
-	if self.showKeybind then
+	if self.showKeybind and not entry.hasAura then
 		local key = Keybinds:GetBindingKeyForSpell(entry.spellID)
 		self.keybindText:SetText(key and Keybinds:FormatBindingText(key, self.keybindFormat) or "")
 		self.keybindText:Show()
@@ -178,7 +171,7 @@ function WidgetMixin:Release()
 	self.entry = nil
 	self.frame:Hide()
 	self.frame:ClearAllPoints()
-	-- Without these a widget released mid-swipe (or with showSwipe off, which never
+	-- Without these a widget released mid-swipe (or whose cooldown was never
 	-- clears the cooldown) keeps drawing that swipe -- or the previous spell's icon --
 	-- the next time it is pulled from the pool for a different entry.
 	pcall(self.cooldown.Clear, self.cooldown)

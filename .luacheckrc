@@ -123,5 +123,4 @@ globals = {
 	"GameFontDisableSmall",
 	-- Addon XML mixin
 	"SparkPointColorOverridesMixin",
-	"SparkPointCooldownFilterMixin",
 }

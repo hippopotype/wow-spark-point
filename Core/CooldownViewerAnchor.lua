@@ -87,24 +87,18 @@ end
 local function ApplyPoint(category)
 	local viewer = GetViewer(category)
 	local state = attached[category]
-	if not viewer or not state then
-		return
-	end
-	local anchor = AnchorFrame:GetFrame()
-	if not anchor then
+	if not viewer or not state or not state.relativeTo then
 		return
 	end
 
 	pcall(function()
 		FrameClearAllPoints(viewer)
 		-- Take the viewer out of BottomManagedFrameContainer's layout (header). Guarded:
-		-- ApplyPoint runs from Attach, SuspendForEditMode(false), the event handler below
-		-- and Blizzard's own RefreshLayout hook, and after the first call the parent is
-		-- already UIParent.
+		-- after the first call the parent is already UIParent.
 		if viewer:GetParent() ~= UIParent then
 			viewer:SetParent(UIParent)
 		end
-		FrameSetPoint(viewer, "CENTER", anchor, "CENTER", state.offsetX, state.offsetY)
+		FrameSetPoint(viewer, state.point, state.relativeTo, state.relativePoint, state.offsetX, state.offsetY)
 	end)
 end
 
@@ -204,13 +198,19 @@ end
 -- ApplyGlobalHidden is referenced by the hooks above before it is defined at load
 -- time; both run only after this file finishes loading, so the forward reference is
 -- fine. Declared here for readability.
-function CooldownViewerAnchor:Attach(category, offsetX, offsetY)
-	if not GetViewer(category) then
+-- relativeTo is a SparkPoint frame or another CDM viewer (stacked slots). Either way
+-- this stays one pure SetPoint -- never SetParent (header).
+function CooldownViewerAnchor:Attach(category, point, relativeTo, relativePoint, offsetX, offsetY)
+	if not GetViewer(category) or not relativeTo then
 		return
 	end
-	attached[category] = attached[category] or {}
-	attached[category].offsetX = offsetX or 0
-	attached[category].offsetY = offsetY or 0
+	local state = attached[category] or {}
+	attached[category] = state
+	state.point = point or "CENTER"
+	state.relativeTo = relativeTo
+	state.relativePoint = relativePoint or "CENTER"
+	state.offsetX = offsetX or 0
+	state.offsetY = offsetY or 0
 	InstallHooks(category)
 	-- Still in Blizzard's bottom container (first attach this session): its current
 	-- center IS Blizzard's default slot. Capture it before we move it.
@@ -225,6 +225,12 @@ function CooldownViewerAnchor:Attach(category, offsetX, offsetY)
 		end
 	end
 	ApplyPoint(category)
+end
+
+-- For use ONLY as a SetPoint relativeTo when chaining a SparkPoint group after a
+-- Blizzard-mode group. Never call methods on it.
+function CooldownViewerAnchor:GetViewer(category)
+	return GetViewer(category)
 end
 
 function CooldownViewerAnchor:Detach(category)

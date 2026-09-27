@@ -40,10 +40,7 @@ local moduleFrame
 local groupFrames = {}
 local widgetPool = {}
 local activeWidgets = {}
--- The mode actually applied by ApplyGroupMode, per group, AFTER the BLIZZARD ->
--- SPARKPOINT degradation and the enabled check -- "OFF" when disabled. UpdateVisibility
--- reads this instead of the raw DB mode so it never fights the degradation applied
--- there; see M10 in the cooldown-manager-hud fix wave.
+-- The mode ApplyOptions applied per group ("OFF" when hidden). UpdateVisibility reads this.
 local resolvedModeByGroup = {}
 local structuralPending = false
 local stateDirty = false
@@ -51,6 +48,22 @@ local elapsedAccum = 0
 
 local STATE_TICK = 0.1
 local STRUCTURAL_DEBOUNCE = 0.2
+
+-- Gap between the cast ring's outer edge and the first group, and between stacked
+-- groups. cast_radius is the ring's OUTER radius (Cast.lua sizes the ring frame
+-- texture radius * 2).
+local GAP = 8
+local ICON_SPACING = 4
+
+-- Per placement: how the first group in a slot hangs off the ring, and how each
+-- following group chains to the previous one. {point, relativePoint, dx, dy}; dx/dy
+-- are multiplied by the ring reach (first) or GAP (chain).
+local SLOT_ANCHORS = {
+	RIGHT = { first = { "LEFT", "CENTER", 1, 0 }, chain = { "TOPLEFT", "BOTTOMLEFT", 0, -1 } },
+	LEFT = { first = { "RIGHT", "CENTER", -1, 0 }, chain = { "TOPRIGHT", "BOTTOMRIGHT", 0, -1 } },
+	BELOW = { first = { "TOP", "CENTER", 0, -1 }, chain = { "TOP", "BOTTOM", 0, -1 } },
+	ABOVE = { first = { "BOTTOM", "CENTER", 0, 1 }, chain = { "BOTTOM", "TOP", 0, 1 } },
+}
 
 local function GroupSetting(key, suffix)
 	return GetDBValue("cooldownmanager_" .. key .. "_" .. suffix)
@@ -77,7 +90,25 @@ local function ReleaseWidgets(groupKey)
 	activeWidgets[groupKey] = {}
 end
 
-local function LayoutGroup(group)
+-- Where icon N sits inside its group container, per placement. Returns the point
+-- used on both the icon and the container, plus the offset.
+local function IconOffset(placement, column, row, count, wrap, size, step)
+	if placement == "LEFT" then
+		return "TOPRIGHT", -column * step, -row * step
+	end
+	if placement == "BELOW" or placement == "ABOVE" then
+		local inRow = math.min(wrap, count - row * wrap)
+		local rowWidth = inRow * step - ICON_SPACING
+		local x = -rowWidth / 2 + size / 2 + column * step
+		if placement == "BELOW" then
+			return "TOP", x, -row * step
+		end
+		return "BOTTOM", x, row * step
+	end
+	return "TOPLEFT", column * step, -row * step
+end
+
+local function LayoutGroup(group, placement)
 	local parent = groupFrames[group.key]
 	if not parent then
 		return
@@ -86,12 +117,11 @@ local function LayoutGroup(group)
 	ReleaseWidgets(group.key)
 
 	local entries = Data:GetEntries(group.category)
+	local count = #entries
 	local size = tonumber(GroupSetting(group.key, "iconSize")) or 28
-	local spacing = tonumber(GroupSetting(group.key, "spacing")) or 4
-	local wrap = tonumber(GroupSetting(group.key, "wrapCount")) or 5
-	local direction = tostring(GroupSetting(group.key, "direction") or "RIGHT")
-	local stepX = (direction == "LEFT") and -(size + spacing) or (size + spacing)
-	local rowStep = -(size + spacing)
+	local wrap = math.max(1, math.floor(tonumber(GroupSetting(group.key, "wrapCount")) or 5))
+	local step = size + ICON_SPACING
+	local showKeybind = GetDBBool("cooldownmanager_showKeybind")
 
 	local list = activeWidgets[group.key] or {}
 	activeWidgets[group.key] = list
@@ -101,70 +131,97 @@ local function LayoutGroup(group)
 		widget:SetEntry(entry)
 		widget:ApplyOptions({
 			size = size,
-			showKeybind = GroupSetting(group.key, "showKeybind") == true,
+			showKeybind = showKeybind,
 			keybindFormat = "COMPACT",
 		})
 
 		local column = (index - 1) % wrap
 		local row = math.floor((index - 1) / wrap)
+		local point, x, y = IconOffset(placement, column, row, count, wrap, size, step)
 		widget.frame:ClearAllPoints()
-		widget.frame:SetPoint("CENTER", parent, "CENTER", column * stepX, row * rowStep)
+		widget.frame:SetPoint(point, parent, point, x, y)
 		widget:UpdateState()
 		widget:SetShown(true)
 		list[#list + 1] = widget
 	end
+
+	-- The container's edges are the chain target for the next group in the slot. An
+	-- empty group keeps a 1x1 footprint so the chain does not collapse onto the ring.
+	if count == 0 then
+		parent:SetSize(1, 1)
+	else
+		local columns = math.min(count, wrap)
+		local rows = math.ceil(count / wrap)
+		parent:SetSize(columns * step - ICON_SPACING, rows * step - ICON_SPACING)
+	end
 end
 
-local function ApplyGroupMode(group)
-	local enabled = GroupSetting(group.key, "enabled") == true
+local VALID_PLACEMENT = { RIGHT = true, LEFT = true, BELOW = true, ABOVE = true }
+
+-- No BLIZZARD -> SPARKPOINT degradation (spec D10): with the Cooldown Manager off,
+-- Blizzard never builds the data SparkPoint mode reads either. The settings page
+-- notice explains the requirement instead.
+local function ResolveMode(group)
 	local mode = tostring(GroupSetting(group.key, "mode") or "SPARKPOINT")
-	local offsetX = tonumber(GroupSetting(group.key, "offsetX")) or 0
-	local offsetY = tonumber(GroupSetting(group.key, "offsetY")) or 0
-
-	-- Spec degradation: with cooldownViewerEnabled off the viewers exist but never
-	-- update, so BLIZZARD mode would render a frozen, empty frame. Fall back to our
-	-- own renderer rather than showing nothing. IsBlizzardModeUsable is a pure read
-	-- (IsAvailable + GetCVar), so it is safe to call here unconditionally, including
-	-- in combat.
-	if mode == "BLIZZARD" and not Data:IsBlizzardModeUsable() then
-		mode = "SPARKPOINT"
+	if mode ~= "SPARKPOINT" and mode ~= "BLIZZARD" then
+		mode = "OFF"
 	end
-	resolvedModeByGroup[group.key] = enabled and mode or "OFF"
+	return mode
+end
 
-	if not enabled or mode == "OFF" then
-		ReleaseWidgets(group.key)
-		Anchor:Detach(group.category)
-		if groupFrames[group.key] then
-			groupFrames[group.key]:Hide()
-		end
-		return
-	end
+local function ResolvePlacement(group)
+	local placement = tostring(GroupSetting(group.key, "placement") or "RIGHT")
+	return VALID_PLACEMENT[placement] and placement or "RIGHT"
+end
 
-	if mode == "BLIZZARD" then
-		ReleaseWidgets(group.key)
-		if groupFrames[group.key] then
-			groupFrames[group.key]:Hide()
-		end
-		Anchor:Attach(group.category, offsetX, offsetY)
-		return
+-- First group in a slot hangs off the ring; later ones chain to the previous group's
+-- frame (our container, or a Blizzard viewer). No Blizzard geometry is ever read.
+local function ComputeAnchor(group, placement, previous)
+	local spec = SLOT_ANCHORS[placement]
+	local nudgeX = tonumber(GroupSetting(group.key, "offsetX")) or 0
+	local nudgeY = tonumber(GroupSetting(group.key, "offsetY")) or 0
+	if previous then
+		local c = spec.chain
+		return c[1], previous, c[2], c[3] * GAP + nudgeX, c[4] * GAP + nudgeY
 	end
-
-	Anchor:Detach(group.category)
-	local parent = groupFrames[group.key]
-	if parent then
-		parent:ClearAllPoints()
-		parent:SetPoint("CENTER", moduleFrame, "CENTER", offsetX, offsetY)
-		parent:Show()
-	end
-	LayoutGroup(group)
+	local reach = (tonumber(GetDBValue("cast_radius")) or 40) + GAP
+	local f = spec.first
+	return f[1], moduleFrame, f[2], f[3] * reach + nudgeX, f[4] * reach + nudgeY
 end
 
 function CooldownManager:ApplyOptions()
 	if not moduleEnabled or not moduleFrame then
 		return
 	end
+	local lastInSlot = {}
+	-- GROUPS order is the stack order within a slot: Essential, Utility, Tracked Buffs.
 	for _, group in ipairs(GROUPS) do
-		ApplyGroupMode(group)
+		local mode = ResolveMode(group)
+		resolvedModeByGroup[group.key] = mode
+		local frame = groupFrames[group.key]
+
+		if mode == "OFF" then
+			ReleaseWidgets(group.key)
+			Anchor:Detach(group.category)
+			frame:Hide()
+		else
+			local placement = ResolvePlacement(group)
+			local point, relativeTo, relativePoint, x, y = ComputeAnchor(group, placement, lastInSlot[placement])
+			if mode == "BLIZZARD" then
+				ReleaseWidgets(group.key)
+				frame:Hide()
+				Anchor:Attach(group.category, point, relativeTo, relativePoint, x, y)
+				-- A missing viewer is treated as absent: the chain skips it.
+				lastInSlot[placement] = Anchor:GetViewer(group.category) or lastInSlot[placement]
+			else
+				Anchor:Detach(group.category)
+				frame:ClearAllPoints()
+				frame:SetPoint(point, relativeTo, relativePoint, x, y)
+				frame:Show()
+				LayoutGroup(group, placement)
+				lastInSlot[placement] = frame
+			end
+		end
 	end
 	self:UpdateVisibility()
 end
@@ -197,7 +254,6 @@ local function RequestStructuralRefresh()
 		-- Data:Refresh gates itself on combat and records a pending request; the
 		-- PLAYER_REGEN_ENABLED registration below replays it.
 		Data:Refresh()
-		CooldownManager:ApplyOptions()
 	end)
 end
 
@@ -333,22 +389,15 @@ end
 
 local settingKeys = {
 	"cooldownmanager_iconOpacity",
-	"cooldownmanager_showSwipe",
 	"cooldownmanager_showTimerText",
-	"cooldownmanager_desaturateOnCooldown",
+	"cooldownmanager_showKeybind",
 	"cooldownmanager_glowOnReady",
-	"cooldownmanager_glowColor",
-	"cooldownmanager_timerFont",
-	"cooldownmanager_timerFontOutline",
-	"cooldownmanager_timerFontSize",
-	"cooldownmanager_timerColor",
-	"cooldownmanager_keybindFont",
-	"cooldownmanager_keybindFontOutline",
-	"cooldownmanager_keybindFontSize",
-	"cooldownmanager_keybindColor",
+	"cooldownmanager_textSize",
+	-- Groups are placed from the cast ring's outer edge; follow a resized ring.
+	"cast_radius",
 }
 for _, group in ipairs(GROUPS) do
-	for _, suffix in ipairs({ "mode", "enabled", "offsetX", "offsetY", "iconSize", "spacing", "direction", "wrapCount", "showKeybind" }) do
+	for _, suffix in ipairs({ "mode", "placement", "iconSize", "wrapCount", "offsetX", "offsetY" }) do
 		settingKeys[#settingKeys + 1] = "cooldownmanager_" .. group.key .. "_" .. suffix
 	end
 end
@@ -358,10 +407,6 @@ for _, key in ipairs(settingKeys) do
 	end, CooldownManager)
 end
 
--- cooldownmanager_hiddenEntries is deliberately NOT in settingKeys. SetHidden writes
--- the key (firing SettingChanged synchronously) and only then rebuilds entries, so an
--- ApplyOptions driven by the setting would lay out against the stale pre-filter list
--- and the corrected one would never be drawn. Relayout on the data event instead.
 CallbackRegistry:Register("CooldownViewer.EntriesChanged", function()
 	CooldownManager:ApplyOptions()
 end, CooldownManager)

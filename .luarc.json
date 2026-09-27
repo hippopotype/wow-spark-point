@@ -75,7 +75,6 @@
     "GameFontDisableSmall",
     "GameFontNormalSmall",
     "SparkPointColorOverridesMixin",
-    "SparkPointCooldownFilterMixin",
     "STATICPOPUP_NUMDIALOGS",
     "StaticPopup_Show",
     "StaticPopupDialogs",

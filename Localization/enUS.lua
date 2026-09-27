@@ -415,16 +415,9 @@ L["Cooldown Manager Description"] = "Mirrors Blizzard's Cooldown Manager into th
 L["Essential Cooldowns"] = "Essential Cooldowns"
 L["Utility Cooldowns"] = "Utility Cooldowns"
 L["Tracked Buffs"] = "Tracked Buffs"
-L["Render Mode"] = "Render Mode"
 L["Mode SparkPoint"] = "SparkPoint icons"
 L["Mode Blizzard"] = "Blizzard viewer (anchored)"
-L["Mode Off"] = "Off"
 L["Hide Blizzard Viewers"] = "Hide Blizzard's frames"
-L["Filter Blizzard Mode Notice"] = "Filtering applies to SparkPoint mode only. In Blizzard mode, configure which spells appear in Blizzard's Cooldown Manager settings."
-L["Filter Blizzard Mode Unusable Notice"] = "Blizzard's Cooldown Manager is disabled, so this category is showing SparkPoint icons instead."
-L["Filter Fallback Mode Notice"] =
-	"Showing Blizzard's raw category list because the ordered Cooldown Viewer data is unavailable. Order and your configured Cooldown Manager selections are not reflected here."
-L["Cooldown Manager Unavailable"] = "Blizzard's Cooldown Manager is unavailable or disabled."
 
 --------------------------------------------------------------------------------
 -- Performance Stats

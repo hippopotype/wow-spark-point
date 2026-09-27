@@ -8,14 +8,12 @@
 -- category regardless of what the player enabled. Measured 2026-09-06:
 -- Essential 3 vs 8, TrackedBuff 4 vs 22, Utility 16 vs 13 -- they differ in BOTH
 -- directions. So the fallback is a materially different display, not merely an
--- unordered one, and that difference is surfaced to the user in settings.
+-- unordered one.
 
 local _, addon = ...
 local Util = addon.Util
 local Bridge = addon.CooldownViewerBridge
 local CallbackRegistry = addon.CallbackRegistry
-local GetDBValue = addon.GetDBValue
-local SetDBValue = addon.SetDBValue
 
 local CooldownViewerData = {}
 addon.CooldownViewerData = CooldownViewerData
@@ -27,62 +25,10 @@ CooldownViewerData.CATEGORY = {
 }
 
 local entriesByCategory = {}
--- Unfiltered mirror. The settings filter list must show entries the player has
--- hidden -- otherwise unchecking one would remove it from the list and make the
--- choice unrecoverable.
-local allEntriesByCategory = {}
--- Per category: a single shared flag would report whichever category happened to be
--- iterated last, which is wrong whenever the three disagree.
-local usingFallbackByCategory = {}
 local pendingRefresh = false
 -- True while Blizzard's display data is dirty. We must not build it (see the Bridge
 -- header, rule 3); the RefreshLayout post-hook retries once Blizzard has built it.
 local pendingDisplayData = false
-
--- Uses C_SpecializationInfo, NOT the global GetSpecialization/GetSpecializationInfo.
--- Those globals exist only when the loadDeprecationFallbacks CVar is set
--- (.clones/wow-ui-source/.../Blizzard_DeprecatedSpecialization/Deprecated_Specialization_Standard.lua:4).
--- With the CVar off they are nil, GetSpecKey silently returns 0, and every spec
--- shares one filter bucket -- the exact opposite of the per-spec requirement.
-local function GetSpecKey()
-	local S = C_SpecializationInfo
-	if not (S and S.GetSpecialization and S.GetSpecializationInfo) then
-		return 0
-	end
-	local index = S.GetSpecialization()
-	if not index then
-		return 0
-	end
-	local id = S.GetSpecializationInfo(index)
-	return Util.IsAccessibleNumber(id) and id or 0
-end
-
-function CooldownViewerData:IsHidden(cooldownID)
-	-- Guard before the table-key use below; this is public API and later callers
-	-- source cooldownID from elsewhere. Invariant 1 makes a secret key a hard defect.
-	if not Util.IsAccessibleNumber(cooldownID) then
-		return false
-	end
-	local hidden = GetDBValue("cooldownmanager_hiddenEntries")
-	if type(hidden) ~= "table" then
-		return false
-	end
-	local specTable = hidden[GetSpecKey()]
-	return type(specTable) == "table" and specTable[cooldownID] == true
-end
-
-function CooldownViewerData:SetHidden(cooldownID, hidden)
-	if not Util.IsAccessibleNumber(cooldownID) then
-		return
-	end
-	local stored = GetDBValue("cooldownmanager_hiddenEntries")
-	local map = (type(stored) == "table") and Util.DeepCopy(stored) or {}
-	local specKey = GetSpecKey()
-	map[specKey] = map[specKey] or {}
-	map[specKey][cooldownID] = hidden and true or nil
-	SetDBValue("cooldownmanager_hiddenEntries", map, true)
-	self:Refresh()
-end
 
 function CooldownViewerData:IsAvailable()
 	if not C_CooldownViewer or not C_CooldownViewer.IsCooldownViewerAvailable then
@@ -107,10 +53,6 @@ function CooldownViewerData:IsBlizzardModeUsable()
 	return not (GetCVar and GetCVar("cooldownViewerEnabled") == "0")
 end
 
-function CooldownViewerData:IsUsingFallback(category)
-	return usingFallbackByCategory[category] == true
-end
-
 -- Returns ids, or nil when Blizzard's display data is still being built. nil means
 -- "keep what you have" -- it must NOT fall through to the raw category set, which
 -- is a materially different display (header comment).
@@ -118,7 +60,6 @@ local function ResolveIDs(category)
 	if Bridge:IsSupported() then
 		local ids, reason = Bridge:GetOrderedIDs(category)
 		if ids then
-			usingFallbackByCategory[category] = false
 			return ids
 		end
 		if reason == "PENDING" then
@@ -126,7 +67,6 @@ local function ResolveIDs(category)
 		end
 	end
 
-	usingFallbackByCategory[category] = true
 	if not C_CooldownViewer or not C_CooldownViewer.GetCooldownViewerCategorySet then
 		return {}
 	end
@@ -196,18 +136,14 @@ function CooldownViewerData:Refresh()
 			-- Keep this category's previous entries until Blizzard has built its data.
 			pendingDisplayData = true
 		else
-			local visible, all = {}, {}
+			local entries = {}
 			for _, cooldownID in ipairs(ids) do
 				local entry = BuildEntry(cooldownID)
 				if entry then
-					all[#all + 1] = entry
-					if not self:IsHidden(cooldownID) then
-						visible[#visible + 1] = entry
-					end
+					entries[#entries + 1] = entry
 				end
 			end
-			entriesByCategory[category] = visible
-			allEntriesByCategory[category] = all
+			entriesByCategory[category] = entries
 		end
 	end
 	CallbackRegistry:Trigger("CooldownViewer.EntriesChanged")
@@ -228,13 +164,7 @@ function CooldownViewerData:GetAuraActive(cooldownID)
 	return Bridge:GetAuraActive(cooldownID)
 end
 
--- What the HUD renders (hidden entries removed).
+-- What the HUD renders, in the player's Blizzard Cooldown Manager order.
 function CooldownViewerData:GetEntries(category)
 	return entriesByCategory[category] or {}
-end
-
--- What the settings filter list renders (hidden entries included, so they can be
--- unhidden again).
-function CooldownViewerData:GetAllEntries(category)
-	return allEntriesByCategory[category] or {}
 end
