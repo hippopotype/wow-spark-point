@@ -119,6 +119,8 @@ function WidgetMixin:ApplyOptions(opts)
 	-- and border, so it must share their 6px expand (Modules/Cast.lua:1367 does the
 	-- same). SetAllPoints(icon) drew it undersized.
 	IconMask:LayoutToIcon(self.cooldown, self.icon, ICON_MASK_BASE_EXPAND)
+	-- Re-applied every time: re-parenting the widget frame can change frame levels.
+	self.overlay:SetFrameLevel(self.cooldown:GetFrameLevel() + 1)
 
 	local textSize = tonumber(GetDBValue("cooldownmanager_textSize")) or 13
 	self.cooldown:SetHideCountdownNumbers(not GetDBBool("cooldownmanager_showTimerText"))
@@ -220,9 +222,6 @@ function CooldownIconWidget:Create(parent)
 	widget.icon = frame:CreateTexture(nil, "ARTWORK")
 	widget.icon:SetPoint("CENTER")
 	widget.background = frame:CreateTexture(nil, "BACKGROUND")
-	widget.glow = frame:CreateTexture(nil, "OVERLAY", nil, 1)
-	widget.glowAnim = IconGlow:Attach(widget.glow)
-	widget.border = frame:CreateTexture(nil, "OVERLAY", nil, 2)
 
 	-- IconMask keys on the lowercase `cooldown` field (Core/IconMask.lua:65).
 	-- Setup mirrors the house pattern at Modules/Cast.lua:3143-3146.
@@ -232,7 +231,16 @@ function CooldownIconWidget:Create(parent)
 	frame.cooldown = widget.cooldown
 	frame.icon = widget.icon
 
-	widget.keybindText = frame:CreateFontString(nil, "OVERLAY")
+	-- Border, glow and keybind sit above Blizzard-style child Cooldown frame: child
+	-- frames draw over all parent regions, so the swipe would otherwise cover them.
+	widget.overlay = CreateFrame("Frame", nil, frame)
+	widget.overlay:SetAllPoints(frame)
+
+	widget.glow = widget.overlay:CreateTexture(nil, "OVERLAY", nil, 1)
+	widget.glowAnim = IconGlow:Attach(widget.glow)
+	widget.border = widget.overlay:CreateTexture(nil, "OVERLAY", nil, 2)
+
+	widget.keybindText = widget.overlay:CreateFontString(nil, "OVERLAY")
 	widget.keybindText:SetPoint("TOP", frame, "TOP", 0, 4)
 	-- Default font so a SetText before the first ApplyOptions cannot nil-error;
 	-- Modules/AssistedHighlight.lua:584 does the same.
