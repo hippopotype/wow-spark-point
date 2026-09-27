@@ -193,12 +193,12 @@ end
 -- never stops the rest of the skin.
 
 local function EnsureOwnLayers(frame, state)
-	if state.background then
+	if state.glow then
 		return
 	end
-	state.ownRegions = {}
-	state.mask = IconMask:CreateMask(frame)
-	state.background = frame:CreateTexture(nil, "BACKGROUND")
+	state.ownRegions = state.ownRegions or {}
+	state.mask = state.mask or IconMask:CreateMask(frame)
+	state.background = state.background or frame:CreateTexture(nil, "BACKGROUND")
 	state.ownRegions[state.background] = true
 	if state.mask then
 		state.ownRegions[state.mask] = true
@@ -208,16 +208,16 @@ local function EnsureOwnLayers(frame, state)
 	-- Border, glow and keybind above Blizzard's Cooldown child: child frames draw over
 	-- all parent regions, so the swipe would otherwise cover them (user-verified on the
 	-- renderer). The swipe stays above the icon, below the frame and text.
-	state.overlay = CreateFrame("Frame", nil, frame)
+	state.overlay = state.overlay or CreateFrame("Frame", nil, frame)
 	state.overlay:SetAllPoints(frame)
-	state.border = state.overlay:CreateTexture(nil, "OVERLAY", nil, 2)
+	state.border = state.border or state.overlay:CreateTexture(nil, "OVERLAY", nil, 2)
 	SetTextureSmooth(state.border, FRAME_PATH)
-	state.glowTexture = state.overlay:CreateTexture(nil, "OVERLAY", nil, 1)
+	state.glowTexture = state.glowTexture or state.overlay:CreateTexture(nil, "OVERLAY", nil, 1)
 	SetTextureSmooth(state.glowTexture, GLOW_PATH)
-	state.glow = IconGlow:Attach(state.glowTexture)
-	state.keybindText = state.overlay:CreateFontString(nil, "OVERLAY")
+	state.keybindText = state.keybindText or state.overlay:CreateFontString(nil, "OVERLAY")
 	state.keybindText:SetPoint("TOP", frame, "TOP", 0, 4)
 	state.keybindText:SetFont(TEXT_FONT, GetTextSize(), TEXT_OUTLINE)
+	state.glow = IconGlow:Attach(state.glowTexture)
 end
 
 local function ApplyIcon(frame, state)
@@ -323,11 +323,11 @@ end
 
 local function HideBlizzardArt(frame, state)
 	for _, region in ipairs({ frame:GetRegions() }) do
-		if region.GetAtlas then
+		if region ~= frame.Icon and region.GetAtlas then
 			-- Mask textures and other region types may not answer GetAtlas; one failing
 			-- region must not stop the overlay from being found.
 			local ok, atlas = pcall(region.GetAtlas, region)
-			if ok and atlas == ICON_OVERLAY_ATLAS then
+			if ok and type(atlas) == "string" and not (_G.issecretvalue and _G.issecretvalue(atlas)) and atlas == ICON_OVERLAY_ATLAS then
 				state.iconOverlay = region
 			end
 		end
@@ -473,7 +473,7 @@ SkinFrame = function(frame, category)
 	frameCategory[frame] = category
 	reasserting[frame] = true
 	local okLayers = pcall(EnsureOwnLayers, frame, state)
-	if okLayers and state.background then
+	if okLayers and state.glow then
 		pcall(InstallFrameHooks, frame, state)
 		state.applied = true
 		local textSize = GetTextSize()
