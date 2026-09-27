@@ -14,6 +14,7 @@ globals = {
 	"_G",
 	"bit",
 	-- WoW API
+	"ActionButtonSpellAlertManager",
 	"C_ActionBar",
 	"C_AddOnProfiler",
 	"C_AddOns",

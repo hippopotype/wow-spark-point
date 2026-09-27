@@ -4,6 +4,7 @@
   "Lua.diagnostics.globals": [
     "_G",
     "ACCEPT",
+    "ActionButtonSpellAlertManager",
     "bit",
     "CANCEL",
     "C_ActionBar",

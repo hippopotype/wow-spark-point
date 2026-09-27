@@ -81,3 +81,18 @@ function IconMask:ApplyToIconFrame(iconFrame, baseExpand, baseSize)
 
 	return true
 end
+
+-- Creates a round mask texture on parentFrame and returns it without storing it on
+-- the frame. For frames SparkPoint does not own (Blizzard's Cooldown Manager items):
+-- ApplyToIconFrame below writes keys on its frame and must only be used on ours.
+function IconMask:CreateMask(parentFrame)
+	if not parentFrame or not parentFrame.CreateMaskTexture then
+		return nil
+	end
+	local ok, mask = pcall(parentFrame.CreateMaskTexture, parentFrame)
+	if not ok or not mask then
+		return nil
+	end
+	mask:SetTexture(MASK_PATH, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+	return mask
+end
