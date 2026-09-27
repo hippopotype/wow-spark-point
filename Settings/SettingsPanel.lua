@@ -98,27 +98,23 @@ local NEW_SETTINGS = {
 	cooldownmanager_hideBlizzardViewers = true,
 	cooldownmanager_hideInPetBattle = true,
 	cooldownmanager_hideInSpecialActionBarContext = true,
-	cooldownmanager_iconOpacity = true,
-	cooldownmanager_showTimerText = true,
 	cooldownmanager_showKeybind = true,
 	cooldownmanager_glowOnReady = true,
 	cooldownmanager_textSize = true,
+	cooldownmanager_keybindColor = true,
+	cooldownmanager_timerColor = true,
+	cooldownmanager_countColor = true,
+	cooldownmanager_glowColor = true,
 	cooldownmanager_essential_mode = true,
 	cooldownmanager_essential_placement = true,
-	cooldownmanager_essential_iconSize = true,
-	cooldownmanager_essential_wrapCount = true,
 	cooldownmanager_essential_nudgeX = true,
 	cooldownmanager_essential_nudgeY = true,
 	cooldownmanager_utility_mode = true,
 	cooldownmanager_utility_placement = true,
-	cooldownmanager_utility_iconSize = true,
-	cooldownmanager_utility_wrapCount = true,
 	cooldownmanager_utility_nudgeX = true,
 	cooldownmanager_utility_nudgeY = true,
 	cooldownmanager_trackedbuff_mode = true,
 	cooldownmanager_trackedbuff_placement = true,
-	cooldownmanager_trackedbuff_iconSize = true,
-	cooldownmanager_trackedbuff_wrapCount = true,
 	cooldownmanager_trackedbuff_nudgeX = true,
 	cooldownmanager_trackedbuff_nudgeY = true,
 }
@@ -1867,6 +1863,7 @@ local function BuildSettingsPanel()
 		cooldownCategory,
 		string.format(L["Cooldown Manager Spell Selection"] or "Choose which spells appear in each group in Blizzard's Cooldown Manager: type %s.", cdmSlash)
 	)
+	AddInfoText(cooldownCategory, L["Cooldown Manager Layout Info"] or "Icon size, spacing, rows and timer visibility are set in Blizzard's Edit Mode.")
 
 	-- Shown predicates are evaluated whenever the page is displayed, so this never goes
 	-- stale the way a notice built once at load would.
@@ -1885,14 +1882,13 @@ local function BuildSettingsPanel()
 	AddCheckbox(
 		cooldownCategory,
 		"cooldownmanager_hideBlizzardViewers",
-		L["Hide Blizzard Viewers"] or "Hide Blizzard's original frames",
-		L["Hide Blizzard Viewers Tooltip"]
-			or "Hide Blizzard's own Cooldown Manager frames for groups shown as SparkPoint icons or hidden. Groups shown as Blizzard icons are moved to the cursor instead."
+		L["Hide Blizzard Viewers"] or "Hide Blizzard's frames for hidden groups",
+		L["Hide Blizzard Viewers Tooltip"] or "Hide Blizzard's own Cooldown Manager frames for groups set to Hidden. Shown groups are always moved to the cursor."
 	)
 
 	local cooldownModeOptions = {
-		{ value = "SPARKPOINT", label = L["Mode SparkPoint"] or "SparkPoint icons" },
-		{ value = "BLIZZARD", label = L["Mode Blizzard"] or "Blizzard icons" },
+		{ value = "SPARKPOINT_STYLE", label = L["Mode SparkPoint Style"] or "SparkPoint style" },
+		{ value = "BLIZZARD_STYLE", label = L["Mode Blizzard Style"] or "Blizzard style" },
 		{ value = "OFF", label = L["Mode Hidden"] or "Hidden" },
 	}
 	local cooldownPlacementOptions = {
@@ -1917,16 +1913,13 @@ local function BuildSettingsPanel()
 			L["Show As"] or "Show as",
 			cooldownModeOptions,
 			L["Show As Tooltip"]
-				or "SparkPoint icons use your SparkPoint appearance. Blizzard icons move Blizzard's own display next to the cursor and keep its timers and stack counts. Hidden leaves this group out of the HUD."
+				or "SparkPoint style skins Blizzard's icons with the SparkPoint look. Blizzard style keeps Blizzard's look. Both keep Blizzard's timers, charges and stacks and sit next to the cursor. Hidden leaves this group out of the HUD."
 		)
 		-- Read the parent setting itself, not the DB: Blizzard fires the child's
 		-- re-evaluation from the same value-change notification that writes the DB,
 		-- and the order of those two callbacks is not guaranteed.
 		local function IsShown()
 			return showAsSetting:GetValue() ~= "OFF"
-		end
-		local function IsSparkPoint()
-			return showAsSetting:GetValue() == "SPARKPOINT"
 		end
 
 		local _, placementInitializer = AddDropdown(
@@ -1937,32 +1930,15 @@ local function BuildSettingsPanel()
 			L["Placement Tooltip"] or "Side of the cast ring this group sits on. Groups on the same side stack outward: Essential, then Utility, then Tracked Buffs."
 		)
 		placementInitializer:SetParentInitializer(showAsInitializer, IsShown)
-
-		local _, sizeInitializer = AddSlider(cooldownCategory, prefix .. "iconSize", L["Cooldown Manager Icon Size"] or "Icon Size", 12, 64, 1)
-		sizeInitializer:SetParentInitializer(showAsInitializer, IsSparkPoint)
-
-		local _, wrapInitializer = AddSlider(cooldownCategory, prefix .. "wrapCount", L["Icons Per Row"] or "Icons per row", 1, 20, 1)
-		wrapInitializer:SetParentInitializer(showAsInitializer, IsSparkPoint)
 	end
 
 	Settings.RegisterInitializer(
 		cooldownCategory,
-		CreateSettingsListSectionHeaderInitializer(L["Appearance"] or "Appearance", L["Cooldown Manager Appearance Tooltip"] or "Applies to groups shown as SparkPoint icons.")
-	)
-	AddSlider(
-		cooldownCategory,
-		"cooldownmanager_iconOpacity",
-		L["Cooldown Manager Icon Opacity"] or "Icon Opacity",
-		0,
-		1,
-		0.05,
-		L["Cooldown Manager Icon Opacity Tooltip"] or "Opacity of SparkPoint-mode cooldown icons"
-	)
-	AddCheckbox(
-		cooldownCategory,
-		"cooldownmanager_showTimerText",
-		L["Cooldown Manager Show Timer Text"] or "Show Timer Text",
-		L["Cooldown Manager Show Timer Text Tooltip"] or "Show the remaining cooldown time as text on icons"
+		CreateSettingsListSectionHeaderInitializer(
+			L["Cooldown Manager SparkPoint Style"] or "SparkPoint style",
+			L["Cooldown Manager SparkPoint Style Tooltip"]
+				or "Applies only to groups shown in SparkPoint style. If another icon-skinning addon also styles these icons, disable its Cooldown Manager groups."
+		)
 	)
 	AddCheckbox(
 		cooldownCategory,
@@ -1970,13 +1946,25 @@ local function BuildSettingsPanel()
 		L["Show Keybinds"] or "Show keybinds",
 		L["Cooldown Manager Show Keybind Tooltip"] or "Show the bound keybind on each icon, when known"
 	)
+	AddColor(cooldownCategory, "cooldownmanager_keybindColor", L["Cooldown Manager Keybind Color"] or "Keybind color")
+	AddColor(cooldownCategory, "cooldownmanager_timerColor", L["Cooldown Manager Timer Color"] or "Timer text color")
+	AddColor(cooldownCategory, "cooldownmanager_countColor", L["Cooldown Manager Count Color"] or "Count text color")
+	AddSlider(
+		cooldownCategory,
+		"cooldownmanager_textSize",
+		L["Text Size"] or "Text size",
+		8,
+		24,
+		1,
+		L["Cooldown Manager Text Size Tooltip"] or "Size of timer, count and keybind text, relative to Blizzard's Edit Mode icon size."
+	)
 	AddCheckbox(
 		cooldownCategory,
 		"cooldownmanager_glowOnReady",
-		L["Cooldown Manager Glow On Ready"] or "Glow When Ready",
-		L["Cooldown Manager Glow On Ready Tooltip"] or "Briefly glow an icon when its cooldown finishes"
+		L["Cooldown Manager Glow On Ready"] or "Glow when ready",
+		L["Cooldown Manager Glow On Ready Tooltip"] or "Briefly glow an icon when its cooldown finishes or a charge is regained"
 	)
-	AddSlider(cooldownCategory, "cooldownmanager_textSize", L["Text Size"] or "Text size", 8, 24, 1)
+	AddColor(cooldownCategory, "cooldownmanager_glowColor", L["Cooldown Manager Glow Color"] or "Glow color")
 
 	-- Visibility: the module-standard pattern, unchanged.
 	local cooldownVisibilityCategory = Settings.RegisterVerticalLayoutSubcategory(cooldownCategory, L["Visibility"] or "Visibility")
@@ -1991,7 +1979,7 @@ local function BuildSettingsPanel()
 		cooldownVisibilityCategory,
 		"cooldownmanager_visibility",
 		nil,
-		L["Cooldown Manager Visibility Tooltip"] or "When to show the SparkPoint-mode cooldown manager icons"
+		L["Cooldown Manager Visibility Tooltip"] or "When to show the cooldown groups next to the cursor"
 	)
 	local cooldownHideCategory = Settings.RegisterVerticalLayoutSubcategory(cooldownVisibilityCategory, L["Hide Overrides"] or "Hide Overrides")
 	AddCheckbox(
