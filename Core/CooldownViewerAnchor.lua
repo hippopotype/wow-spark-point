@@ -43,6 +43,7 @@ local _, addon = ...
 local AnchorFrame = addon.AnchorFrame
 local Bridge = addon.CooldownViewerBridge
 local CallbackRegistry = addon.CallbackRegistry
+local Util = addon.Util
 
 -- Cooldown viewers are Edit Mode systems: EditModeSystemMixin.OnSystemLoad replaces
 -- their SetPoint/ClearAllPoints with Lua overrides that write snappedToFrame and
@@ -64,6 +65,10 @@ local VIEWER_BY_CATEGORY = {
 local attached = {}
 local alphaGuard = {}
 local hooked = {}
+-- Per category, the screen center { x, y } where Blizzard's own layout (default
+-- position, container-managed) or saved Edit Mode anchor (custom position) last
+-- placed the viewer. Captured from reads only; see PinToBlizzardHome below.
+local blizzardHome = {}
 local globalHidden = false
 local editModeSuspended = false
 -- Whether ApplyGlobalHidden has actually run for the CURRENT globalHidden value.
@@ -123,6 +128,13 @@ local function InstallManagedContainerHook()
 		end
 		for category in pairs(attached) do
 			if GetViewer(category) == frame then
+				-- Capture Blizzard's own placement (native GetCenter, pure read) before we
+				-- move the viewer to the SparkPoint anchor below, so Edit Mode can later
+				-- show it where Blizzard's last layout pass actually put it.
+				local ok, x, y = pcall(frame.GetCenter, frame)
+				if ok and Util.IsAccessibleNumber(x) and Util.IsAccessibleNumber(y) then
+					blizzardHome[category] = { x = x, y = y }
+				end
 				ApplyPoint(category)
 			end
 		end
@@ -200,12 +212,25 @@ function CooldownViewerAnchor:Attach(category, offsetX, offsetY)
 	attached[category].offsetX = offsetX or 0
 	attached[category].offsetY = offsetY or 0
 	InstallHooks(category)
+	-- Still in Blizzard's bottom container (first attach this session): its current
+	-- center IS Blizzard's default slot. Capture it before we move it.
+	if not blizzardHome[category] then
+		local viewer = GetViewer(category)
+		local okParent, parent = pcall(viewer.GetParent, viewer)
+		if okParent and parent and parent == _G.BottomManagedFrameContainer then
+			local ok, x, y = pcall(viewer.GetCenter, viewer)
+			if ok and Util.IsAccessibleNumber(x) and Util.IsAccessibleNumber(y) then
+				blizzardHome[category] = { x = x, y = y }
+			end
+		end
+	end
 	ApplyPoint(category)
 end
 
 function CooldownViewerAnchor:Detach(category)
 	local viewer = GetViewer(category)
 	attached[category] = nil
+	blizzardHome[category] = nil
 	if not viewer then
 		return
 	end
@@ -269,25 +294,70 @@ function CooldownViewerAnchor:SetVisible(category, visible)
 	alphaGuard[viewer] = nil
 end
 
+-- Edit Mode shows the viewer where Blizzard itself would put it. Pure reads of
+-- systemInfo plus native SetPoint -- nothing is written to Blizzard's tables.
+local function ApplyAnchorInfo(viewer, info, scale)
+	if type(info) ~= "table" then
+		return false
+	end
+	local point, relativeTo, relativePoint = info.point, info.relativeTo, info.relativePoint
+	local offsetX, offsetY = info.offsetX, info.offsetY
+	if type(point) ~= "string" or type(relativePoint) ~= "string" then
+		return false
+	end
+	if not Util.IsAccessibleNumber(offsetX) or not Util.IsAccessibleNumber(offsetY) then
+		return false
+	end
+	if type(relativeTo) ~= "string" and type(relativeTo) ~= "table" then
+		return false
+	end
+	FrameSetPoint(viewer, point, relativeTo, relativePoint, offsetX / scale, offsetY / scale)
+	return true
+end
+
+local function PinToBlizzardHome(category, viewer)
+	pcall(function()
+		local info = viewer.systemInfo
+		local scale = viewer:GetScale()
+		if not Util.IsAccessibleNumber(scale) or scale <= 0 then
+			scale = 1
+		end
+		if type(info) == "table" and info.isInDefaultPosition == false then
+			FrameClearAllPoints(viewer)
+			if ApplyAnchorInfo(viewer, info.anchorInfo, scale) then
+				ApplyAnchorInfo(viewer, info.anchorInfo2, scale)
+				return
+			end
+		end
+		local home = blizzardHome[category]
+		local x, y
+		if home then
+			x, y = home.x, home.y
+		else
+			-- No layout pass seen yet this session: freeze in place (previous behaviour).
+			x, y = viewer:GetCenter()
+		end
+		if Util.IsAccessibleNumber(x) and Util.IsAccessibleNumber(y) then
+			FrameClearAllPoints(viewer)
+			FrameSetPoint(viewer, "CENTER", UIParent, "BOTTOMLEFT", x, y)
+		end
+	end)
+end
+
 -- While the player is in EditMode we must NOT re-assert our anchor -- doing so
--- fights their drag. Pinning each attached viewer to its current screen position
--- also breaks its dependency on the moving SparkPoint anchor, which otherwise keeps
--- dragging it after the cursor and makes it impossible to click. GetCenter is a
--- plain geometry read and native SetPoint runs no Blizzard Lua; nothing is written to
--- the viewer's table. Offsets from GetCenter and SetPoint share the viewer's own scale.
+-- fights their drag. Instead show each attached viewer at Blizzard's own saved Edit
+-- Mode position: the stored anchor (systemInfo.anchorInfo) when the player has moved
+-- it to a custom spot, or the container slot we captured from Blizzard's last layout
+-- pass when it is still in its default position. Dragging the viewer in Edit Mode
+-- updates Blizzard's own layout but does not change the SparkPoint placement, which
+-- is re-applied on exit via ApplyPoint below.
 function CooldownViewerAnchor:SuspendForEditMode(suspended)
 	editModeSuspended = suspended and true or false
 	if editModeSuspended then
 		for category in pairs(attached) do
 			local viewer = GetViewer(category)
 			if viewer then
-				pcall(function()
-					local x, y = viewer:GetCenter()
-					if x and y then
-						FrameClearAllPoints(viewer)
-						FrameSetPoint(viewer, "CENTER", UIParent, "BOTTOMLEFT", x, y)
-					end
-				end)
+				PinToBlizzardHome(category, viewer)
 			end
 		end
 		return
