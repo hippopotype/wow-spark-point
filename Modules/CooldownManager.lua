@@ -4,9 +4,8 @@
 -- routes events. It must never accumulate per-spell or per-category branches --
 -- that is the mistake recorded in .skills/.private/class-resource.md.
 --
--- SPARKPOINT mode draws our own icons. BLIZZARD mode positions Blizzard's viewer.
--- Tracked Buff defaults to BLIZZARD because aura timers and stack counts are
--- unreachable from addon code; see Core/CooldownViewerBridge.lua.
+-- SPARKPOINT mode draws our own icons through the render strategy in
+-- Modules/CooldownManagerRenderer.lua. BLIZZARD mode positions Blizzard's viewer.
 
 local _, addon = ...
 local L = addon.L
@@ -16,7 +15,7 @@ local HUDLayers = addon.HUDLayers
 local Visibility = addon.Visibility
 local Data = addon.CooldownViewerData
 local Anchor = addon.CooldownViewerAnchor
-local IconWidget = addon.CooldownIconWidget
+local Renderer = addon.CooldownManagerRenderer
 local GetDBValue = addon.GetDBValue
 local GetDBBool = addon.GetDBBool
 
@@ -37,23 +36,16 @@ local GROUPS = {
 -- keeps the same flag for the same reason.
 local moduleEnabled = false
 local moduleFrame
-local groupFrames = {}
-local widgetPool = {}
-local activeWidgets = {}
 -- The mode ApplyOptions applied per group ("OFF" when hidden). UpdateVisibility reads this.
 local resolvedModeByGroup = {}
 local structuralPending = false
-local stateDirty = false
-local elapsedAccum = 0
 
-local STATE_TICK = 0.1
 local STRUCTURAL_DEBOUNCE = 0.2
 
 -- Gap between the cast ring's outer edge and the first group, and between stacked
 -- groups. cast_radius is the ring's OUTER radius (Cast.lua sizes the ring frame
 -- texture radius * 2).
 local GAP = 8
-local ICON_SPACING = 4
 
 -- Per placement: how the first group in a slot hangs off the ring, and how each
 -- following group chains to the previous one. {point, relativePoint, dx, dy}; dx/dy
@@ -67,93 +59,6 @@ local SLOT_ANCHORS = {
 
 local function GroupSetting(key, suffix)
 	return GetDBValue("cooldownmanager_" .. key .. "_" .. suffix)
-end
-
-local function AcquireWidget(parent)
-	local widget = table.remove(widgetPool)
-	if not widget then
-		widget = IconWidget:Create(parent)
-	end
-	widget.frame:SetParent(parent)
-	return widget
-end
-
-local function ReleaseWidgets(groupKey)
-	local list = activeWidgets[groupKey]
-	if not list then
-		return
-	end
-	for _, widget in ipairs(list) do
-		widget:Release()
-		widgetPool[#widgetPool + 1] = widget
-	end
-	activeWidgets[groupKey] = {}
-end
-
--- Where icon N sits inside its group container, per placement. Returns the point
--- used on both the icon and the container, plus the offset.
-local function IconOffset(placement, column, row, count, wrap, size, step)
-	if placement == "LEFT" then
-		return "TOPRIGHT", -column * step, -row * step
-	end
-	if placement == "BELOW" or placement == "ABOVE" then
-		local inRow = math.min(wrap, count - row * wrap)
-		local rowWidth = inRow * step - ICON_SPACING
-		local x = -rowWidth / 2 + size / 2 + column * step
-		if placement == "BELOW" then
-			return "TOP", x, -row * step
-		end
-		return "BOTTOM", x, row * step
-	end
-	return "TOPLEFT", column * step, -row * step
-end
-
-local function LayoutGroup(group, placement)
-	local parent = groupFrames[group.key]
-	if not parent then
-		return
-	end
-
-	ReleaseWidgets(group.key)
-
-	local entries = Data:GetEntries(group.category)
-	local count = #entries
-	local size = tonumber(GroupSetting(group.key, "iconSize")) or 28
-	local wrap = math.max(1, math.floor(tonumber(GroupSetting(group.key, "wrapCount")) or 5))
-	local step = size + ICON_SPACING
-	local showKeybind = GetDBBool("cooldownmanager_showKeybind")
-
-	local list = activeWidgets[group.key] or {}
-	activeWidgets[group.key] = list
-
-	for index, entry in ipairs(entries) do
-		local widget = AcquireWidget(parent)
-		widget:SetEntry(entry)
-		widget:ApplyOptions({
-			size = size,
-			showKeybind = showKeybind,
-			keybindFormat = "COMPACT",
-		})
-
-		local column = (index - 1) % wrap
-		local row = math.floor((index - 1) / wrap)
-		local point, x, y = IconOffset(placement, column, row, count, wrap, size, step)
-		widget.frame:ClearAllPoints()
-		widget.frame:SetPoint(point, parent, point, x, y)
-		widget:UpdateState()
-		widget:SetShown(true)
-		list[#list + 1] = widget
-	end
-
-	-- The container's edges are the chain target for the next group in the slot. An
-	-- empty group keeps a 1x1 footprint so the chain does not collapse onto the ring.
-	if count == 0 then
-		parent:SetSize(1, 1)
-	else
-		local columns = math.min(count, wrap)
-		local rows = math.ceil(count / wrap)
-		parent:SetSize(columns * step - ICON_SPACING, rows * step - ICON_SPACING)
-	end
 end
 
 local VALID_PLACEMENT = { RIGHT = true, LEFT = true, BELOW = true, ABOVE = true }
@@ -198,28 +103,26 @@ function CooldownManager:ApplyOptions()
 	for _, group in ipairs(GROUPS) do
 		local mode = ResolveMode(group)
 		resolvedModeByGroup[group.key] = mode
-		local frame = groupFrames[group.key]
 
 		if mode == "OFF" then
-			ReleaseWidgets(group.key)
+			Renderer:HideGroup(group.key)
 			Anchor:Detach(group.category)
-			frame:Hide()
 		else
 			local placement = ResolvePlacement(group)
 			local point, relativeTo, relativePoint, x, y = ComputeAnchor(group, placement, lastInSlot[placement])
 			if mode == "BLIZZARD" then
-				ReleaseWidgets(group.key)
-				frame:Hide()
+				Renderer:HideGroup(group.key)
 				Anchor:Attach(group.category, point, relativeTo, relativePoint, x, y)
 				-- A missing viewer is treated as absent: the chain skips it.
 				lastInSlot[placement] = Anchor:GetViewer(group.category) or lastInSlot[placement]
 			else
 				Anchor:Detach(group.category)
-				frame:ClearAllPoints()
-				frame:SetPoint(point, relativeTo, relativePoint, x, y)
-				frame:Show()
-				LayoutGroup(group, placement)
-				lastInSlot[placement] = frame
+				local container = Renderer:ShowGroup(group, placement)
+				if container then
+					container:ClearAllPoints()
+					container:SetPoint(point, relativeTo, relativePoint, x, y)
+					lastInSlot[placement] = container
+				end
 			end
 		end
 	end
@@ -267,49 +170,12 @@ function CooldownManager:Initialize()
 	moduleFrame:SetAllPoints()
 	moduleFrame:Hide()
 
-	for _, group in ipairs(GROUPS) do
-		local frame = CreateFrame("Frame", nil, moduleFrame)
-		frame:SetSize(1, 1)
-		frame:Hide()
-		groupFrames[group.key] = frame
-		activeWidgets[group.key] = {}
-	end
-
-	moduleFrame:SetScript("OnUpdate", function(_, elapsed)
-		elapsedAccum = elapsedAccum + elapsed
-		if elapsedAccum < STATE_TICK then
-			return
-		end
-		elapsedAccum = 0
-		if not stateDirty then
-			return
-		end
-		stateDirty = false
-		for _, group in ipairs(GROUPS) do
-			for _, widget in ipairs(activeWidgets[group.key] or {}) do
-				widget:UpdateState()
-			end
-		end
-	end)
-
 	-- No ApplyOptions here: EnableModule calls it immediately after Initialize, and
 	-- Data:Refresh fires CooldownViewer.EntriesChanged which calls it too.
 	Data:Refresh()
 end
 
 local EL = CreateFrame("Frame")
-
-function CooldownManager:MarkStateDirty()
-	stateDirty = true
-end
-
-local STATE_EVENTS = {
-	SPELL_UPDATE_COOLDOWN = true,
-	SPELL_UPDATE_CHARGES = true,
-	SPELL_UPDATE_USES = true,
-	SPELL_UPDATE_ICON = true,
-	UNIT_AURA = true,
-}
 
 local KEYBIND_EVENTS = {
 	UPDATE_BINDINGS = true,
@@ -318,14 +184,9 @@ local KEYBIND_EVENTS = {
 }
 
 EL:SetScript("OnEvent", function(_, event)
-	if STATE_EVENTS[event] then
-		-- UNIT_AURA is a payload-free signal. Never inspect its arguments.
-		CooldownManager:MarkStateDirty()
-		return
-	end
 	if KEYBIND_EVENTS[event] then
 		addon.Keybinds:InvalidateCaches()
-		CooldownManager:MarkStateDirty()
+		Renderer:MarkStateDirty()
 		return
 	end
 	-- PLAYER_REGEN_ENABLED fires after every fight regardless of whether a Refresh was
@@ -344,17 +205,13 @@ local function EnableModule(enabled)
 		if not moduleFrame then
 			CooldownManager:Initialize()
 		end
+		Renderer:Enable(moduleFrame)
 		EL:RegisterEvent("COOLDOWN_VIEWER_DATA_LOADED")
 		EL:RegisterEvent("COOLDOWN_VIEWER_TABLE_HOTFIXED")
 		EL:RegisterEvent("COOLDOWN_VIEWER_SPELL_OVERRIDE_UPDATED")
 		EL:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
 		EL:RegisterEvent("SPELLS_CHANGED")
 		EL:RegisterEvent("PLAYER_REGEN_ENABLED")
-		EL:RegisterEvent("SPELL_UPDATE_COOLDOWN")
-		EL:RegisterEvent("SPELL_UPDATE_CHARGES")
-		EL:RegisterEvent("SPELL_UPDATE_USES")
-		EL:RegisterEvent("SPELL_UPDATE_ICON")
-		EL:RegisterUnitEvent("UNIT_AURA", "player")
 		-- Keybind text goes stale after any rebind without these; AssistedHighlight
 		-- registers the same three.
 		EL:RegisterEvent("UPDATE_BINDINGS")
@@ -377,9 +234,7 @@ local function EnableModule(enabled)
 		-- Restore Blizzard's own frames before letting go of them.
 		Anchor:SetGlobalHidden(false)
 		Anchor:DetachAll()
-		for _, group in ipairs(GROUPS) do
-			ReleaseWidgets(group.key)
-		end
+		Renderer:Disable()
 		if moduleFrame then
 			moduleFrame:Hide()
 		end
