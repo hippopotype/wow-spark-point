@@ -331,7 +331,11 @@ local function ApplyCounts(frame, state, textSize)
 		stack = frame.Applications and { holder = frame.Applications, text = frame.Applications.Applications },
 	}
 	local okWidth, width = pcall(frame.GetWidth, frame)
-	local inset = (okWidth and Util.IsAccessibleNumber(width) and width > 0) and (width * COUNT_INSET_RATIO) or 2
+	local hasWidth = okWidth and Util.IsAccessibleNumber(width) and width > 0
+	local inset = hasWidth and (width * COUNT_INSET_RATIO) or 2
+	local unit = hasWidth and (width / BASE_SIZE) or 1
+	local offsetX = (tonumber(GetDBValue("cooldownmanager_countOffsetX")) or 0) * unit
+	local offsetY = (tonumber(GetDBValue("cooldownmanager_countOffsetY")) or 0) * unit
 	for key, count in pairs(counts) do
 		local holder, fontString = count.holder, count.text
 		if holder and fontString then
@@ -352,9 +356,9 @@ local function ApplyCounts(frame, state, textSize)
 			-- Above our overlay (border, glow, keybind), which sits above the Cooldown.
 			holder:SetFrameLevel(state.overlay:GetFrameLevel() + 1)
 			fontString:ClearAllPoints()
-			fontString:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -inset, inset)
+			fontString:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -inset + offsetX, inset + offsetY)
 			fontString:SetFont(TEXT_FONT, textSize, TEXT_OUTLINE)
-			fontString:SetTextColor(GetDBColor("cooldownmanager_countColor"))
+			fontString:SetTextColor(GetDBColor(key == "charge" and "cooldownmanager_chargeColor" or "cooldownmanager_stackColor"))
 		end
 	end
 end

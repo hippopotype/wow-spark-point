@@ -103,7 +103,10 @@ local NEW_SETTINGS = {
 	cooldownmanager_textSize = true,
 	cooldownmanager_keybindColor = true,
 	cooldownmanager_timerColor = true,
-	cooldownmanager_countColor = true,
+	cooldownmanager_chargeColor = true,
+	cooldownmanager_stackColor = true,
+	cooldownmanager_countOffsetX = true,
+	cooldownmanager_countOffsetY = true,
 	cooldownmanager_glowColor = true,
 	cooldownmanager_essential_mode = true,
 	cooldownmanager_essential_placement = true,
@@ -1947,7 +1950,26 @@ local function BuildSettingsPanel()
 	)
 	AddColor(cooldownCategory, "cooldownmanager_keybindColor", L["Cooldown Manager Keybind Color"] or "Keybind color")
 	AddColor(cooldownCategory, "cooldownmanager_timerColor", L["Cooldown Manager Timer Color"] or "Timer text color")
-	AddColor(cooldownCategory, "cooldownmanager_countColor", L["Cooldown Manager Count Color"] or "Count text color")
+	AddColor(cooldownCategory, "cooldownmanager_chargeColor", L["Cooldown Manager Charge Color"] or "Charge count color")
+	AddColor(cooldownCategory, "cooldownmanager_stackColor", L["Cooldown Manager Stack Color"] or "Stack count color")
+	AddSlider(
+		cooldownCategory,
+		"cooldownmanager_countOffsetX",
+		L["Cooldown Manager Count Offset X"] or "Count horizontal offset",
+		-12,
+		12,
+		1,
+		L["Cooldown Manager Count Offset Tooltip"] or "Moves the charge and stack count, relative to the icon size, the same in every group."
+	)
+	AddSlider(
+		cooldownCategory,
+		"cooldownmanager_countOffsetY",
+		L["Cooldown Manager Count Offset Y"] or "Count vertical offset",
+		-12,
+		12,
+		1,
+		L["Cooldown Manager Count Offset Tooltip"] or "Moves the charge and stack count, relative to the icon size, the same in every group."
+	)
 	AddSlider(
 		cooldownCategory,
 		"cooldownmanager_textSize",

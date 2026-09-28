@@ -242,7 +242,10 @@ local settingKeys = {
 	"cooldownmanager_textSize",
 	"cooldownmanager_keybindColor",
 	"cooldownmanager_timerColor",
-	"cooldownmanager_countColor",
+	"cooldownmanager_chargeColor",
+	"cooldownmanager_stackColor",
+	"cooldownmanager_countOffsetX",
+	"cooldownmanager_countOffsetY",
 	"cooldownmanager_glowColor",
 	-- Groups are placed from the cast ring's outer edge; follow a resized ring.
 	"cast_radius",
