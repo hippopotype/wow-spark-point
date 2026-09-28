@@ -234,7 +234,7 @@ local function EnsureOwnLayers(frame, state)
 	SetTextureSmooth(state.glowTexture, GLOW_PATH)
 	state.keybindText = state.keybindText or state.overlay:CreateFontString(nil, "OVERLAY")
 	state.keybindText:SetFont(TEXT_FONT, GetTextSize(frame), TEXT_OUTLINE)
-	state.glow = IconGlow:Attach(state.glowTexture)
+	state.glow = state.glow or IconGlow:Attach(state.glowTexture)
 end
 
 local function ApplyIcon(frame, state)
@@ -493,7 +493,6 @@ local function InstallFrameHooks(frame, state)
 	if state.hooked then
 		return
 	end
-	state.hooked = true
 
 	local flash = frame.CooldownFlash and frame.CooldownFlash.FlashAnim
 	if flash and flash.HookScript then
@@ -547,6 +546,8 @@ local function InstallFrameHooks(frame, state)
 	hooksecurefunc(frame.Icon, "SetSize", function()
 		QueueReassert(frame)
 	end)
+
+	state.hooked = true
 end
 
 SkinFrame = function(frame, category)

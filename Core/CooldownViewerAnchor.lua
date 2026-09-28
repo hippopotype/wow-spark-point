@@ -308,9 +308,9 @@ local function InstallHooks(category)
 	end
 end
 
--- Installed for every viewer when the module enables, not only attached ones: the
--- LayoutRefreshed retry must also reach SPARKPOINT-only setups. The hooks are inert
--- for unattached viewers unless hideBlizzardViewers is on.
+-- Installed for every viewer when the module enables, not only attached ones: hooks go
+-- on every viewer so Hidden categories still get LayoutRefreshed and hideBlizzardViewers
+-- handling. The hooks are inert for unattached viewers unless hideBlizzardViewers is on.
 function CooldownViewerAnchor:InstallAllHooks()
 	for category in pairs(VIEWER_BY_CATEGORY) do
 		InstallHooks(category)

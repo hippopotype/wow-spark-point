@@ -181,9 +181,9 @@ EL:SetScript("OnEvent", function(_, event)
 		return
 	end
 	-- PLAYER_REGEN_ENABLED fires after every fight regardless of whether a Refresh was
-	-- actually dropped for combat; without this every combat exit paid for a full
-	-- rebuild (ReleaseWidgets + per-icon ApplyOptions) for nothing. This is an event
-	-- branch, not a per-category one -- Invariant 2 holds.
+	-- actually dropped for combat; without this every combat exit paid for a
+	-- Data:Refresh -> ApplyOptions pass (re-attach + skin pass) for nothing. This is an
+	-- event branch, not a per-category one -- Invariant 2 holds.
 	if event == "PLAYER_REGEN_ENABLED" and not Data:HasPendingRefresh() then
 		return
 	end

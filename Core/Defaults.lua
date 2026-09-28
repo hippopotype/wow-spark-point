@@ -297,6 +297,7 @@ addon.DefaultValues = {
 	cooldownmanager_hideInPetBattle = true,
 	cooldownmanager_hideInSpecialActionBarContext = true,
 
+	-- Appearance (SparkPoint style; also read by the dormant renderer). Font and outline are fixed.
 	cooldownmanager_showKeybind = true,
 	cooldownmanager_glowOnReady = true,
 	cooldownmanager_textSize = 13,
@@ -330,7 +331,6 @@ addon.DefaultValues = {
 
 	-- Dormant SparkPoint icon renderer (Modules/CooldownManagerRenderer.lua) --------
 	-- Not shown in settings. Kept so the renderer can be plugged back in.
-	-- Appearance (SparkPoint style; also read by the dormant renderer). Font and outline are fixed.
 	cooldownmanager_iconOpacity = 1,
 	cooldownmanager_showTimerText = true,
 	cooldownmanager_essential_iconSize = 28,
