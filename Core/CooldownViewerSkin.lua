@@ -57,6 +57,10 @@ local OVERLAY_LEVEL_OFFSET = 10
 -- Charge/stack count: bottom-right, pulled inside the round ring (a point on a circle at
 -- 45 degrees sits ~0.146 of the width in from the corner).
 local COUNT_INSET_RATIO = 0.12
+-- Built-in count position on top of the inset, in pixels at a 32px icon (user-tuned;
+-- the Count offset sliders nudge from here, default 0/0).
+local COUNT_BASE_OFFSET_X = 12
+local COUNT_BASE_OFFSET_Y = -6
 -- Charge recharge: our round swipe, lighter than a real cooldown's.
 local RECHARGE_SWIPE_COLOR = { 0, 0, 0, 0.35 }
 
@@ -334,8 +338,8 @@ local function ApplyCounts(frame, state, textSize)
 	local hasWidth = okWidth and Util.IsAccessibleNumber(width) and width > 0
 	local inset = hasWidth and (width * COUNT_INSET_RATIO) or 2
 	local unit = hasWidth and (width / BASE_SIZE) or 1
-	local offsetX = (tonumber(GetDBValue("cooldownmanager_countOffsetX")) or 0) * unit
-	local offsetY = (tonumber(GetDBValue("cooldownmanager_countOffsetY")) or 0) * unit
+	local offsetX = (COUNT_BASE_OFFSET_X + (tonumber(GetDBValue("cooldownmanager_countOffsetX")) or 0)) * unit
+	local offsetY = (COUNT_BASE_OFFSET_Y + (tonumber(GetDBValue("cooldownmanager_countOffsetY")) or 0)) * unit
 	for key, count in pairs(counts) do
 		local holder, fontString = count.holder, count.text
 		if holder and fontString then

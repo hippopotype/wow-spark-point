@@ -302,11 +302,11 @@ addon.DefaultValues = {
 	cooldownmanager_textSize = 13,
 	cooldownmanager_keybindColor = { r = 0.44, g = 0.98, b = 1, a = 1 },
 	cooldownmanager_timerColor = { r = 1, g = 1, b = 1, a = 1 },
-	cooldownmanager_chargeColor = { r = 1, g = 1, b = 1, a = 1 },
-	cooldownmanager_stackColor = { r = 1, g = 1, b = 1, a = 1 },
-	-- Count position nudge from the inside-the-ring corner, in pixels at a 32px icon.
-	cooldownmanager_countOffsetX = 2,
-	cooldownmanager_countOffsetY = -2,
+	cooldownmanager_chargeColor = { r = 0.44, g = 0.98, b = 1, a = 1 },
+	cooldownmanager_stackColor = { r = 0.44, g = 0.98, b = 1, a = 1 },
+	-- Count position nudge from its built-in spot, in pixels at a 32px icon.
+	cooldownmanager_countOffsetX = 0,
+	cooldownmanager_countOffsetY = 0,
 	cooldownmanager_glowColor = { r = 0.44, g = 0.98, b = 1, a = 1 },
 
 	-- mode: SPARKPOINT_STYLE | BLIZZARD_STYLE | OFF. placement: RIGHT | LEFT | BELOW |
