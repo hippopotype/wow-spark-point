@@ -80,7 +80,8 @@ local function ResolvePlacement(group)
 end
 
 -- First group in a slot hangs off the ring; later ones chain to the previous group's
--- frame (our container, or a Blizzard viewer). No Blizzard geometry is ever read.
+-- frame (the measured bounds of the previous group's shown icons,
+-- CooldownViewerAnchor:GetChainTarget).
 local function ComputeAnchor(group, placement, previous)
 	local spec = SLOT_ANCHORS[placement]
 	local nudgeX = tonumber(GroupSetting(group.key, "nudgeX")) or 0
@@ -112,7 +113,7 @@ function CooldownManager:ApplyOptions()
 			local point, relativeTo, relativePoint, x, y = ComputeAnchor(group, placement, lastInSlot[placement])
 			Anchor:Attach(group.category, point, relativeTo, relativePoint, x, y)
 			-- A missing viewer is treated as absent: the chain skips it.
-			lastInSlot[placement] = Anchor:GetViewer(group.category) or lastInSlot[placement]
+			lastInSlot[placement] = Anchor:GetChainTarget(group.category) or lastInSlot[placement]
 			Skin:SetCategoryEnabled(group.category, mode == "SPARKPOINT_STYLE")
 		end
 	end

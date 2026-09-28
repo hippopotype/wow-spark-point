@@ -69,6 +69,13 @@ local hooked = {}
 -- position, container-managed) or saved Edit Mode anchor (custom position) last
 -- placed the viewer. Captured from reads only; see PinToBlizzardHome below.
 local blizzardHome = {}
+
+-- Chain targets for placement stacking. Blizzard's viewer can report a stale 1x1 size
+-- on a first login (ResizeLayoutMixin:Layout found no resolvable child rects), so the
+-- next group would overlap it. These SparkPoint-owned frames are sized from the
+-- viewer's SHOWN icons instead; reading rects is a plain, native read.
+local boundsFrames = {}
+
 local globalHidden = false
 local editModeSuspended = false
 -- Whether ApplyGlobalHidden has actually run for the CURRENT globalHidden value.
@@ -82,6 +89,79 @@ local globalHiddenApplied = false
 local function GetViewer(category)
 	local name = VIEWER_BY_CATEGORY[category]
 	return name and _G[name] or nil
+end
+
+local function MeasureShownItems(viewer)
+	local ok, children = pcall(function()
+		return { viewer:GetChildren() }
+	end)
+	if not ok or not children then
+		return nil
+	end
+	local left, right, top, bottom
+	for _, child in ipairs(children) do
+		local okChild, isItem, shown = pcall(function()
+			return child.Icon ~= nil and child.Cooldown ~= nil, child:IsShown()
+		end)
+		if okChild and isItem and Util.GetAccessibleBoolean(shown, false) then
+			local okRect, l, b, w, h = pcall(child.GetRect, child)
+			local okScale, scale = pcall(child.GetEffectiveScale, child)
+			if
+				okRect
+				and okScale
+				and Util.IsAccessibleNumber(l)
+				and Util.IsAccessibleNumber(b)
+				and Util.IsAccessibleNumber(w)
+				and Util.IsAccessibleNumber(h)
+				and Util.IsAccessibleNumber(scale)
+				and w > 0
+				and h > 0
+			then
+				local cl, cb, cr, ct = l * scale, b * scale, (l + w) * scale, (b + h) * scale
+				left = left and math.min(left, cl) or cl
+				bottom = bottom and math.min(bottom, cb) or cb
+				right = right and math.max(right, cr) or cr
+				top = top and math.max(top, ct) or ct
+			end
+		end
+	end
+	if not left then
+		return nil
+	end
+	return left, right, top, bottom
+end
+
+local function UpdateBounds(category)
+	local viewer = GetViewer(category)
+	local bounds = boundsFrames[category]
+	if not viewer or not bounds then
+		return
+	end
+	bounds:ClearAllPoints()
+	local left, right, top, bottom = MeasureShownItems(viewer)
+	local okLeft, viewerLeft = pcall(viewer.GetLeft, viewer)
+	local okTop, viewerTop = pcall(viewer.GetTop, viewer)
+	local okScale, viewerScale = pcall(viewer.GetEffectiveScale, viewer)
+	local boundsScale = bounds:GetEffectiveScale()
+	if
+		left
+		and okLeft
+		and okTop
+		and okScale
+		and Util.IsAccessibleNumber(viewerLeft)
+		and Util.IsAccessibleNumber(viewerTop)
+		and Util.IsAccessibleNumber(viewerScale)
+		and boundsScale > 0
+	then
+		-- Offset from the viewer's top-left in our frame's units; the bounds frame follows
+		-- the viewer (and so the cursor) through the anchor.
+		local offsetX = (left - viewerLeft * viewerScale) / boundsScale
+		local offsetY = (top - viewerTop * viewerScale) / boundsScale
+		bounds:SetPoint("TOPLEFT", viewer, "TOPLEFT", offsetX, offsetY)
+		bounds:SetSize(math.max(1, (right - left) / boundsScale), math.max(1, (top - bottom) / boundsScale))
+	else
+		bounds:SetAllPoints(viewer)
+	end
 end
 
 local function ApplyPoint(category)
@@ -177,6 +257,9 @@ local function InstallHooks(category)
 		if attached[category] and not editModeSuspended then
 			ApplyPoint(category)
 		end
+		if attached[category] then
+			UpdateBounds(category)
+		end
 		CooldownViewerAnchor:ApplyGlobalHidden()
 		-- Blizzard's OnAcquireItemFrame calls SetTooltipsShown(true) on every newly
 		-- pooled child, so mouse suppression must be re-applied after each recycle.
@@ -187,6 +270,22 @@ local function InstallHooks(category)
 			end
 		end
 	end)
+
+	-- Any later re-layout (items shown/hidden, icon scale) and in-place data refreshes.
+	if viewer.Layout then
+		hooksecurefunc(viewer, "Layout", function()
+			if attached[category] then
+				UpdateBounds(category)
+			end
+		end)
+	end
+	if viewer.RefreshData then
+		hooksecurefunc(viewer, "RefreshData", function()
+			if attached[category] then
+				UpdateBounds(category)
+			end
+		end)
+	end
 end
 
 -- Installed for every viewer when the module enables, not only attached ones: the
@@ -225,12 +324,27 @@ function CooldownViewerAnchor:Attach(category, point, relativeTo, relativePoint,
 		end
 	end
 	ApplyPoint(category)
+	if not boundsFrames[category] then
+		boundsFrames[category] = CreateFrame("Frame", nil, UIParent)
+		boundsFrames[category]:SetSize(1, 1)
+	end
+	boundsFrames[category]:Show()
+	UpdateBounds(category)
 end
 
 -- For use ONLY as a SetPoint relativeTo when chaining a SparkPoint group after a
 -- Blizzard-mode group. Never call methods on it.
 function CooldownViewerAnchor:GetViewer(category)
 	return GetViewer(category)
+end
+
+-- Chain target for the next group in a placement slot: the measured bounds of this
+-- viewer's shown icons (see boundsFrames), or nil when not attached.
+function CooldownViewerAnchor:GetChainTarget(category)
+	if not attached[category] then
+		return nil
+	end
+	return boundsFrames[category] or GetViewer(category)
 end
 
 -- Edit Mode shows the viewer where Blizzard itself would put it. Pure reads of
@@ -290,6 +404,10 @@ function CooldownViewerAnchor:Detach(category)
 		-- Re-home the viewer before dropping our own attached state below: Blizzard's
 		-- container will not reclaim it on its own until Edit Mode or reload.
 		PinToBlizzardHome(category, viewer)
+	end
+	if boundsFrames[category] then
+		boundsFrames[category]:ClearAllPoints()
+		boundsFrames[category]:Hide()
 	end
 	attached[category] = nil
 	if not viewer then
