@@ -73,8 +73,13 @@ local blizzardHome = {}
 -- Chain targets for placement stacking. Blizzard's viewer can report a stale 1x1 size
 -- on a first login (ResizeLayoutMixin:Layout found no resolvable child rects), so the
 -- next group would overlap it. These SparkPoint-owned frames are sized from the
--- viewer's SHOWN icons instead; reading rects is a plain, native read.
+-- viewer's item slots, shown or hidden, instead; reading rects is a plain, native read.
 local boundsFrames = {}
+-- Per category, whether a next-frame remeasure is already scheduled (coalesces bursts
+-- of Layout/RefreshData calls into a single retry) and how many retries have run since
+-- the last successful measurement (capped so an empty group does not loop forever).
+local remeasureQueued = {}
+local remeasureTries = {}
 
 local globalHidden = false
 local editModeSuspended = false
@@ -91,7 +96,12 @@ local function GetViewer(category)
 	return name and _G[name] or nil
 end
 
-local function MeasureShownItems(viewer)
+-- Tracked-buff items toggle with SetShown without any viewer Layout/RefreshData call
+-- (Blizzard keeps their slots via includeAsLayoutChildWhenHidden), so shown state is
+-- not a requirement here: any child with Icon+Cooldown whose rect still resolves to
+-- accessible, positive numbers counts. Released pool frames clear their anchors and
+-- so drop out (GetRect fails or returns non-positive size) on their own.
+local function MeasureItems(viewer)
 	local ok, children = pcall(function()
 		return { viewer:GetChildren() }
 	end)
@@ -100,10 +110,10 @@ local function MeasureShownItems(viewer)
 	end
 	local left, right, top, bottom
 	for _, child in ipairs(children) do
-		local okChild, isItem, shown = pcall(function()
-			return child.Icon ~= nil and child.Cooldown ~= nil, child:IsShown()
+		local okChild, isItem = pcall(function()
+			return child.Icon ~= nil and child.Cooldown ~= nil
 		end)
-		if okChild and isItem and Util.GetAccessibleBoolean(shown, false) then
+		if okChild and isItem then
 			local okRect, l, b, w, h = pcall(child.GetRect, child)
 			local okScale, scale = pcall(child.GetEffectiveScale, child)
 			if
@@ -138,7 +148,7 @@ local function UpdateBounds(category)
 		return
 	end
 	bounds:ClearAllPoints()
-	local left, right, top, bottom = MeasureShownItems(viewer)
+	local left, right, top, bottom = MeasureItems(viewer)
 	local okLeft, viewerLeft = pcall(viewer.GetLeft, viewer)
 	local okTop, viewerTop = pcall(viewer.GetTop, viewer)
 	local okScale, viewerScale = pcall(viewer.GetEffectiveScale, viewer)
@@ -159,8 +169,21 @@ local function UpdateBounds(category)
 		local offsetY = (top - viewerTop * viewerScale) / boundsScale
 		bounds:SetPoint("TOPLEFT", viewer, "TOPLEFT", offsetX, offsetY)
 		bounds:SetSize(math.max(1, (right - left) / boundsScale), math.max(1, (top - bottom) / boundsScale))
+		remeasureTries[category] = 0
 	else
 		bounds:SetAllPoints(viewer)
+		-- Child rects may resolve a frame later than Blizzard's own layout pass (the stale
+		-- 1x1 viewer on a first login); measure again next frame instead of keeping it.
+		if attached[category] and not remeasureQueued[category] and (remeasureTries[category] or 0) < 10 then
+			remeasureQueued[category] = true
+			remeasureTries[category] = (remeasureTries[category] or 0) + 1
+			C_Timer.After(0, function()
+				remeasureQueued[category] = nil
+				if attached[category] then
+					UpdateBounds(category)
+				end
+			end)
+		end
 	end
 end
 
@@ -257,9 +280,6 @@ local function InstallHooks(category)
 		if attached[category] and not editModeSuspended then
 			ApplyPoint(category)
 		end
-		if attached[category] then
-			UpdateBounds(category)
-		end
 		CooldownViewerAnchor:ApplyGlobalHidden()
 		-- Blizzard's OnAcquireItemFrame calls SetTooltipsShown(true) on every newly
 		-- pooled child, so mouse suppression must be re-applied after each recycle.
@@ -310,6 +330,7 @@ function CooldownViewerAnchor:Attach(category, point, relativeTo, relativePoint,
 	state.relativePoint = relativePoint or "CENTER"
 	state.offsetX = offsetX or 0
 	state.offsetY = offsetY or 0
+	remeasureTries[category] = 0
 	InstallHooks(category)
 	-- Still in Blizzard's bottom container (first attach this session): its current
 	-- center IS Blizzard's default slot. Capture it before we move it.
@@ -332,14 +353,8 @@ function CooldownViewerAnchor:Attach(category, point, relativeTo, relativePoint,
 	UpdateBounds(category)
 end
 
--- For use ONLY as a SetPoint relativeTo when chaining a SparkPoint group after a
--- Blizzard-mode group. Never call methods on it.
-function CooldownViewerAnchor:GetViewer(category)
-	return GetViewer(category)
-end
-
 -- Chain target for the next group in a placement slot: the measured bounds of this
--- viewer's shown icons (see boundsFrames), or nil when not attached.
+-- viewer's item slots (see boundsFrames), or nil when not attached.
 function CooldownViewerAnchor:GetChainTarget(category)
 	if not attached[category] then
 		return nil
