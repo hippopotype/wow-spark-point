@@ -1875,7 +1875,7 @@ local function BuildSettingsPanel()
 	local cdmDisabledNotice = AddInfoText(
 		cooldownCategory,
 		L["Cooldown Manager Disabled Notice"]
-			or "SparkPoint needs Blizzard's Cooldown Manager turned on (Options > Gameplay > Combat) with its bars visible in Edit Mode. To hide Blizzard's bars, use 'Hide Blizzard's original frames' below instead."
+			or "SparkPoint needs Blizzard's Cooldown Manager turned on (Options > Gameplay > Combat) with its bars visible in Edit Mode. To hide Blizzard's bars, use 'Hide Blizzard's bars' below instead."
 	)
 	cdmDisabledNotice:AddShownPredicate(function()
 		return not CooldownData:IsBlizzardModeUsable() or CooldownData:HasPendingDisplayData()

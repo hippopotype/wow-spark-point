@@ -60,9 +60,10 @@ local function IsSpellOnCooldown(spellID)
 	return okShown and shown == true
 end
 
--- true = the current cooldown is only the GCD, false = a real cooldown, nil = unknown
--- (isOnGCD is secret in combat). Unknown is treated as "not a real cooldown", so the
--- ready glow is skipped in combat -- a documented limitation of this renderer.
+-- true = the current cooldown is only the GCD, false = a real cooldown, nil = unknown.
+-- isOnGCD is never secret but is nilable and only trustworthy inside a
+-- SPELL_UPDATE_COOLDOWN handler; this is sampled from the state tick, so unknown is
+-- treated as "not a real cooldown" and the ready glow is skipped for that cooldown.
 local function IsOnGCD(spellID)
 	if not C_Spell or not C_Spell.GetSpellCooldown then
 		return nil

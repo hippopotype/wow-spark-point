@@ -29,8 +29,10 @@
 --   Entries come from CooldownViewerData (raw display-data reads; never build
 --   Blizzard's data -- CooldownViewerBridge.lua rule 3).
 --
--- Known limitation: the ready glow is skipped in combat (its GCD guard reads
--- C_Spell.GetSpellCooldown().isOnGCD, which is secret in combat).
+-- Known limitation: the ready glow's GCD guard samples C_Spell.GetSpellCooldown()
+-- .isOnGCD from the 0.1 s state tick rather than inside a SPELL_UPDATE_COOLDOWN handler,
+-- where Blizzard documents that field as untrustworthy (it is never secret, but nilable);
+-- a nil read skips the ready glow for that cooldown.
 -- Tracked Buffs glow with the looping proc pulse while the buff is up (was a
 -- static glow before the 2026-09-27 fixes).
 --

@@ -431,7 +431,7 @@ L["Hide Blizzard Viewers"] = "Hide Blizzard's bars"
 L["Hide Blizzard Viewers Tooltip"] = "Hide Blizzard's own Cooldown Manager bars for groups set to Hidden. Shown groups always sit next to the cursor."
 L["Cooldown Manager Spell Selection"] = "Choose spells with %s. Icon size, spacing, rows and timers are set in Blizzard's Edit Mode."
 L["Cooldown Manager Disabled Notice"] =
-	"SparkPoint needs Blizzard's Cooldown Manager turned on (Options > Gameplay > Combat) with its bars visible in Edit Mode. To hide Blizzard's bars, use 'Hide Blizzard's original frames' below instead."
+	"SparkPoint needs Blizzard's Cooldown Manager turned on (Options > Gameplay > Combat) with its bars visible in Edit Mode. To hide Blizzard's bars, use 'Hide Blizzard's bars' below instead."
 L["Cooldown Manager SparkPoint Style"] = "SparkPoint style"
 L["Cooldown Manager SparkPoint Style Tooltip"] =
 	"Applies only to groups shown in SparkPoint style. If another icon-skinning addon also styles these icons, disable its Cooldown Manager groups."
