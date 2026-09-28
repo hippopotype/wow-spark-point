@@ -54,6 +54,11 @@ local TEXT_OUTLINE = "OUTLINE"
 local BASE_EXPAND = 6
 local BASE_SIZE = 32
 local OVERLAY_LEVEL_OFFSET = 10
+-- Charge/stack count: bottom-right, pulled inside the round ring (a point on a circle at
+-- 45 degrees sits ~0.146 of the width in from the corner).
+local COUNT_INSET_RATIO = 0.12
+-- Charge recharge: our round swipe, lighter than a real cooldown's.
+local RECHARGE_SWIPE_COLOR = { 0, 0, 0, 0.35 }
 
 -- Dispel colours: ui-debuff-border-<type>-(no)icon atlases (AuraUtil.lua:5-9).
 local DISPEL_COLOR_GLOBALS = {
@@ -75,6 +80,7 @@ local skinned = setmetatable({}, { __mode = "k" })
 local frameCategory = setmetatable({}, { __mode = "k" })
 local reasserting = setmetatable({}, { __mode = "k" })
 local reassertQueued = setmetatable({}, { __mode = "k" })
+local edgeGuard = setmetatable({}, { __mode = "k" })
 
 local SkinFrame -- forward declaration (used by hooks defined before it)
 
@@ -273,6 +279,24 @@ local function ApplyOwnLayers(frame, state)
 	end
 end
 
+-- Blizzard shows charge recharge as a square edge line with no swipe; on a round icon the
+-- line's corners stick out. Replace it with a light round swipe. Called from the
+-- SetDrawEdge post-hook (runs after Blizzard's own swipe flags, Cooldown.lua:4) and once
+-- per skin pass.
+local function ApplyRechargeStyle(frame, drawEdge)
+	if not drawEdge then
+		return
+	end
+	local cooldown = frame.Cooldown
+	edgeGuard[frame] = true
+	pcall(function()
+		cooldown:SetDrawEdge(false)
+		cooldown:SetDrawSwipe(true)
+		cooldown:SetSwipeColor(unpack(RECHARGE_SWIPE_COLOR))
+	end)
+	edgeGuard[frame] = nil
+end
+
 local function ApplyCooldown(frame, state, textSize)
 	local cooldown = frame.Cooldown
 	cooldown:SetSwipeTexture(SWIPE_PATH)
@@ -285,16 +309,50 @@ local function ApplyCooldown(frame, state, textSize)
 		countdown:SetFont(TEXT_FONT, textSize, TEXT_OUTLINE)
 		countdown:SetTextColor(GetDBColor("cooldownmanager_timerColor"))
 	end
+
+	-- The widget's built-in end-of-cooldown "bling" is a square star that also fires on
+	-- every GCD end; our round ready glow replaces it.
+	if state.drawBling == nil then
+		local okBling, bling = pcall(cooldown.GetDrawBling, cooldown)
+		local drawBling = true
+		if okBling then
+			drawBling = Util.GetAccessibleBoolean(bling, true)
+		end
+		state.drawBling = drawBling
+	end
+	cooldown:SetDrawBling(false)
+	local okEdge, drawEdge = pcall(cooldown.GetDrawEdge, cooldown)
+	ApplyRechargeStyle(frame, okEdge and Util.GetAccessibleBoolean(drawEdge, false) == true)
 end
 
 local function ApplyCounts(frame, state, textSize)
-	local chargeText = frame.ChargeCount and frame.ChargeCount.Current
-	local stackText = frame.Applications and frame.Applications.Applications
-	for key, fontString in pairs({ charge = chargeText, stack = stackText }) do
-		if fontString then
+	local counts = {
+		charge = frame.ChargeCount and { holder = frame.ChargeCount, text = frame.ChargeCount.Current },
+		stack = frame.Applications and { holder = frame.Applications, text = frame.Applications.Applications },
+	}
+	local okWidth, width = pcall(frame.GetWidth, frame)
+	local inset = (okWidth and Util.IsAccessibleNumber(width) and width > 0) and (width * COUNT_INSET_RATIO) or 2
+	for key, count in pairs(counts) do
+		local holder, fontString = count.holder, count.text
+		if holder and fontString then
 			if not state.countFonts[key] then
 				state.countFonts[key] = RecordFont(fontString)
 			end
+			if not state.countLayout[key] then
+				local point, relativeTo, relativePoint, x, y = fontString:GetPoint(1)
+				state.countLayout[key] = {
+					level = holder:GetFrameLevel(),
+					point = point,
+					relativeTo = relativeTo,
+					relativePoint = relativePoint,
+					x = x,
+					y = y,
+				}
+			end
+			-- Above our overlay (border, glow, keybind), which sits above the Cooldown.
+			holder:SetFrameLevel(state.overlay:GetFrameLevel() + 1)
+			fontString:ClearAllPoints()
+			fontString:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -inset, inset)
 			fontString:SetFont(TEXT_FONT, textSize, TEXT_OUTLINE)
 			fontString:SetTextColor(GetDBColor("cooldownmanager_countColor"))
 		end
@@ -467,6 +525,14 @@ local function InstallFrameHooks(frame, state)
 		end)
 	end
 
+	-- Charge recharge: Blizzard re-enables the square edge on every refresh.
+	hooksecurefunc(frame.Cooldown, "SetDrawEdge", function(_, drawEdge)
+		if edgeGuard[frame] or not IsActive(frame) then
+			return
+		end
+		ApplyRechargeStyle(frame, Util.GetAccessibleBoolean(drawEdge, false) == true)
+	end)
+
 	hooksecurefunc(frame.Icon, "SetTexCoord", function()
 		QueueReassert(frame)
 	end)
@@ -478,7 +544,7 @@ end
 SkinFrame = function(frame, category)
 	local state = skinned[frame]
 	if not state then
-		state = { hiddenRegions = {}, removedMasks = {}, removedOorMasks = {}, countFonts = {} }
+		state = { hiddenRegions = {}, removedMasks = {}, removedOorMasks = {}, countFonts = {}, countLayout = {} }
 		skinned[frame] = state
 	end
 	frameCategory[frame] = category
@@ -537,6 +603,22 @@ local function UnskinFrame(frame)
 	pcall(RestoreFont, frame.ChargeCount and frame.ChargeCount.Current, state.countFonts.charge)
 	pcall(RestoreFont, frame.Applications and frame.Applications.Applications, state.countFonts.stack)
 	state.countFonts = {}
+	for key, holder in pairs({ charge = frame.ChargeCount, stack = frame.Applications }) do
+		local layout = state.countLayout[key]
+		if holder and layout then
+			pcall(function()
+				holder:SetFrameLevel(layout.level)
+				local fontString = key == "charge" and holder.Current or holder.Applications
+				if fontString and layout.point then
+					fontString:ClearAllPoints()
+					fontString:SetPoint(layout.point, layout.relativeTo, layout.relativePoint, layout.x, layout.y)
+				end
+			end)
+		end
+	end
+	state.countLayout = {}
+	pcall(cooldown.SetDrawBling, cooldown, state.drawBling ~= false)
+	state.drawBling = nil
 
 	for region, alpha in pairs(state.hiddenRegions) do
 		pcall(region.SetAlpha, region, alpha)
