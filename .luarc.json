@@ -66,6 +66,7 @@
     "MinimalSliderWithSteppersMixin",
     "Minimap",
     "RAID_CLASS_COLORS",
+    "RELOADUI",
     "ReloadUI",
     "CreateSettingsListSectionHeaderInitializer",
     "Settings",

@@ -15,6 +15,7 @@ L["Vertical Offset Tooltip"] = "Vertical offset from cursor position"
 L["Anchor Horizontal Offset"] = "Anchor Horizontal Offset"
 L["Anchor Vertical Offset"] = "Anchor Vertical Offset"
 L["Modules"] = "Modules"
+L["Module Off Notice"] = "%s is turned off. Turn it on in the Modules list on the main SparkPoint page to use these settings."
 L["SparkPoint"] = "SparkPoint"
 L["Show Minimap Button"] = "Show Minimap Button"
 L["Show Minimap Button Tooltip"] = "Show a SparkPoint minimap button that opens settings."
@@ -453,6 +454,8 @@ L["Cooldown Manager Visibility Tooltip"] = "When to show the cooldown groups nex
 L["Advanced"] = "Advanced"
 L["Cooldown Manager Advanced Tooltip"] = "Fine-tune each group's position from its placement."
 L["Cooldown Manager Advanced Nudge Tooltip"] = "Moves this group from its placement. Groups stacked after it on the same side move with it."
+L["Cooldown Manager Reload Confirm"] = "Reload the interface to apply the new Cooldown Manager style cleanly?"
+L["Later"] = "Later"
 
 --------------------------------------------------------------------------------
 -- Performance Stats

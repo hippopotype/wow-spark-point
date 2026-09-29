@@ -313,18 +313,19 @@ addon.DefaultValues = {
 	-- mode: SPARKPOINT_STYLE | BLIZZARD_STYLE | OFF. placement: RIGHT | LEFT | BELOW |
 	-- ABOVE, relative to the cast ring. nudgeX/nudgeY nudge from the preset anchor.
 	-- Both styles use Blizzard's viewer at the cursor; SPARKPOINT_STYLE is skinned by
-	-- Core/CooldownViewerSkin.lua.
-	cooldownmanager_essential_mode = "SPARKPOINT_STYLE",
+	-- Core/CooldownViewerSkin.lua. Groups default to OFF (Hidden) so nothing is shown
+	-- until the player picks a style.
+	cooldownmanager_essential_mode = "OFF",
 	cooldownmanager_essential_placement = "RIGHT",
 	cooldownmanager_essential_nudgeX = 0,
 	cooldownmanager_essential_nudgeY = 0,
 
-	cooldownmanager_utility_mode = "SPARKPOINT_STYLE",
+	cooldownmanager_utility_mode = "OFF",
 	cooldownmanager_utility_placement = "RIGHT",
 	cooldownmanager_utility_nudgeX = 0,
 	cooldownmanager_utility_nudgeY = 0,
 
-	cooldownmanager_trackedbuff_mode = "SPARKPOINT_STYLE",
+	cooldownmanager_trackedbuff_mode = "OFF",
 	cooldownmanager_trackedbuff_placement = "LEFT",
 	cooldownmanager_trackedbuff_nudgeX = 0,
 	cooldownmanager_trackedbuff_nudgeY = 0,

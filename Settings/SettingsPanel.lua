@@ -18,6 +18,7 @@ local ResourceColors = addon.ResourceColors
 local ADDON_TITLE = "SparkPoint"
 local PROFILE_MODE_CONFIRM_POPUP = "SPARKPOINT_CONFIRM_PROFILE_MODE_CHANGE"
 local PROFILE_COPY_CONFIRM_POPUP = "SPARKPOINT_CONFIRM_PROFILE_COPY"
+local RELOAD_UI_CONFIRM_POPUP = "SPARKPOINT_CONFIRM_RELOAD_UI"
 
 local NEW_SETTINGS = {
 	hud_frameStrata = true,
@@ -332,6 +333,20 @@ local function BuildSettingsPanel()
 		end
 		Settings.RegisterInitializer(cat, initializer)
 		return initializer
+	end
+
+	-- Top-of-page notice for a module's own settings page while that module is off. The
+	-- shown predicate is evaluated each time the page is displayed, so it follows the
+	-- toggle on the main page without a reload.
+	local function AddModuleOffNotice(cat, moduleKey, moduleName)
+		local notice = AddInfoText(
+			cat,
+			string.format(L["Module Off Notice"] or "%s is turned off. Turn it on in the Modules list on the main SparkPoint page to use these settings.", moduleName)
+		)
+		notice:AddShownPredicate(function()
+			return not GetDBBool(moduleKey)
+		end)
+		return notice
 	end
 
 	local function IsAssistedCVarEnabled()
@@ -918,6 +933,7 @@ local function BuildSettingsPanel()
 	-- Cast Ring Settings Subcategory
 	------------------------------------------------------------------------
 	local castCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Cast Ring"] or "Cast Ring")
+	AddModuleOffNotice(castCategory, "moduleEnabled_Cast", L["Cast Ring"] or "Cast Ring")
 
 	AddSlider(castCategory, "cast_radius", L["Cast Radius"] or "Cast Radius", 16, 64, 1, L["Radius Tooltip"] or "Size of the cast ring")
 
@@ -1093,6 +1109,7 @@ local function BuildSettingsPanel()
 	-- Ring Slots Settings Subcategory
 	------------------------------------------------------------------------
 	local slotsCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Inner Ring Slots"] or "Ring Slots")
+	AddModuleOffNotice(slotsCategory, "moduleEnabled_Cast", L["Cast Ring"] or "Cast Ring")
 	local slotProviderOptions = addon.SlotProviders:GetDropdownOptions()
 
 	for _, slotInfo in ipairs({
@@ -1189,6 +1206,7 @@ local function BuildSettingsPanel()
 	-- Bar Slots Settings Subcategory
 	------------------------------------------------------------------------
 	local barSlotsCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Bar Slots"] or "Bar Slots")
+	AddModuleOffNotice(barSlotsCategory, "moduleEnabled_BarSlots", L["Bar Slots"] or "Bar Slots")
 	local barSlotProviderOptions = {
 		{ value = "NONE", label = L["None"] or "None" },
 	}
@@ -1435,6 +1453,7 @@ local function BuildSettingsPanel()
 	-- Class Resource Settings Subcategory
 	------------------------------------------------------------------------
 	local cpCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Class Resource"] or "Class Resource")
+	AddModuleOffNotice(cpCategory, "moduleEnabled_ClassResource", L["Class Resource"] or "Class Resource")
 
 	AddDropdown(
 		cpCategory,
@@ -1526,6 +1545,7 @@ local function BuildSettingsPanel()
 	-- Ring Settings Subcategory
 	------------------------------------------------------------------------
 	local ringCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Decorative Ring"] or "Decorative Ring")
+	AddModuleOffNotice(ringCategory, "moduleEnabled_Ring", L["Decorative Ring"] or "Decorative Ring")
 	local ringModule = addon.Modules and addon.Modules.RingObj
 	local ringTextureOptions = (ringModule and ringModule.TEXTURE_OPTIONS)
 		or {
@@ -1590,6 +1610,7 @@ local function BuildSettingsPanel()
 	-- Spell Icon Settings Subcategory
 	------------------------------------------------------------------------
 	local iconCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Spell Icon"] or "Spell Icon")
+	AddModuleOffNotice(iconCategory, "moduleEnabled_SpellIcon", L["Spell Icon"] or "Spell Icon")
 
 	AddSlider(iconCategory, "spellicon_size", L["Spell Icon Size"] or "Spell Icon Size", 16, 64, 1)
 	AddSlider(iconCategory, "spellicon_offsetX", L["Spell Icon Horizontal Offset"] or "Spell Icon Horizontal Offset", -100, 100, 1)
@@ -1640,6 +1661,7 @@ local function BuildSettingsPanel()
 	-- Assisted Highlight Settings Subcategory
 	------------------------------------------------------------------------
 	local assistedCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Assisted Highlight"] or "Assisted Highlight")
+	AddModuleOffNotice(assistedCategory, "moduleEnabled_AssistedHighlight", L["Assisted Highlight"] or "Assisted Highlight")
 
 	if not IsAssistedCVarEnabled() then
 		AddInfoText(
@@ -1785,6 +1807,7 @@ local function BuildSettingsPanel()
 	-- Performance Stats Settings Subcategory
 	------------------------------------------------------------------------
 	local performanceCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Performance Stats"] or "Performance Stats")
+	AddModuleOffNotice(performanceCategory, "moduleEnabled_PerformanceStats", L["Performance Stats"] or "Performance Stats")
 	AddDropdown(
 		performanceCategory,
 		"performancestats_font",
@@ -1856,6 +1879,7 @@ local function BuildSettingsPanel()
 	-- Cooldown Manager Settings Subcategory
 	------------------------------------------------------------------------
 	local cooldownCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Cooldown Manager"] or "Cooldown Manager")
+	AddModuleOffNotice(cooldownCategory, "moduleEnabled_CooldownManager", L["Cooldown Manager"] or "Cooldown Manager")
 	local CooldownData = addon.CooldownViewerData
 
 	-- No button: opening Blizzard's settings from addon code runs its RefreshLayout ->
@@ -1905,6 +1929,23 @@ local function BuildSettingsPanel()
 		{ key = "trackedbuff", label = "Tracked Buffs" },
 	}
 
+	-- Switching a group's style applies immediately; a reload gives a clean state (the
+	-- skinner's restore path cannot undo everything another skinner may have changed).
+	if StaticPopupDialogs and not StaticPopupDialogs[RELOAD_UI_CONFIRM_POPUP] then
+		StaticPopupDialogs[RELOAD_UI_CONFIRM_POPUP] = {
+			text = L["Cooldown Manager Reload Confirm"] or "Reload the interface to apply the new Cooldown Manager style cleanly?",
+			button1 = RELOADUI or "Reload UI",
+			button2 = L["Later"] or "Later",
+			OnAccept = function()
+				ReloadUI()
+			end,
+			timeout = 0,
+			whileDead = true,
+			hideOnEscape = true,
+			preferredIndex = STATICPOPUP_NUMDIALOGS,
+		}
+	end
+
 	for _, group in ipairs(cooldownGroups) do
 		local prefix = "cooldownmanager_" .. group.key .. "_"
 		Settings.RegisterInitializer(cooldownCategory, CreateSettingsListSectionHeaderInitializer(L[group.label] or group.label))
@@ -1917,6 +1958,11 @@ local function BuildSettingsPanel()
 			L["Show As Tooltip"]
 				or "SparkPoint style skins Blizzard's icons with the SparkPoint look. Blizzard style keeps Blizzard's look. Both keep Blizzard's timers, charges and stacks and sit next to the cursor. Hidden leaves this group out of the HUD."
 		)
+		CallbackRegistry:RegisterSettingCallback(prefix .. "mode", function(_, userInput)
+			if userInput and GetDBBool("moduleEnabled_CooldownManager") and StaticPopup_Show then
+				StaticPopup_Show(RELOAD_UI_CONFIRM_POPUP)
+			end
+		end)
 		-- Read the parent setting itself, not the DB: Blizzard fires the child's
 		-- re-evaluation from the same value-change notification that writes the DB,
 		-- and the order of those two callbacks is not guaranteed.

@@ -117,6 +117,7 @@ globals = {
 	-- WoW locale strings
 	"ACCEPT",
 	"CANCEL",
+	"RELOADUI",
 	"Enum",
 	"C_PetBattles",
 	"C_Texture",
