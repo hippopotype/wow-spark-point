@@ -71,19 +71,6 @@
   </tbody>
 </table>
 <hr />
-<p style="text-align: center">
-  <span style="color: rgb(236, 202, 250)"
-    ><em>
-      If SparkPoint has been useful for your runs, I&rsquo;d really appreciate a
-      small favor: leave a kind word about it on CurseForge, Discord, Reddit, or
-      wherever your WoW friends hang out. A quick rating, short comment, or
-      screenshot helps far more than you might think, and it genuinely helps the
-      addon reach more players. Thanks for helping SparkPoint grow, and happy
-      Midnight to you all!
-    </em></span
-  >
-</p>
-<hr />
 <h2><strong>Overview</strong></h2>
 <p>
   SparkPoint is a lightweight, event-driven WoW addon that keeps important
@@ -105,6 +92,7 @@
     feedback
   </li>
   <li>Assisted Highlight support for Blizzard's suggested-spell system</li>
+  <li>Cooldown Manager groups placed around the cast ring</li>
   <li>Optional performance stats HUD</li>
   <li>
     Shared visibility rules, per-module overrides, and optional HUD transitions
@@ -113,13 +101,28 @@
     Cursor-attached mode, fixed anchor mode, minimap button, and profile support
   </li>
 </ul>
-<h2><strong>New In v1.4.5</strong></h2>
+<h2><strong>New In v1.5.0</strong></h2>
 <ul>
-  <li>Added compatibility for WoW 12.1.0</li>
+  <li>
+    Added the Cooldown Manager module: Blizzard's Essential Cooldowns, Utility
+    Cooldowns, and Tracked Buffs next to the cast ring
+  </li>
+  <li>
+    Each group can be shown in SparkPoint style, Blizzard style, or hidden, and
+    placed right, left, above, or below the ring
+  </li>
+  <li>
+    SparkPoint style adds keybinds, a ready glow, and adjustable text size,
+    colors, and count position
+  </li>
+  <li>Added an option to hide Blizzard's own Cooldown Manager bars</li>
+  <li>Settings pages now show a notice when their module is turned off</li>
+  <li>Internal cleanup and stability fixes</li>
 </ul>
 
 <h2><strong>Previously In v1.4.x</strong></h2>
 <ul>
+  <li>Added compatibility for WoW 12.1.0</li>
   <li>Updated addon metadata for WoW 12.0.7</li>
   <li>
     Added empowered cast support
@@ -360,6 +363,33 @@
   <li>Hidden automatically if Blizzard Assisted Highlight is disabled</li>
   <li>Per-module visibility override</li>
 </ul>
+<h3>Cooldown Manager</h3>
+<p>
+  Places Blizzard's Cooldown Manager groups around the cast ring. Turn it on in
+  the Modules list; it requires Blizzard's Cooldown Manager to be enabled
+  (Options &gt; Gameplay &gt; Combat).
+</p>
+<ul>
+  <li>
+    Essential Cooldowns, Utility Cooldowns, and Tracked Buffs configured
+    independently
+  </li>
+  <li>Each group shown in SparkPoint style, Blizzard style, or hidden</li>
+  <li>
+    Right, left, above, or below placement with fine-tune nudges; groups on the
+    same side stack outward
+  </li>
+  <li>
+    SparkPoint style: keybinds, ready glow with color, text size, and timer,
+    charge, stack, and keybind colors
+  </li>
+  <li>Optional hiding of Blizzard's own Cooldown Manager bars</li>
+  <li>
+    Spells, icon size, spacing, and rows stay managed in Blizzard's Cooldown
+    Manager and Edit Mode
+  </li>
+  <li>Per-module visibility override</li>
+</ul>
 <h3>Visibility And Transitions</h3>
 <p>
   SparkPoint supports both addon-wide visibility rules and per-module overrides.
@@ -452,6 +482,7 @@
   <li>Decorative Ring</li>
   <li>Spell Icon</li>
   <li>Assisted Highlight</li>
+  <li>Cooldown Manager</li>
   <li>Profiles</li>
 </ul>
 <hr />

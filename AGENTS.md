@@ -19,9 +19,14 @@ SparkPoint/
 │   ├── Initialization.lua   # Namespace, CallbackRegistry, event loading
 │   ├── Util.lua             # Shared texture, numeric, copy, and layering helpers
 │   ├── API.lua              # Utility functions (new WoW APIs)
+│   ├── EmpowerStageLayout.lua # Empowered cast stage geometry
+│   ├── ResourceModel.lua    # Class/spec/form resource ownership
+│   ├── ClassResourceSystems.lua # Class resource system registry
 │   ├── IconMask.lua         # Shared masked icon rendering helpers
+│   ├── IconGlow.lua         # Ready/pulse glow animations for icons
 │   ├── Defaults.lua         # DefaultValues, RootDefaultValues, ProfileModes
 │   ├── Database.lua         # GetDBValue/SetDBValue, profile management
+│   ├── ResourceColors.lua   # Addon-wide resource color overrides
 │   ├── Transition.lua       # Shared alpha transitions for HUD elements
 │   ├── Visibility.lua       # Shared visibility policy (ALWAYS/IN_COMBAT/etc.)
 │   ├── ModuleRegistry.lua   # ControlCenter module registration
@@ -29,22 +34,34 @@ SparkPoint/
 │   ├── BarProviders.lua     # Horizontal bar slot data provider registry
 │   ├── AnchorFrame.lua      # Cursor-following anchor frame + slash commands
 │   ├── HUDLayers.lua        # Centralized z-order layer roots
+│   ├── Keybinds.lua         # Shared action-slot keybind resolution
+│   ├── CooldownViewerBridge.lua # Quarantined access to Blizzard cooldown viewers
+│   ├── CooldownViewerData.lua   # C_CooldownViewer entry model
+│   ├── CooldownViewerAnchor.lua # Anchors Blizzard viewers to the HUD
+│   ├── CooldownViewerSkin.lua   # SparkPoint skin for Blizzard cooldown icons
 │   └── MinimapButton.lua    # Native minimap button (no LibDBIcon)
 ├── Widgets/
 │   ├── DonutWidget.lua      # Ring/arc rendering widget
 │   ├── SlotRingWidget.lua   # Inner slot arc widget
-│   └── BarSlotWidget.lua    # Curved horizontal bar widget
+│   ├── BarSlotWidget.lua    # Curved horizontal bar widget
+│   └── CooldownIconWidget.lua # Pooled round cooldown icon (dormant renderer)
 ├── Providers/
 │   ├── GCD.lua              # Global cooldown slot provider
 │   ├── HealthBar.lua        # Health bar provider
-│   └── ManaBar.lua          # Mana bar provider
+│   ├── ManaBar.lua          # Mana bar provider
+│   └── ClassPower.lua       # Continuous class power bar provider
 ├── Modules/                 # Feature modules
+│   ├── CastEmpowerRenderer.lua # Empowered cast stage rendering
 │   ├── Cast.lua             # Cast ring with latency + inner slots + spell icon
 │   ├── BarSlots.lua         # Curved bar slots above/below cast ring
+│   ├── ClassResourceSystems/ # Per-class resource renderers
 │   ├── ClassResource.lua    # Class resource pips / text display
 │   ├── DecorativeRing.lua   # Decorative rotating ring
 │   ├── SpellIcon.lua        # Spell icon proxy (delegates to Cast)
-│   └── AssistedHighlight.lua # Blizzard assisted highlight next spell
+│   ├── AssistedHighlight.lua # Blizzard assisted highlight next spell
+│   ├── CooldownManagerRenderer.lua # SparkPoint icon renderer (dormant)
+│   ├── CooldownManager.lua  # Cooldown Manager groups around the ring
+│   └── PerformanceStats.lua # Addon memory/CPU readout
 ├── Settings/
 │   ├── SettingsTemplates.xml  # Color picker XML mixin
 │   ├── ColorOverrides.lua     # Color override widget logic

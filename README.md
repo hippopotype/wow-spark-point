@@ -10,7 +10,7 @@
 
 <p align="center">
   <img alt="WoW Version" src="https://img.shields.io/badge/WoW-12.1.0-blue" />
-  <img alt="Version" src="https://img.shields.io/badge/version-1.4.5-green" />
+  <img alt="Version" src="https://img.shields.io/badge/version-1.5.0-green" />
   <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0-blue" />
   <a href="https://www.curseforge.com/wow/addons/sparkpoint">
     <img alt="CurseForge" src="https://img.shields.io/badge/CurseForge-SparkPoint-orange" />
@@ -32,18 +32,25 @@ It currently includes:
 - Decorative rotating ring
 - Spell icon with cast swipe, instant-cast feedback, and cooldown-blocked feedback
 - Assisted Highlight support for Blizzard's suggested-spell system
+- Cooldown Manager groups placed around the cast ring
 - Optional performance stats HUD
 - Shared visibility rules, per-module overrides, and optional HUD transitions
 - Cursor-attached mode, fixed anchor mode, minimap button, and profile support
 
-## New In v1.4.5
+## New In v1.5.0
+
+- Added the Cooldown Manager module: Blizzard's Essential Cooldowns, Utility Cooldowns, and Tracked Buffs next to the cast ring
+- Each group can be shown in SparkPoint style, Blizzard style, or hidden, and placed right, left, above, or below the ring
+- SparkPoint style adds keybinds, a ready glow, and adjustable text size, colors, and count position
+- Added an option to hide Blizzard's own Cooldown Manager bars
+- Settings pages now show a notice when their module is turned off
+- Internal cleanup and stability fixes
+
+## Previously In v1.4.x
 
 - Added compatibility for WoW 12.1.0
 - Updated aura-driven class resources for secret `UNIT_AURA` payloads
 - Hardened hover visibility checks for restricted UI objects
-
-## Previously In v1.4.x
-
 - Updated addon metadata for WoW 12.0.7
 - Added empowered cast support
 - Added a cast spell text anchor setting
@@ -175,6 +182,18 @@ Displays Blizzard Assisted Highlight's suggested spell near the SparkPoint HUD.
 - Hidden automatically if Blizzard Assisted Highlight is disabled
 - Per-module visibility override
 
+### Cooldown Manager
+
+Places Blizzard's Cooldown Manager groups around the cast ring. Turn it on in the Modules list; it requires Blizzard's Cooldown Manager to be enabled (Options > Gameplay > Combat).
+
+- Essential Cooldowns, Utility Cooldowns, and Tracked Buffs configured independently
+- Each group shown in SparkPoint style, Blizzard style, or hidden
+- Right, left, above, or below placement with fine-tune nudges; groups on the same side stack outward
+- SparkPoint style: keybinds, ready glow with color, text size, and timer, charge, stack, and keybind colors
+- Optional hiding of Blizzard's own Cooldown Manager bars
+- Spells, icon size, spacing, and rows stay managed in Blizzard's Cooldown Manager and Edit Mode
+- Per-module visibility override
+
 ### Performance Stats
 
 Optional performance readout for local development and lightweight HUD diagnostics.
@@ -258,6 +277,7 @@ Open the Blizzard Settings panel via `/sparkpoint`. SparkPoint provides sections
 - Decorative Ring
 - Spell Icon
 - Assisted Highlight
+- Cooldown Manager
 - Profiles
 
 ## Compatibility
