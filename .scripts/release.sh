@@ -76,7 +76,7 @@ echo "  Release packaged:"
 echo "  $OUTPUT"
 echo ""
 echo "  Contents:"
-unzip -l "$OUTPUT" | awk 'NR>3 && /SparkPoint\// {print "  " $NF}' | head -30
+unzip -l "$OUTPUT" | awk 'NR>3 && /SparkPoint\// && n++ < 30 {print "  " $NF}'
 TOTAL=$(unzip -l "$OUTPUT" | grep -c "SparkPoint/" || true)
 echo "  ... ($TOTAL files total)"
 echo ""
