@@ -31,7 +31,7 @@ return function(T)
 		{
 			name = "spec unknown (nil) on retail resolves empty without error",
 			fn = function()
-				local resolveFor, addon = Snapshot.NewResolver("Standard", standardExtras())
+				local _, addon = Snapshot.NewResolver("Standard", standardExtras())
 				_G.C_SpecializationInfo = {
 					GetSpecialization = function()
 						return nil
@@ -55,6 +55,49 @@ return function(T)
 				T.eq(addon.API.GetSpecIndex(), 0, "GetSpecIndex")
 				local resolved = addon.ResourceModel:Resolve("player")
 				T.eq(#resolved.resources, 0, "resources")
+			end,
+		},
+		{
+			name = "Forever data is class-keyed and empty -> empty resources",
+			fn = function()
+				local resolveFor = Snapshot.NewResolver("Camelot", { "Data/ResourceModels_Forever.lua" })
+				local resolved = resolveFor("ROGUE", 0, "ENERGY")
+				T.eq(#resolved.resources, 0, "resources")
+				T.eq(resolved.specModel, nil, "specModel")
+			end,
+		},
+		{
+			name = "class-keyed data resolves by class and druid form",
+			fn = function()
+				local resolveFor, addon = Snapshot.NewResolver("Camelot")
+				local RM = addon.ResourceModel
+				RM:SetModelData({
+					keyedBy = "class",
+					models = {
+						DRUID = {
+							resources = { RM.ResourceRef("MANA", RM.Roles.MANA) },
+							formOverrides = { CAT = { resources = { RM.ResourceRef("ENERGY") } } },
+						},
+					},
+				})
+				T.eq(resolveFor("DRUID", 0, "MANA").resources[1].key, "MANA", "caster form")
+				T.eq(resolveFor("DRUID", 0, "ENERGY").resources[1].key, "ENERGY", "cat form")
+			end,
+		},
+		{
+			name = "no registered data -> empty resources",
+			fn = function()
+				local resolveFor = Snapshot.NewResolver("Standard")
+				T.eq(#resolveFor("WARLOCK", 1, "MANA").resources, 0, "resources")
+			end,
+		},
+		{
+			name = "SetModelData rejects an unknown keyedBy",
+			fn = function()
+				local _, addon = Snapshot.NewResolver("Standard")
+				T.errors(function()
+					addon.ResourceModel:SetModelData({ keyedBy = "race", models = {} })
+				end, "keyedBy")
 			end,
 		},
 	}

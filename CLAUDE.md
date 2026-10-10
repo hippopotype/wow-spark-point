@@ -91,6 +91,9 @@ SparkPoint/
 │   ├── CooldownViewerAnchor.lua # Anchors Blizzard viewers to the HUD
 │   ├── CooldownViewerSkin.lua   # SparkPoint skin for Blizzard cooldown icons
 │   └── MinimapButton.lua    # Native minimap button (no LibDBIcon)
+├── Data/
+│   ├── ResourceModels_Standard.lua # Retail spec-keyed resource models
+│   └── ResourceModels_Forever.lua  # Forever class-keyed resource models
 ├── Widgets/
 │   ├── DonutWidget.lua      # Ring/arc rendering widget
 │   ├── SlotRingWidget.lua   # Inner slot arc widget
