@@ -375,6 +375,8 @@ SlashCmdList["SPARKPOINT"] = function(msg)
 		addon.SetDBValue("position_y", 400, true)
 		addon.SetDBValue("attachToMouse", true, true)
 		print("SparkPoint: Position reset to defaults.")
+	elseif msg == "status" then
+		addon.Diagnostics:PrintStatus()
 	else
 		OpenSettingsSafely()
 	end

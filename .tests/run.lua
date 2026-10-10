@@ -68,6 +68,7 @@ local TEST_FILES = {
 	"test_api.lua",
 	"test_resource_model.lua",
 	"test_module_registry.lua",
+	"test_diagnostics.lua",
 }
 
 -- Cases install WoW stubs into _G; restoring after every case keeps them order-independent.

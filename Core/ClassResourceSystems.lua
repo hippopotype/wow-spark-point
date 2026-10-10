@@ -29,3 +29,12 @@ function ClassResourceSystems:Create(systemID, context)
 
 	return factory(context)
 end
+
+function ClassResourceSystems:GetRegisteredIDs()
+	local ids = {}
+	for systemID in pairs(factories) do
+		ids[#ids + 1] = systemID
+	end
+	table.sort(ids)
+	return ids
+end

@@ -36,6 +36,7 @@ Core\CooldownViewerData.lua
 Core\CooldownViewerAnchor.lua
 Core\CooldownViewerSkin.lua
 Core\MinimapButton.lua
+Core\Diagnostics.lua
 
 # Widgets
 Widgets\DonutWidget.lua

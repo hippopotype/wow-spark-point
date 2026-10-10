@@ -33,6 +33,7 @@ Domain-specific guidance lives in `.claude/skills/`. Key skills:
 /sparkpoint unlock    # Unlock position for manual placement
 /sparkpoint lock      # Lock position
 /sparkpoint reset     # Reset position to defaults
+/sparkpoint status    # Flavor, capabilities, module availability
 ```
 
 ## Dev Tooling
@@ -90,7 +91,8 @@ SparkPoint/
 │   ├── CooldownViewerData.lua   # C_CooldownViewer entry model
 │   ├── CooldownViewerAnchor.lua # Anchors Blizzard viewers to the HUD
 │   ├── CooldownViewerSkin.lua   # SparkPoint skin for Blizzard cooldown icons
-│   └── MinimapButton.lua    # Native minimap button (no LibDBIcon)
+│   ├── MinimapButton.lua    # Native minimap button (no LibDBIcon)
+│   └── Diagnostics.lua      # /sparkpoint status (flavor, capabilities, modules)
 ├── Data/
 │   ├── ResourceModels_Standard.lua # Retail spec-keyed resource models
 │   └── ResourceModels_Forever.lua  # Forever class-keyed resource models
