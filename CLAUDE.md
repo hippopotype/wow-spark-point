@@ -52,6 +52,9 @@ stylua .
 
 # Verify both .toc files stay in sync (Title and validated icon folder may differ)
 bash .scripts/check-toc-sync.sh
+
+# Only Core/Flavor.lua and Data/*_{Standard,Forever}.lua may know the game flavor
+bash .scripts/check-flavor-isolation.sh
 ```
 
 Config files: `.luacheckrc`, `.luarc.json`, `.stylua.toml`
