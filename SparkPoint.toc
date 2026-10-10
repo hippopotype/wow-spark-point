@@ -15,8 +15,8 @@ Core\Flavor.lua
 Core\API.lua
 Core\EmpowerStageLayout.lua
 Core\ResourceModel.lua
-Data\ResourceModels_Standard.lua [AllowLoadGameType standard]
 Data\ResourceModels_Forever.lua [AllowLoadGameType camelot]
+Data\ResourceModels_Standard.lua [AllowLoadGameType standard]
 Core\ClassResourceSystems.lua
 Core\IconMask.lua
 Core\IconGlow.lua
