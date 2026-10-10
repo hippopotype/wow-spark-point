@@ -69,11 +69,35 @@ local TEST_FILES = {
 	"test_resource_model.lua",
 }
 
+-- Cases install WoW stubs into _G; restoring after every case keeps them order-independent.
+local function SnapshotGlobals()
+	local snapshot = {}
+	for key, value in pairs(_G) do
+		snapshot[key] = value
+	end
+	return snapshot
+end
+
+local function RestoreGlobals(snapshot)
+	for key in pairs(_G) do
+		if snapshot[key] == nil then
+			_G[key] = nil
+		end
+	end
+	for key, value in pairs(snapshot) do
+		if _G[key] ~= value then
+			_G[key] = value
+		end
+	end
+end
+
 local passed, failed = 0, 0
 for _, file in ipairs(TEST_FILES) do
 	local cases = dofile(".tests/" .. file)(T)
 	for _, case in ipairs(cases) do
+		local snapshot = SnapshotGlobals()
 		local ok, err = pcall(case.fn)
+		RestoreGlobals(snapshot)
 		if ok then
 			passed = passed + 1
 			print("PASS  " .. file .. " :: " .. case.name)

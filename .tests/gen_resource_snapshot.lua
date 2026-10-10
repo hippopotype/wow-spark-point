@@ -72,8 +72,7 @@ local function NewResolver(game, extraFiles)
 			end,
 		}),
 	}
-	-- These stubs stay installed (no restore): files loaded later by other tests read no
-	-- WoW globals at load, and test_flavor restores its own through T.withGlobals.
+	-- The test runner restores globals after every case, so these stubs do not leak.
 	for name, value in pairs(stubs) do
 		_G[name] = value
 	end

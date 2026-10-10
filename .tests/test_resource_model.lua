@@ -40,7 +40,6 @@ return function(T)
 				T.eq(addon.API.GetSpecIndex(), 0, "GetSpecIndex")
 				local resolved = addon.ResourceModel:Resolve("player")
 				T.eq(#resolved.resources, 0, "resources")
-				T.truthy(resolveFor ~= nil)
 			end,
 		},
 		{
