@@ -3,6 +3,7 @@
 ## Notes: Cursor-centered combat HUD with cast ring, bar slots, and resources.
 ## Author: Pink (EU-BurningLegion)
 ## Version: 1.5.0
+## X-Game: [Game]
 ## X-License: GPL-3.0
 ## SavedVariables: SparkPointDB
 ## IconTexture: Interface\AddOns\SparkPoint\Textures\icon.png
@@ -10,6 +11,7 @@
 # Core (load order matters)
 Core\Initialization.lua
 Core\Util.lua
+Core\Flavor.lua
 Core\API.lua
 Core\EmpowerStageLayout.lua
 Core\ResourceModel.lua

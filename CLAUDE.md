@@ -44,6 +44,9 @@ luacheck .
 # Format check (preview only)
 stylua --check .
 
+# Headless logic tests
+lua .tests/run.lua
+
 # Format in place
 stylua .
 
@@ -62,6 +65,7 @@ SparkPoint/
 ├── Core/
 │   ├── Initialization.lua   # Namespace, CallbackRegistry, event loading
 │   ├── Util.lua             # Shared texture, numeric, copy, and layering helpers
+│   ├── Flavor.lua           # Game detection + capability table (only flavor-aware file)
 │   ├── API.lua              # Utility functions (new WoW APIs)
 │   ├── EmpowerStageLayout.lua # Empowered cast stage geometry
 │   ├── ResourceModel.lua    # Class/spec/form resource ownership

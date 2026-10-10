@@ -44,6 +44,7 @@ globals = {
 	"FindSpellOverrideByID",
 	"GetBindingKey",
 	"GetBindingText",
+	"GetBuildInfo",
 	"GetCursorPosition",
 	"GetCVar",
 	"GetCVarBool",
