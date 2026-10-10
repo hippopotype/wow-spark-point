@@ -9,21 +9,12 @@ local function readFile(path)
 	return content
 end
 
-local function standardExtras()
-	local f = io.open("Data/ResourceModels_Standard.lua", "r")
-	if f then
-		f:close()
-		return { "Data/ResourceModels_Standard.lua" }
-	end
-	return {}
-end
-
 return function(T)
 	return {
 		{
 			name = "retail resolution matches the golden snapshot",
 			fn = function()
-				local resolveFor = Snapshot.NewResolver("Standard", standardExtras())
+				local resolveFor = Snapshot.NewResolver("Standard", { "Data/ResourceModels_Standard.lua" })
 				local actual = Snapshot.BuildResourceSnapshot(resolveFor)
 				T.eq(actual == readFile(".tests/fixtures/resource_model_snapshot.txt"), true, "snapshot drifted; diff with gen_resource_snapshot.lua output")
 			end,
@@ -31,7 +22,7 @@ return function(T)
 		{
 			name = "spec unknown (nil) on retail resolves empty without error",
 			fn = function()
-				local _, addon = Snapshot.NewResolver("Standard", standardExtras())
+				local _, addon = Snapshot.NewResolver("Standard", { "Data/ResourceModels_Standard.lua" })
 				_G.C_SpecializationInfo = {
 					GetSpecialization = function()
 						return nil
