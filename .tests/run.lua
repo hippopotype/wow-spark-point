@@ -65,6 +65,8 @@ end
 
 local TEST_FILES = {
 	"test_flavor.lua",
+	"test_api.lua",
+	"test_resource_model.lua",
 }
 
 local passed, failed = 0, 0

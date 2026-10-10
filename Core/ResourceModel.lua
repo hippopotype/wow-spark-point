@@ -7,7 +7,6 @@ local _, addon = ...
 local ResourceModel = {}
 addon.ResourceModel = ResourceModel
 
-local GetSpecialization = GetSpecialization
 local UnitClass = UnitClass
 local UnitPowerType = UnitPowerType
 
@@ -583,7 +582,7 @@ function ResourceModel:GetCurrentContext(unit)
 	unit = unit or "player"
 
 	local _, classTag = UnitClass(unit)
-	local spec = GetSpecialization() or 0
+	local spec = addon.API.GetSpecIndex()
 	local displayPowerEnum, displayPowerToken = UnitPowerType(unit)
 
 	local context = {

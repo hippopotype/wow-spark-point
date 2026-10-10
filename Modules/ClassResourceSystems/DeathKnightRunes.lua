@@ -7,7 +7,6 @@ local ClassResourceSystems = addon.ClassResourceSystems
 
 local C_Texture = C_Texture
 local GetRuneCooldown = GetRuneCooldown
-local GetSpecialization = GetSpecialization
 local GetTime = GetTime
 local math_abs = math.abs
 local math_floor = math.floor
@@ -641,7 +640,7 @@ end
 function DeathKnightRunes:SetResource(resourceDef, resolved)
 	self.activeResource = resourceDef
 
-	local specIndex = resolved and resolved.context and resolved.context.spec or GetSpecialization()
+	local specIndex = resolved and resolved.context and resolved.context.spec or addon.API.GetSpecIndex()
 	for i = 1, #self.runes do
 		self:ApplyRuneArt(self.runes[i], specIndex)
 		self:ApplySlotVisualArt(self.slotVisuals[i], specIndex)

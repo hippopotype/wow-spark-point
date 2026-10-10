@@ -5,7 +5,6 @@ local _, addon = ...
 local ResourceModel = addon.ResourceModel
 local ClassResourceSystems = addon.ClassResourceSystems
 
-local GetSpecialization = GetSpecialization
 local UnitAffectingCombat = UnitAffectingCombat
 local UnitPower = UnitPower
 local UnitPowerDisplayMod = UnitPowerDisplayMod
@@ -437,7 +436,7 @@ function WarlockSoulShards:ReadState()
 	local displayMod = UnitPowerDisplayMod(resource.powerEnum)
 	local shardPower = (displayMod and displayMod ~= 0) and (rawPower / displayMod) or 0
 
-	local spec = (self.resolved and self.resolved.spec) or GetSpecialization() or 0
+	local spec = (self.resolved and self.resolved.context and self.resolved.context.spec) or addon.API.GetSpecIndex()
 	if spec ~= DESTRUCTION_SPEC_INDEX then
 		shardPower = math_floor(shardPower)
 	end

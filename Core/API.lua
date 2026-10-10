@@ -6,8 +6,6 @@ local _, addon = ...
 local API = {}
 addon.API = API
 local issecretvalue = _G.issecretvalue
-local GetActionCooldown = GetActionCooldown
-local GetActionCharges = GetActionCharges
 
 local function SafeNumber(value, fallback)
 	if value == nil then
@@ -161,20 +159,11 @@ function API.GetSpellCooldownInfo(spellID)
 end
 
 function API.GetActionCooldownInfo(actionSlot)
-	if not actionSlot or not GetActionCooldown then
+	if not actionSlot or not (C_ActionBar and C_ActionBar.GetActionCooldown) then
 		return nil
 	end
 
-	local startTime, duration, _, modRate = GetActionCooldown(actionSlot)
-	if type(startTime) == "table" then
-		return NormalizeCooldownInfo(startTime)
-	end
-
-	return NormalizeCooldownInfo({
-		startTime = startTime,
-		duration = duration,
-		modRate = modRate,
-	})
+	return NormalizeCooldownInfo(C_ActionBar.GetActionCooldown(actionSlot))
 end
 
 function API.GetSpellChargeCooldownInfo(spellID)
@@ -186,19 +175,11 @@ function API.GetSpellChargeCooldownInfo(spellID)
 end
 
 function API.GetActionChargeCooldownInfo(actionSlot)
-	if not actionSlot or not GetActionCharges then
+	if not actionSlot or not (C_ActionBar and C_ActionBar.GetActionCharges) then
 		return nil
 	end
 
-	local currentCharges, maxCharges, cooldownStartTime, cooldownDuration, chargeModRate = GetActionCharges(actionSlot)
-
-	return NormalizeChargeCooldownInfo({
-		currentCharges = currentCharges,
-		maxCharges = maxCharges,
-		cooldownStartTime = cooldownStartTime,
-		cooldownDuration = cooldownDuration,
-		chargeModRate = chargeModRate,
-	})
+	return NormalizeChargeCooldownInfo(C_ActionBar.GetActionCharges(actionSlot))
 end
 
 function API.IsCooldownInfoActive(info)
@@ -261,4 +242,35 @@ function API.GetPlayerClassColor()
 	end
 
 	return 1, 1, 1, 1
+end
+
+-- Active specialization index, or 0 when the flavor has no specs or the spec is not known yet.
+function API.GetSpecIndex()
+	if not addon.Has("specs") then
+		return 0
+	end
+	if not (C_SpecializationInfo and C_SpecializationInfo.GetSpecialization) then
+		return 0
+	end
+	return C_SpecializationInfo.GetSpecialization() or 0
+end
+
+local function CallSpellBook(method, spellID)
+	local fn = C_SpellBook and C_SpellBook[method]
+	if not fn then
+		return nil
+	end
+	local ok, result = pcall(fn, spellID)
+	if ok then
+		return result
+	end
+	return nil
+end
+
+function API.FindSpellOverride(spellID)
+	return CallSpellBook("FindSpellOverrideByID", spellID)
+end
+
+function API.FindBaseSpell(spellID)
+	return CallSpellBook("FindBaseSpellByID", spellID)
 end

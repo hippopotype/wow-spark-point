@@ -887,27 +887,20 @@ end
 
 local function GetBaseSpellID(spellID)
 	local normalized = NormalizeSpellID(spellID)
-	if not normalized or not FindBaseSpellByID then
+	if not normalized then
 		return normalized
 	end
 
-	local _, baseSpellID = pcall(FindBaseSpellByID, normalized)
-	baseSpellID = NormalizeSpellID(baseSpellID)
-	return baseSpellID or normalized
+	return NormalizeSpellID(API.FindBaseSpell(normalized)) or normalized
 end
 
 local function GetOverrideSpellID(spellID)
 	local normalized = NormalizeSpellID(spellID)
-	if not normalized or not FindSpellOverrideByID then
+	if not normalized then
 		return normalized
 	end
 
-	local ok, overrideSpellID = pcall(FindSpellOverrideByID, normalized)
-	if not ok then
-		return normalized
-	end
-	overrideSpellID = NormalizeSpellID(overrideSpellID)
-	return overrideSpellID or normalized
+	return NormalizeSpellID(API.FindSpellOverride(normalized)) or normalized
 end
 
 local function BuildSpellCandidateList(spellID)
