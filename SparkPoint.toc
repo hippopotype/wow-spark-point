@@ -1,4 +1,4 @@
-## Interface: 120000, 120001, 120005, 120007, 120100
+## Interface: 120000, 120001, 120005, 120007, 120100, 16001
 ## Title: SparkPoint
 ## Notes: Cursor-centered combat HUD with cast ring, bar slots, and resources.
 ## Author: Pink (EU-BurningLegion)
@@ -55,12 +55,12 @@ Modules\CastEmpowerRenderer.lua
 Modules\Cast.lua
 Modules\BarSlots.lua
 Modules\ClassResourceSystems\GenericPips.lua
-Modules\ClassResourceSystems\DeathKnightRunes.lua
-Modules\ClassResourceSystems\EvokerEssence.lua
+Modules\ClassResourceSystems\DeathKnightRunes.lua [AllowLoadGameType standard]
+Modules\ClassResourceSystems\EvokerEssence.lua [AllowLoadGameType standard]
 Modules\ClassResourceSystems\RogueComboPoints.lua
 Modules\ClassResourceSystems\DruidComboPoints.lua
 Modules\ClassResourceSystems\PaladinHolyPower.lua
-Modules\ClassResourceSystems\MonkChi.lua
+Modules\ClassResourceSystems\MonkChi.lua [AllowLoadGameType standard]
 Modules\ClassResourceSystems\MageArcaneCharges.lua
 Modules\ClassResourceSystems\WarlockSoulShards.lua
 Modules\ClassResourceSystems\ShamanMaelstromWeapon.lua
