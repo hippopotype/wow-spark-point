@@ -1660,148 +1660,157 @@ local function BuildSettingsPanel()
 	------------------------------------------------------------------------
 	-- Assisted Highlight Settings Subcategory
 	------------------------------------------------------------------------
-	local assistedCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Assisted Highlight"] or "Assisted Highlight")
-	AddModuleOffNotice(assistedCategory, "moduleEnabled_AssistedHighlight", L["Assisted Highlight"] or "Assisted Highlight")
+	if addon.ControlCenter:IsAvailable("moduleEnabled_AssistedHighlight") then
+		local assistedCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Assisted Highlight"] or "Assisted Highlight")
+		AddModuleOffNotice(assistedCategory, "moduleEnabled_AssistedHighlight", L["Assisted Highlight"] or "Assisted Highlight")
 
-	if not IsAssistedCVarEnabled() then
-		AddInfoText(
+		if not IsAssistedCVarEnabled() then
+			AddInfoText(
+				assistedCategory,
+				L["Assisted Highlight CVar Disabled"] or "Blizzard Assisted Highlight is currently disabled. Enable it in Blizzard settings to show suggestions."
+			)
+		end
+
+		AddSlider(assistedCategory, "assistedhighlight_size", L["Assisted Highlight Size"] or "Assisted Highlight Size", 16, 64, 1)
+		AddSlider(assistedCategory, "assistedhighlight_offsetX", L["Assisted Highlight Horizontal Offset"] or "Assisted Highlight Horizontal Offset", -100, 100, 1)
+		AddSlider(assistedCategory, "assistedhighlight_offsetY", L["Assisted Highlight Vertical Offset"] or "Assisted Highlight Vertical Offset", -100, 100, 1)
+		AddSlider(
 			assistedCategory,
-			L["Assisted Highlight CVar Disabled"] or "Blizzard Assisted Highlight is currently disabled. Enable it in Blizzard settings to show suggestions."
+			"assistedhighlight_iconOpacity",
+			L["Assisted Highlight Icon Opacity"] or "Assisted Highlight Icon Opacity",
+			0,
+			1,
+			0.05,
+			L["Assisted Highlight Icon Opacity Tooltip"] or "Opacity of the assisted highlight spell icon"
+		)
+		AddCheckbox(
+			assistedCategory,
+			"assistedhighlight_glowEnabled",
+			L["Assisted Highlight Glow"] or "Assisted Highlight Glow",
+			L["Assisted Highlight Glow Tooltip"] or "Show a blue glow around the suggested spell icon"
+		)
+		AddColor(
+			assistedCategory,
+			"assistedhighlight_glowColor",
+			L["Assisted Highlight Glow Color"] or "Assisted Highlight Glow Color",
+			L["Assisted Highlight Glow Color Tooltip"] or "Color and alpha for the assisted highlight glow layer"
+		)
+		AddCheckbox(
+			assistedCategory,
+			"assistedhighlight_glowTransitionEnabled",
+			L["Assisted Highlight Glow Transition Enabled"] or "Enable Glow Transition",
+			L["Assisted Highlight Glow Transition Enabled Tooltip"] or "Enable glow breathing on assisted highlight."
+		)
+		AddSlider(
+			assistedCategory,
+			"assistedhighlight_glowTransitionSpeed",
+			L["Assisted Highlight Glow Transition Speed"] or "Glow Transition Speed",
+			0.2,
+			2.5,
+			0.05,
+			L["Assisted Highlight Glow Transition Speed Tooltip"] or "Speed multiplier for glow animation cycles."
+		)
+		AddSlider(
+			assistedCategory,
+			"assistedhighlight_glowTransitionStrength",
+			L["Assisted Highlight Glow Transition Strength"] or "Glow Transition Strength",
+			0,
+			1.0,
+			0.01,
+			L["Assisted Highlight Glow Transition Strength Tooltip"] or "Additional intensity boost near glow peak."
+		)
+		AddCheckbox(
+			assistedCategory,
+			"assistedhighlight_keybindEnabled",
+			L["Assisted Highlight Keybind Text"] or "Assisted Highlight Keybind Text",
+			L["Assisted Highlight Keybind Text Tooltip"] or "Show the keybind for the suggested spell when available"
+		)
+		AddDropdown(assistedCategory, "assistedhighlight_keybindFormat", L["Assisted Highlight Keybind Format"] or "Assisted Highlight Keybind Format", {
+			{ value = "COMPACT", label = L["Assisted Highlight Keybind Compact"] or "Compact" },
+			{ value = "FULL", label = L["Assisted Highlight Keybind Full"] or "Full" },
+		}, L["Assisted Highlight Keybind Format Tooltip"] or "Choose compact or full keybind text style")
+		AddDropdown(assistedCategory, "assistedhighlight_keybindFont", L["Assisted Highlight Keybind Font"] or "Assisted Highlight Keybind Font", {
+			{ value = "Fonts\\FRIZQT__.TTF", label = "Friz Quadrata" },
+			{ value = "Fonts\\ARIALN.TTF", label = "Arial Narrow" },
+			{ value = "Fonts\\MORPHEUS.ttf", label = "Morpheus" },
+			{ value = "Fonts\\SKURRI.TTF", label = "Skurri" },
+		})
+		AddDropdown(assistedCategory, "assistedhighlight_keybindFontOutline", L["Assisted Highlight Keybind Font Outline"] or "Assisted Highlight Keybind Font Outline", {
+			{ value = "", label = "None" },
+			{ value = "OUTLINE", label = "Outline" },
+			{ value = "THICKOUTLINE", label = "Thick Outline" },
+			{ value = "MONOCHROME", label = "Monochrome" },
+			{ value = "MONOCHROME,OUTLINE", label = "Mono + Outline" },
+			{ value = "MONOCHROME,THICKOUTLINE", label = "Mono + Thick Outline" },
+		})
+		AddSlider(assistedCategory, "assistedhighlight_keybindFontSize", L["Assisted Highlight Keybind Font Size"] or "Assisted Highlight Keybind Font Size", 8, 48, 1)
+		AddSlider(
+			assistedCategory,
+			"assistedhighlight_keybindOpacity",
+			L["Assisted Highlight Keybind Opacity"] or "Assisted Highlight Keybind Opacity",
+			0,
+			1,
+			0.05,
+			L["Assisted Highlight Keybind Opacity Tooltip"] or "Opacity multiplier for assisted highlight keybind text"
+		)
+		AddSlider(
+			assistedCategory,
+			"assistedhighlight_keybindOffsetX",
+			L["Assisted Highlight Keybind Horizontal Offset"] or "Assisted Highlight Keybind Horizontal Offset",
+			-150,
+			150,
+			1
+		)
+		AddSlider(
+			assistedCategory,
+			"assistedhighlight_keybindOffsetY",
+			L["Assisted Highlight Keybind Vertical Offset"] or "Assisted Highlight Keybind Vertical Offset",
+			-150,
+			150,
+			1
+		)
+		AddColor(
+			assistedCategory,
+			"assistedhighlight_keybindColor",
+			L["Assisted Highlight Keybind Color"] or "Assisted Highlight Keybind Color",
+			L["Assisted Highlight Keybind Color Tooltip"] or "Color and alpha for assisted highlight keybind text"
+		)
+
+		local assistedVisibilityCategory = Settings.RegisterVerticalLayoutSubcategory(assistedCategory, L["Visibility"] or "Visibility")
+		AddDropdown(
+			assistedVisibilityCategory,
+			"assistedhighlight_visibilitySource",
+			L["Visibility Source"] or "Visibility Source",
+			visibilitySourceOptions,
+			L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility"
+		)
+		AddVisibilityRuleGroup(
+			assistedVisibilityCategory,
+			"assistedhighlight_visibility",
+			nil,
+			L["Assisted Highlight Visibility Tooltip"] or "When to show the assisted highlight icon"
+		)
+		local assistedHideCategory = Settings.RegisterVerticalLayoutSubcategory(assistedVisibilityCategory, L["Hide Overrides"] or "Hide Overrides")
+		AddCheckbox(
+			assistedHideCategory,
+			"assistedhighlight_hideOnUIHover",
+			L["Hide While Hovering UI"] or "Hide While Hovering UI",
+			L["Hide While Hovering UI Tooltip"] or "Hide SparkPoint while cursor is over clickable UI frames. Keeps SparkPoint visible primarily for world targeting."
+		)
+		AddCheckbox(
+			assistedHideCategory,
+			"assistedhighlight_hideInPetBattle",
+			L["Hide While In Pet Battle"] or "Hide While In Pet Battle",
+			L["Hide While In Pet Battle Tooltip"] or "Hide SparkPoint while you are in a pet battle."
+		)
+		AddCheckbox(
+			assistedHideCategory,
+			"assistedhighlight_hideInSpecialActionBarContext",
+			L["Hide While In Special Action Bar Context"] or "Hide While In Special Action Bar Context",
+			L["Hide While In Special Action Bar Context Tooltip"]
+				or "Hide SparkPoint while Blizzard replaces your normal action bar with a special context such as vehicle, override, possess, or temporary shapeshift bars."
 		)
 	end
-
-	AddSlider(assistedCategory, "assistedhighlight_size", L["Assisted Highlight Size"] or "Assisted Highlight Size", 16, 64, 1)
-	AddSlider(assistedCategory, "assistedhighlight_offsetX", L["Assisted Highlight Horizontal Offset"] or "Assisted Highlight Horizontal Offset", -100, 100, 1)
-	AddSlider(assistedCategory, "assistedhighlight_offsetY", L["Assisted Highlight Vertical Offset"] or "Assisted Highlight Vertical Offset", -100, 100, 1)
-	AddSlider(
-		assistedCategory,
-		"assistedhighlight_iconOpacity",
-		L["Assisted Highlight Icon Opacity"] or "Assisted Highlight Icon Opacity",
-		0,
-		1,
-		0.05,
-		L["Assisted Highlight Icon Opacity Tooltip"] or "Opacity of the assisted highlight spell icon"
-	)
-	AddCheckbox(
-		assistedCategory,
-		"assistedhighlight_glowEnabled",
-		L["Assisted Highlight Glow"] or "Assisted Highlight Glow",
-		L["Assisted Highlight Glow Tooltip"] or "Show a blue glow around the suggested spell icon"
-	)
-	AddColor(
-		assistedCategory,
-		"assistedhighlight_glowColor",
-		L["Assisted Highlight Glow Color"] or "Assisted Highlight Glow Color",
-		L["Assisted Highlight Glow Color Tooltip"] or "Color and alpha for the assisted highlight glow layer"
-	)
-	AddCheckbox(
-		assistedCategory,
-		"assistedhighlight_glowTransitionEnabled",
-		L["Assisted Highlight Glow Transition Enabled"] or "Enable Glow Transition",
-		L["Assisted Highlight Glow Transition Enabled Tooltip"] or "Enable glow breathing on assisted highlight."
-	)
-	AddSlider(
-		assistedCategory,
-		"assistedhighlight_glowTransitionSpeed",
-		L["Assisted Highlight Glow Transition Speed"] or "Glow Transition Speed",
-		0.2,
-		2.5,
-		0.05,
-		L["Assisted Highlight Glow Transition Speed Tooltip"] or "Speed multiplier for glow animation cycles."
-	)
-	AddSlider(
-		assistedCategory,
-		"assistedhighlight_glowTransitionStrength",
-		L["Assisted Highlight Glow Transition Strength"] or "Glow Transition Strength",
-		0,
-		1.0,
-		0.01,
-		L["Assisted Highlight Glow Transition Strength Tooltip"] or "Additional intensity boost near glow peak."
-	)
-	AddCheckbox(
-		assistedCategory,
-		"assistedhighlight_keybindEnabled",
-		L["Assisted Highlight Keybind Text"] or "Assisted Highlight Keybind Text",
-		L["Assisted Highlight Keybind Text Tooltip"] or "Show the keybind for the suggested spell when available"
-	)
-	AddDropdown(assistedCategory, "assistedhighlight_keybindFormat", L["Assisted Highlight Keybind Format"] or "Assisted Highlight Keybind Format", {
-		{ value = "COMPACT", label = L["Assisted Highlight Keybind Compact"] or "Compact" },
-		{ value = "FULL", label = L["Assisted Highlight Keybind Full"] or "Full" },
-	}, L["Assisted Highlight Keybind Format Tooltip"] or "Choose compact or full keybind text style")
-	AddDropdown(assistedCategory, "assistedhighlight_keybindFont", L["Assisted Highlight Keybind Font"] or "Assisted Highlight Keybind Font", {
-		{ value = "Fonts\\FRIZQT__.TTF", label = "Friz Quadrata" },
-		{ value = "Fonts\\ARIALN.TTF", label = "Arial Narrow" },
-		{ value = "Fonts\\MORPHEUS.ttf", label = "Morpheus" },
-		{ value = "Fonts\\SKURRI.TTF", label = "Skurri" },
-	})
-	AddDropdown(assistedCategory, "assistedhighlight_keybindFontOutline", L["Assisted Highlight Keybind Font Outline"] or "Assisted Highlight Keybind Font Outline", {
-		{ value = "", label = "None" },
-		{ value = "OUTLINE", label = "Outline" },
-		{ value = "THICKOUTLINE", label = "Thick Outline" },
-		{ value = "MONOCHROME", label = "Monochrome" },
-		{ value = "MONOCHROME,OUTLINE", label = "Mono + Outline" },
-		{ value = "MONOCHROME,THICKOUTLINE", label = "Mono + Thick Outline" },
-	})
-	AddSlider(assistedCategory, "assistedhighlight_keybindFontSize", L["Assisted Highlight Keybind Font Size"] or "Assisted Highlight Keybind Font Size", 8, 48, 1)
-	AddSlider(
-		assistedCategory,
-		"assistedhighlight_keybindOpacity",
-		L["Assisted Highlight Keybind Opacity"] or "Assisted Highlight Keybind Opacity",
-		0,
-		1,
-		0.05,
-		L["Assisted Highlight Keybind Opacity Tooltip"] or "Opacity multiplier for assisted highlight keybind text"
-	)
-	AddSlider(
-		assistedCategory,
-		"assistedhighlight_keybindOffsetX",
-		L["Assisted Highlight Keybind Horizontal Offset"] or "Assisted Highlight Keybind Horizontal Offset",
-		-150,
-		150,
-		1
-	)
-	AddSlider(assistedCategory, "assistedhighlight_keybindOffsetY", L["Assisted Highlight Keybind Vertical Offset"] or "Assisted Highlight Keybind Vertical Offset", -150, 150, 1)
-	AddColor(
-		assistedCategory,
-		"assistedhighlight_keybindColor",
-		L["Assisted Highlight Keybind Color"] or "Assisted Highlight Keybind Color",
-		L["Assisted Highlight Keybind Color Tooltip"] or "Color and alpha for assisted highlight keybind text"
-	)
-
-	local assistedVisibilityCategory = Settings.RegisterVerticalLayoutSubcategory(assistedCategory, L["Visibility"] or "Visibility")
-	AddDropdown(
-		assistedVisibilityCategory,
-		"assistedhighlight_visibilitySource",
-		L["Visibility Source"] or "Visibility Source",
-		visibilitySourceOptions,
-		L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility"
-	)
-	AddVisibilityRuleGroup(
-		assistedVisibilityCategory,
-		"assistedhighlight_visibility",
-		nil,
-		L["Assisted Highlight Visibility Tooltip"] or "When to show the assisted highlight icon"
-	)
-	local assistedHideCategory = Settings.RegisterVerticalLayoutSubcategory(assistedVisibilityCategory, L["Hide Overrides"] or "Hide Overrides")
-	AddCheckbox(
-		assistedHideCategory,
-		"assistedhighlight_hideOnUIHover",
-		L["Hide While Hovering UI"] or "Hide While Hovering UI",
-		L["Hide While Hovering UI Tooltip"] or "Hide SparkPoint while cursor is over clickable UI frames. Keeps SparkPoint visible primarily for world targeting."
-	)
-	AddCheckbox(
-		assistedHideCategory,
-		"assistedhighlight_hideInPetBattle",
-		L["Hide While In Pet Battle"] or "Hide While In Pet Battle",
-		L["Hide While In Pet Battle Tooltip"] or "Hide SparkPoint while you are in a pet battle."
-	)
-	AddCheckbox(
-		assistedHideCategory,
-		"assistedhighlight_hideInSpecialActionBarContext",
-		L["Hide While In Special Action Bar Context"] or "Hide While In Special Action Bar Context",
-		L["Hide While In Special Action Bar Context Tooltip"]
-			or "Hide SparkPoint while Blizzard replaces your normal action bar with a special context such as vehicle, override, possess, or temporary shapeshift bars."
-	)
 
 	------------------------------------------------------------------------
 	-- Performance Stats Settings Subcategory
@@ -1878,222 +1887,224 @@ local function BuildSettingsPanel()
 	------------------------------------------------------------------------
 	-- Cooldown Manager Settings Subcategory
 	------------------------------------------------------------------------
-	local cooldownCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Cooldown Manager"] or "Cooldown Manager")
-	AddModuleOffNotice(cooldownCategory, "moduleEnabled_CooldownManager", L["Cooldown Manager"] or "Cooldown Manager")
-	local CooldownData = addon.CooldownViewerData
+	if addon.ControlCenter:IsAvailable("moduleEnabled_CooldownManager") then
+		local cooldownCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Cooldown Manager"] or "Cooldown Manager")
+		AddModuleOffNotice(cooldownCategory, "moduleEnabled_CooldownManager", L["Cooldown Manager"] or "Cooldown Manager")
+		local CooldownData = addon.CooldownViewerData
 
-	-- No button: opening Blizzard's settings from addon code runs its RefreshLayout ->
-	-- CheckBuildDisplayData under our taint (see Core/CooldownViewerBridge.lua rule 3).
-	-- A slash command typed by the player is secure.
-	local cdmSlash = _G.SLASH_COOLDOWNMANAGER1 or "/cooldownmanager"
-	AddInfoText(
-		cooldownCategory,
-		string.format(L["Cooldown Manager Spell Selection"] or "Choose spells with %s. Icon size, spacing, rows and timers are set in Blizzard's Edit Mode.", cdmSlash)
-	)
-
-	-- Shown predicates are evaluated whenever the page is displayed, so this never goes
-	-- stale the way a notice built once at load would.
-	-- Spec D10: Blizzard builds its cooldown data only from a SHOWN viewer, and SparkPoint
-	-- may not build it. PENDING that persists while the page is open means the CVar is off
-	-- or every viewer is hidden in Edit Mode.
-	local cdmDisabledNotice = AddInfoText(
-		cooldownCategory,
-		L["Cooldown Manager Disabled Notice"]
-			or "SparkPoint needs Blizzard's Cooldown Manager turned on (Options > Gameplay > Combat) with its bars visible in Edit Mode. To hide Blizzard's bars, use 'Hide Blizzard's bars' below instead."
-	)
-	cdmDisabledNotice:AddShownPredicate(function()
-		return not CooldownData:IsBlizzardModeUsable() or CooldownData:HasPendingDisplayData()
-	end)
-
-	AddCheckbox(
-		cooldownCategory,
-		"cooldownmanager_hideBlizzardViewers",
-		L["Hide Blizzard Viewers"] or "Hide Blizzard's bars",
-		L["Hide Blizzard Viewers Tooltip"] or "Hide Blizzard's own Cooldown Manager bars for groups set to Hidden. Shown groups always sit next to the cursor."
-	)
-
-	local cooldownModeOptions = {
-		{ value = "SPARKPOINT_STYLE", label = L["Mode SparkPoint Style"] or "SparkPoint style" },
-		{ value = "BLIZZARD_STYLE", label = L["Mode Blizzard Style"] or "Blizzard style" },
-		{ value = "OFF", label = L["Mode Hidden"] or "Hidden" },
-	}
-	local cooldownPlacementOptions = {
-		{ value = "RIGHT", label = L["Placement Right"] or "Right" },
-		{ value = "LEFT", label = L["Placement Left"] or "Left" },
-		{ value = "BELOW", label = L["Placement Below"] or "Below" },
-		{ value = "ABOVE", label = L["Placement Above"] or "Above" },
-	}
-	local cooldownGroups = {
-		{ key = "essential", label = "Essential Cooldowns" },
-		{ key = "utility", label = "Utility Cooldowns" },
-		{ key = "trackedbuff", label = "Tracked Buffs" },
-	}
-
-	-- Switching a group's style applies immediately; a reload gives a clean state (the
-	-- skinner's restore path cannot undo everything another skinner may have changed).
-	if StaticPopupDialogs and not StaticPopupDialogs[RELOAD_UI_CONFIRM_POPUP] then
-		StaticPopupDialogs[RELOAD_UI_CONFIRM_POPUP] = {
-			text = L["Cooldown Manager Reload Confirm"] or "Reload the interface to apply the new Cooldown Manager style cleanly?",
-			button1 = RELOADUI or "Reload UI",
-			button2 = L["Later"] or "Later",
-			OnAccept = function()
-				ReloadUI()
-			end,
-			timeout = 0,
-			whileDead = true,
-			hideOnEscape = true,
-			preferredIndex = STATICPOPUP_NUMDIALOGS,
-		}
-	end
-
-	for _, group in ipairs(cooldownGroups) do
-		local prefix = "cooldownmanager_" .. group.key .. "_"
-		Settings.RegisterInitializer(cooldownCategory, CreateSettingsListSectionHeaderInitializer(L[group.label] or group.label))
-
-		local showAsSetting, showAsInitializer = AddDropdown(
+		-- No button: opening Blizzard's settings from addon code runs its RefreshLayout ->
+		-- CheckBuildDisplayData under our taint (see Core/CooldownViewerBridge.lua rule 3).
+		-- A slash command typed by the player is secure.
+		local cdmSlash = _G.SLASH_COOLDOWNMANAGER1 or "/cooldownmanager"
+		AddInfoText(
 			cooldownCategory,
-			prefix .. "mode",
-			L["Show As"] or "Show as",
-			cooldownModeOptions,
-			L["Show As Tooltip"]
-				or "SparkPoint style skins Blizzard's icons with the SparkPoint look. Blizzard style keeps Blizzard's look. Both keep Blizzard's timers, charges and stacks and sit next to the cursor. Hidden leaves this group out of the HUD."
+			string.format(L["Cooldown Manager Spell Selection"] or "Choose spells with %s. Icon size, spacing, rows and timers are set in Blizzard's Edit Mode.", cdmSlash)
 		)
-		CallbackRegistry:RegisterSettingCallback(prefix .. "mode", function(_, userInput)
-			if userInput and GetDBBool("moduleEnabled_CooldownManager") and StaticPopup_Show then
-				StaticPopup_Show(RELOAD_UI_CONFIRM_POPUP)
-			end
+
+		-- Shown predicates are evaluated whenever the page is displayed, so this never goes
+		-- stale the way a notice built once at load would.
+		-- Spec D10: Blizzard builds its cooldown data only from a SHOWN viewer, and SparkPoint
+		-- may not build it. PENDING that persists while the page is open means the CVar is off
+		-- or every viewer is hidden in Edit Mode.
+		local cdmDisabledNotice = AddInfoText(
+			cooldownCategory,
+			L["Cooldown Manager Disabled Notice"]
+				or "SparkPoint needs Blizzard's Cooldown Manager turned on (Options > Gameplay > Combat) with its bars visible in Edit Mode. To hide Blizzard's bars, use 'Hide Blizzard's bars' below instead."
+		)
+		cdmDisabledNotice:AddShownPredicate(function()
+			return not CooldownData:IsBlizzardModeUsable() or CooldownData:HasPendingDisplayData()
 		end)
-		-- Read the parent setting itself, not the DB: Blizzard fires the child's
-		-- re-evaluation from the same value-change notification that writes the DB,
-		-- and the order of those two callbacks is not guaranteed.
-		local function IsShown()
-			return showAsSetting:GetValue() ~= "OFF"
+
+		AddCheckbox(
+			cooldownCategory,
+			"cooldownmanager_hideBlizzardViewers",
+			L["Hide Blizzard Viewers"] or "Hide Blizzard's bars",
+			L["Hide Blizzard Viewers Tooltip"] or "Hide Blizzard's own Cooldown Manager bars for groups set to Hidden. Shown groups always sit next to the cursor."
+		)
+
+		local cooldownModeOptions = {
+			{ value = "SPARKPOINT_STYLE", label = L["Mode SparkPoint Style"] or "SparkPoint style" },
+			{ value = "BLIZZARD_STYLE", label = L["Mode Blizzard Style"] or "Blizzard style" },
+			{ value = "OFF", label = L["Mode Hidden"] or "Hidden" },
+		}
+		local cooldownPlacementOptions = {
+			{ value = "RIGHT", label = L["Placement Right"] or "Right" },
+			{ value = "LEFT", label = L["Placement Left"] or "Left" },
+			{ value = "BELOW", label = L["Placement Below"] or "Below" },
+			{ value = "ABOVE", label = L["Placement Above"] or "Above" },
+		}
+		local cooldownGroups = {
+			{ key = "essential", label = "Essential Cooldowns" },
+			{ key = "utility", label = "Utility Cooldowns" },
+			{ key = "trackedbuff", label = "Tracked Buffs" },
+		}
+
+		-- Switching a group's style applies immediately; a reload gives a clean state (the
+		-- skinner's restore path cannot undo everything another skinner may have changed).
+		if StaticPopupDialogs and not StaticPopupDialogs[RELOAD_UI_CONFIRM_POPUP] then
+			StaticPopupDialogs[RELOAD_UI_CONFIRM_POPUP] = {
+				text = L["Cooldown Manager Reload Confirm"] or "Reload the interface to apply the new Cooldown Manager style cleanly?",
+				button1 = RELOADUI or "Reload UI",
+				button2 = L["Later"] or "Later",
+				OnAccept = function()
+					ReloadUI()
+				end,
+				timeout = 0,
+				whileDead = true,
+				hideOnEscape = true,
+				preferredIndex = STATICPOPUP_NUMDIALOGS,
+			}
 		end
 
-		local _, placementInitializer = AddDropdown(
+		for _, group in ipairs(cooldownGroups) do
+			local prefix = "cooldownmanager_" .. group.key .. "_"
+			Settings.RegisterInitializer(cooldownCategory, CreateSettingsListSectionHeaderInitializer(L[group.label] or group.label))
+
+			local showAsSetting, showAsInitializer = AddDropdown(
+				cooldownCategory,
+				prefix .. "mode",
+				L["Show As"] or "Show as",
+				cooldownModeOptions,
+				L["Show As Tooltip"]
+					or "SparkPoint style skins Blizzard's icons with the SparkPoint look. Blizzard style keeps Blizzard's look. Both keep Blizzard's timers, charges and stacks and sit next to the cursor. Hidden leaves this group out of the HUD."
+			)
+			CallbackRegistry:RegisterSettingCallback(prefix .. "mode", function(_, userInput)
+				if userInput and GetDBBool("moduleEnabled_CooldownManager") and StaticPopup_Show then
+					StaticPopup_Show(RELOAD_UI_CONFIRM_POPUP)
+				end
+			end)
+			-- Read the parent setting itself, not the DB: Blizzard fires the child's
+			-- re-evaluation from the same value-change notification that writes the DB,
+			-- and the order of those two callbacks is not guaranteed.
+			local function IsShown()
+				return showAsSetting:GetValue() ~= "OFF"
+			end
+
+			local _, placementInitializer = AddDropdown(
+				cooldownCategory,
+				prefix .. "placement",
+				L["Placement"] or "Placement",
+				cooldownPlacementOptions,
+				L["Placement Tooltip"] or "Side of the cast ring this group sits on. Groups on the same side stack outward: Essential, then Utility, then Tracked Buffs."
+			)
+			placementInitializer:SetParentInitializer(showAsInitializer, IsShown)
+		end
+
+		Settings.RegisterInitializer(
 			cooldownCategory,
-			prefix .. "placement",
-			L["Placement"] or "Placement",
-			cooldownPlacementOptions,
-			L["Placement Tooltip"] or "Side of the cast ring this group sits on. Groups on the same side stack outward: Essential, then Utility, then Tracked Buffs."
+			CreateSettingsListSectionHeaderInitializer(
+				L["Cooldown Manager SparkPoint Style"] or "SparkPoint style",
+				L["Cooldown Manager SparkPoint Style Tooltip"]
+					or "Applies only to groups shown in SparkPoint style. If another icon-skinning addon also styles these icons, disable its Cooldown Manager groups."
+			)
 		)
-		placementInitializer:SetParentInitializer(showAsInitializer, IsShown)
-	end
-
-	Settings.RegisterInitializer(
-		cooldownCategory,
-		CreateSettingsListSectionHeaderInitializer(
-			L["Cooldown Manager SparkPoint Style"] or "SparkPoint style",
-			L["Cooldown Manager SparkPoint Style Tooltip"]
-				or "Applies only to groups shown in SparkPoint style. If another icon-skinning addon also styles these icons, disable its Cooldown Manager groups."
+		AddCheckbox(
+			cooldownCategory,
+			"cooldownmanager_showKeybind",
+			L["Show Keybinds"] or "Show keybinds",
+			L["Cooldown Manager Show Keybind Tooltip"] or "Show the bound keybind on each icon, when known"
 		)
-	)
-	AddCheckbox(
-		cooldownCategory,
-		"cooldownmanager_showKeybind",
-		L["Show Keybinds"] or "Show keybinds",
-		L["Cooldown Manager Show Keybind Tooltip"] or "Show the bound keybind on each icon, when known"
-	)
-	AddColor(cooldownCategory, "cooldownmanager_keybindColor", L["Cooldown Manager Keybind Color"] or "Keybind color")
-	AddColor(cooldownCategory, "cooldownmanager_timerColor", L["Cooldown Manager Timer Color"] or "Timer text color")
-	AddColor(cooldownCategory, "cooldownmanager_chargeColor", L["Cooldown Manager Charge Color"] or "Charge count color")
-	AddColor(cooldownCategory, "cooldownmanager_stackColor", L["Cooldown Manager Stack Color"] or "Stack count color")
-	AddSlider(
-		cooldownCategory,
-		"cooldownmanager_countOffsetX",
-		L["Cooldown Manager Count Offset X"] or "Count horizontal offset",
-		-12,
-		12,
-		1,
-		L["Cooldown Manager Count Offset Tooltip"] or "Moves the charge and stack count, relative to the icon size, the same in every group."
-	)
-	AddSlider(
-		cooldownCategory,
-		"cooldownmanager_countOffsetY",
-		L["Cooldown Manager Count Offset Y"] or "Count vertical offset",
-		-12,
-		12,
-		1,
-		L["Cooldown Manager Count Offset Tooltip"] or "Moves the charge and stack count, relative to the icon size, the same in every group."
-	)
-	AddSlider(
-		cooldownCategory,
-		"cooldownmanager_textSize",
-		L["Text Size"] or "Text size",
-		8,
-		24,
-		1,
-		L["Cooldown Manager Text Size Tooltip"] or "Size of timer, count and keybind text relative to the icon, the same in every group."
-	)
-	AddCheckbox(
-		cooldownCategory,
-		"cooldownmanager_glowOnReady",
-		L["Cooldown Manager Glow On Ready"] or "Glow when ready",
-		L["Cooldown Manager Glow On Ready Tooltip"] or "Briefly glow an icon when its cooldown finishes or a charge is regained"
-	)
-	AddColor(cooldownCategory, "cooldownmanager_glowColor", L["Cooldown Manager Glow Color"] or "Glow color")
-
-	-- Visibility: the module-standard pattern, unchanged.
-	local cooldownVisibilityCategory = Settings.RegisterVerticalLayoutSubcategory(cooldownCategory, L["Visibility"] or "Visibility")
-	AddDropdown(
-		cooldownVisibilityCategory,
-		"cooldownmanager_visibilitySource",
-		L["Visibility Source"] or "Visibility Source",
-		visibilitySourceOptions,
-		L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility"
-	)
-	AddVisibilityRuleGroup(
-		cooldownVisibilityCategory,
-		"cooldownmanager_visibility",
-		nil,
-		L["Cooldown Manager Visibility Tooltip"] or "When to show the cooldown groups next to the cursor"
-	)
-	local cooldownHideCategory = Settings.RegisterVerticalLayoutSubcategory(cooldownVisibilityCategory, L["Hide Overrides"] or "Hide Overrides")
-	AddCheckbox(
-		cooldownHideCategory,
-		"cooldownmanager_hideOnUIHover",
-		L["Hide While Hovering UI"] or "Hide While Hovering UI",
-		L["Hide While Hovering UI Tooltip"] or "Hide SparkPoint while cursor is over clickable UI frames. Keeps SparkPoint visible primarily for world targeting."
-	)
-	AddCheckbox(
-		cooldownHideCategory,
-		"cooldownmanager_hideInPetBattle",
-		L["Hide While In Pet Battle"] or "Hide While In Pet Battle",
-		L["Hide While In Pet Battle Tooltip"] or "Hide SparkPoint while you are in a pet battle."
-	)
-	AddCheckbox(
-		cooldownHideCategory,
-		"cooldownmanager_hideInSpecialActionBarContext",
-		L["Hide While In Special Action Bar Context"] or "Hide While In Special Action Bar Context",
-		L["Hide While In Special Action Bar Context Tooltip"]
-			or "Hide SparkPoint while Blizzard replaces your normal action bar with a special context such as vehicle, override, possess, or temporary shapeshift bars."
-	)
-
-	-- Advanced: per-group nudge from the placement preset.
-	local cooldownAdvancedCategory = Settings.RegisterVerticalLayoutSubcategory(cooldownCategory, L["Advanced"] or "Advanced")
-	AddInfoText(cooldownAdvancedCategory, L["Cooldown Manager Advanced Tooltip"] or "Fine-tune each group's position from its placement.")
-	for _, group in ipairs(cooldownGroups) do
-		local prefix = "cooldownmanager_" .. group.key .. "_"
-		local groupLabel = L[group.label] or group.label
-		Settings.RegisterInitializer(cooldownAdvancedCategory, CreateSettingsListSectionHeaderInitializer(groupLabel))
+		AddColor(cooldownCategory, "cooldownmanager_keybindColor", L["Cooldown Manager Keybind Color"] or "Keybind color")
+		AddColor(cooldownCategory, "cooldownmanager_timerColor", L["Cooldown Manager Timer Color"] or "Timer text color")
+		AddColor(cooldownCategory, "cooldownmanager_chargeColor", L["Cooldown Manager Charge Color"] or "Charge count color")
+		AddColor(cooldownCategory, "cooldownmanager_stackColor", L["Cooldown Manager Stack Color"] or "Stack count color")
 		AddSlider(
-			cooldownAdvancedCategory,
-			prefix .. "nudgeX",
-			L["Horizontal Offset"] or "Horizontal Offset",
-			-240,
-			240,
+			cooldownCategory,
+			"cooldownmanager_countOffsetX",
+			L["Cooldown Manager Count Offset X"] or "Count horizontal offset",
+			-12,
+			12,
 			1,
-			L["Cooldown Manager Advanced Nudge Tooltip"] or "Moves this group from its placement. Groups stacked after it on the same side move with it."
+			L["Cooldown Manager Count Offset Tooltip"] or "Moves the charge and stack count, relative to the icon size, the same in every group."
 		)
 		AddSlider(
-			cooldownAdvancedCategory,
-			prefix .. "nudgeY",
-			L["Vertical Offset"] or "Vertical Offset",
-			-240,
-			240,
+			cooldownCategory,
+			"cooldownmanager_countOffsetY",
+			L["Cooldown Manager Count Offset Y"] or "Count vertical offset",
+			-12,
+			12,
 			1,
-			L["Cooldown Manager Advanced Nudge Tooltip"] or "Moves this group from its placement. Groups stacked after it on the same side move with it."
+			L["Cooldown Manager Count Offset Tooltip"] or "Moves the charge and stack count, relative to the icon size, the same in every group."
 		)
+		AddSlider(
+			cooldownCategory,
+			"cooldownmanager_textSize",
+			L["Text Size"] or "Text size",
+			8,
+			24,
+			1,
+			L["Cooldown Manager Text Size Tooltip"] or "Size of timer, count and keybind text relative to the icon, the same in every group."
+		)
+		AddCheckbox(
+			cooldownCategory,
+			"cooldownmanager_glowOnReady",
+			L["Cooldown Manager Glow On Ready"] or "Glow when ready",
+			L["Cooldown Manager Glow On Ready Tooltip"] or "Briefly glow an icon when its cooldown finishes or a charge is regained"
+		)
+		AddColor(cooldownCategory, "cooldownmanager_glowColor", L["Cooldown Manager Glow Color"] or "Glow color")
+
+		-- Visibility: the module-standard pattern, unchanged.
+		local cooldownVisibilityCategory = Settings.RegisterVerticalLayoutSubcategory(cooldownCategory, L["Visibility"] or "Visibility")
+		AddDropdown(
+			cooldownVisibilityCategory,
+			"cooldownmanager_visibilitySource",
+			L["Visibility Source"] or "Visibility Source",
+			visibilitySourceOptions,
+			L["Visibility Source Tooltip"] or "Choose whether this module inherits the global visibility setting or uses its own visibility"
+		)
+		AddVisibilityRuleGroup(
+			cooldownVisibilityCategory,
+			"cooldownmanager_visibility",
+			nil,
+			L["Cooldown Manager Visibility Tooltip"] or "When to show the cooldown groups next to the cursor"
+		)
+		local cooldownHideCategory = Settings.RegisterVerticalLayoutSubcategory(cooldownVisibilityCategory, L["Hide Overrides"] or "Hide Overrides")
+		AddCheckbox(
+			cooldownHideCategory,
+			"cooldownmanager_hideOnUIHover",
+			L["Hide While Hovering UI"] or "Hide While Hovering UI",
+			L["Hide While Hovering UI Tooltip"] or "Hide SparkPoint while cursor is over clickable UI frames. Keeps SparkPoint visible primarily for world targeting."
+		)
+		AddCheckbox(
+			cooldownHideCategory,
+			"cooldownmanager_hideInPetBattle",
+			L["Hide While In Pet Battle"] or "Hide While In Pet Battle",
+			L["Hide While In Pet Battle Tooltip"] or "Hide SparkPoint while you are in a pet battle."
+		)
+		AddCheckbox(
+			cooldownHideCategory,
+			"cooldownmanager_hideInSpecialActionBarContext",
+			L["Hide While In Special Action Bar Context"] or "Hide While In Special Action Bar Context",
+			L["Hide While In Special Action Bar Context Tooltip"]
+				or "Hide SparkPoint while Blizzard replaces your normal action bar with a special context such as vehicle, override, possess, or temporary shapeshift bars."
+		)
+
+		-- Advanced: per-group nudge from the placement preset.
+		local cooldownAdvancedCategory = Settings.RegisterVerticalLayoutSubcategory(cooldownCategory, L["Advanced"] or "Advanced")
+		AddInfoText(cooldownAdvancedCategory, L["Cooldown Manager Advanced Tooltip"] or "Fine-tune each group's position from its placement.")
+		for _, group in ipairs(cooldownGroups) do
+			local prefix = "cooldownmanager_" .. group.key .. "_"
+			local groupLabel = L[group.label] or group.label
+			Settings.RegisterInitializer(cooldownAdvancedCategory, CreateSettingsListSectionHeaderInitializer(groupLabel))
+			AddSlider(
+				cooldownAdvancedCategory,
+				prefix .. "nudgeX",
+				L["Horizontal Offset"] or "Horizontal Offset",
+				-240,
+				240,
+				1,
+				L["Cooldown Manager Advanced Nudge Tooltip"] or "Moves this group from its placement. Groups stacked after it on the same side move with it."
+			)
+			AddSlider(
+				cooldownAdvancedCategory,
+				prefix .. "nudgeY",
+				L["Vertical Offset"] or "Vertical Offset",
+				-240,
+				240,
+				1,
+				L["Cooldown Manager Advanced Nudge Tooltip"] or "Moves this group from its placement. Groups stacked after it on the same side move with it."
+			)
+		end
 	end
 
 	------------------------------------------------------------------------

@@ -493,6 +493,7 @@ end
 addon.ControlCenter:AddModule({
 	name = L["Assisted Highlight"] or "Assisted Highlight",
 	dbKey = "moduleEnabled_AssistedHighlight",
+	requires = { "assistedCombat" },
 	description = L["Assisted Highlight Description"] or "Shows the next suggested spell from Blizzard Assisted Highlight",
 	toggleFunc = EnableModule,
 	categoryID = 1,

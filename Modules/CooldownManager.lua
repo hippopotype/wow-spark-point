@@ -290,6 +290,7 @@ end, CooldownManager)
 addon.ControlCenter:AddModule({
 	name = L["Cooldown Manager"] or "Cooldown Manager",
 	dbKey = "moduleEnabled_CooldownManager",
+	requires = { "cooldownViewer" },
 	description = L["Cooldown Manager Description"] or "Mirrors Blizzard's Cooldown Manager into the SparkPoint HUD",
 	toggleFunc = EnableModule,
 	categoryID = 1,

@@ -16,6 +16,7 @@ ControlCenter.dbKeyToModule = {}
 --     dbKey = "moduleEnabled_Cast",  -- Key in SparkPointDB for enable/disable
 --     description = "Module description",
 --     toggleFunc = function(enabled) end,  -- Called on enable/disable
+--     requires = { "capability" },  -- Optional: addon.Has() capabilities the module needs
 --     categoryID = 1,  -- For grouping in settings UI
 --     uiOrder = 1,     -- Sort order in settings panel
 -- }
@@ -35,22 +36,46 @@ function ControlCenter:AddModule(moduleData)
 	addon.Modules[cleanName] = moduleData
 end
 
-function ControlCenter:InitializeModules()
-	for _, moduleData in ipairs(self.modules) do
-		local enabled = addon.GetDBValue(moduleData.dbKey)
-
-		if enabled == nil then
-			-- Use default from DefaultValues
-			enabled = addon.DefaultValues[moduleData.dbKey]
-			if enabled == nil then
-				enabled = true
+-- nil when the module can run on this client; otherwise a short reason for diagnostics.
+function ControlCenter:GetUnavailableReason(dbKey)
+	local moduleData = self.dbKeyToModule[dbKey]
+	if not moduleData then
+		return "not loaded"
+	end
+	if moduleData.requires then
+		for _, capability in ipairs(moduleData.requires) do
+			if not addon.Has(capability) then
+				return "requires " .. capability
 			end
 		end
+	end
+	return nil
+end
 
-		moduleData.isEnabled = enabled
+function ControlCenter:IsAvailable(dbKey)
+	return self:GetUnavailableReason(dbKey) == nil
+end
 
-		if moduleData.toggleFunc and enabled then
-			moduleData.toggleFunc(true)
+function ControlCenter:InitializeModules()
+	for _, moduleData in ipairs(self.modules) do
+		if self:IsAvailable(moduleData.dbKey) then
+			local enabled = addon.GetDBValue(moduleData.dbKey)
+
+			if enabled == nil then
+				-- Use default from DefaultValues
+				enabled = addon.DefaultValues[moduleData.dbKey]
+				if enabled == nil then
+					enabled = true
+				end
+			end
+
+			moduleData.isEnabled = enabled
+
+			if moduleData.toggleFunc and enabled then
+				moduleData.toggleFunc(true)
+			end
+		else
+			moduleData.isEnabled = false
 		end
 	end
 
@@ -58,6 +83,9 @@ function ControlCenter:InitializeModules()
 end
 
 function ControlCenter:EnableModule(dbKey)
+	if not self:IsAvailable(dbKey) then
+		return
+	end
 	local moduleData = self.dbKeyToModule[dbKey]
 	if moduleData and not moduleData.isEnabled then
 		moduleData.isEnabled = true
@@ -70,6 +98,9 @@ function ControlCenter:EnableModule(dbKey)
 end
 
 function ControlCenter:DisableModule(dbKey)
+	if not self:IsAvailable(dbKey) then
+		return
+	end
 	local moduleData = self.dbKeyToModule[dbKey]
 	if moduleData and moduleData.isEnabled then
 		moduleData.isEnabled = false
@@ -89,7 +120,9 @@ end
 function ControlCenter:GetModulesSorted()
 	local sorted = {}
 	for _, moduleData in ipairs(self.modules) do
-		table.insert(sorted, moduleData)
+		if self:IsAvailable(moduleData.dbKey) then
+			table.insert(sorted, moduleData)
+		end
 	end
 	table.sort(sorted, function(a, b)
 		return (a.uiOrder or 999) < (b.uiOrder or 999)
