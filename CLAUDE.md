@@ -83,6 +83,7 @@ SparkPoint/
 │   ├── Visibility.lua       # Shared visibility policy (ALWAYS/IN_COMBAT/etc.)
 │   ├── ModuleRegistry.lua   # ControlCenter module registration
 │   ├── SlotProviders.lua    # Inner ring slot provider registry
+│   ├── SwingTimer.lua       # Swing state service (WoW Forever)
 │   ├── BarProviders.lua     # Horizontal bar slot data provider registry
 │   ├── AnchorFrame.lua      # Cursor-following anchor frame + slash commands
 │   ├── HUDLayers.lua        # Centralized z-order layer roots
@@ -95,7 +96,8 @@ SparkPoint/
 │   └── Diagnostics.lua      # /sparkpoint status (flavor, capabilities, modules)
 ├── Data/
 │   ├── ResourceModels_Standard.lua # Retail spec-keyed resource models
-│   └── ResourceModels_Forever.lua  # Forever class-keyed resource models
+│   ├── ResourceModels_Forever.lua  # Forever class-keyed resource models
+│   └── SwingQueueSpells_Forever.lua # Queued next-melee spells per class (Forever)
 ├── Widgets/
 │   ├── DonutWidget.lua      # Ring/arc rendering widget
 │   ├── SlotRingWidget.lua   # Inner slot arc widget

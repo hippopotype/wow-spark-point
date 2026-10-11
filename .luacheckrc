@@ -26,6 +26,7 @@ globals = {
 	"C_SpellBook",
 	"C_SpecializationInfo",
 	"C_StringUtil",
+	"C_SwingTimer",
 	"C_Timer",
 	"C_UnitAuras",
 	"CooldownViewerSettings",
