@@ -112,6 +112,24 @@ return function(T)
 			end,
 		},
 		{
+			name = "every range re-assert also polls the current range",
+			fn = function()
+				local S, ctl = loadService()
+				ctl.inRange[0] = false
+				S:Acquire()
+				T.eq(S:GetState("MH").outOfRange, true, "polled on first acquire")
+				ctl.inRange[0] = true
+				S:CVAR_UPDATE("CVAR_UPDATE", "showSwingTimer")
+				T.eq(S:GetState("MH").outOfRange, false, "re-polled on CVAR_UPDATE")
+				ctl.inRange[0] = false
+				S:PLAYER_ENTERING_WORLD("PLAYER_ENTERING_WORLD")
+				T.eq(S:GetState("MH").outOfRange, true, "re-polled on PLAYER_ENTERING_WORLD")
+				ctl.inRange[0] = nil
+				S:WEAPON_SLOT_CHANGED("WEAPON_SLOT_CHANGED")
+				T.eq(S:GetState("MH").outOfRange, false, "re-polled on WEAPON_SLOT_CHANGED")
+			end,
+		},
+		{
 			name = "range checks are only ever enabled, including on re-assert events",
 			fn = function()
 				local S, ctl = loadService()

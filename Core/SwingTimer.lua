@@ -72,6 +72,13 @@ local function PollRange()
 	end
 end
 
+-- Enabling does not push a range event, so every re-assert also polls the current
+-- range (Blizzard polls right after enabling too).
+local function ReassertRange()
+	EnsureRangeChecks()
+	PollRange()
+end
+
 local function IsCurrentSpell(identifier)
 	local api = _G.C_Spell
 	if not (api and api.IsCurrentSpell) then
@@ -169,20 +176,19 @@ function SwingTimer:STOP_AUTOREPEAT_SPELL()
 end
 
 function SwingTimer:PLAYER_TARGET_CHANGED()
-	EnsureRangeChecks()
-	PollRange()
+	ReassertRange()
 end
 
 function SwingTimer:PLAYER_ENTERING_WORLD()
-	EnsureRangeChecks()
+	ReassertRange()
 end
 
 function SwingTimer:WEAPON_SLOT_CHANGED()
-	EnsureRangeChecks()
+	ReassertRange()
 end
 
 function SwingTimer:CVAR_UPDATE()
-	EnsureRangeChecks()
+	ReassertRange()
 end
 
 function SwingTimer:CURRENT_SPELL_CAST_CHANGED()
@@ -208,7 +214,7 @@ function SwingTimer:Acquire()
 		for _, event in ipairs(EVENTS) do
 			pcall(EL.RegisterEvent, EL, event)
 		end
-		EnsureRangeChecks()
+		ReassertRange()
 	end
 end
 
