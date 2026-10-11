@@ -25,8 +25,11 @@ return function(T)
 
 	-- Loads HUDLayers with stubs; `anchorReady` false simulates the startup moment before
 	-- the anchor (and therefore any layer root) exists.
+	-- Returns `created`: every root frame in creation order. Assertions read these captured
+	-- frames directly, because GetLayerFrame itself re-applies the scale and would mask a
+	-- broken hud_scale callback.
 	local function loadLayers(db, anchorReady)
-		local events, settings = {}, {}
+		local events, settings, created = {}, {}, {}
 		local state = { anchor = anchorReady ~= false and newFrame() or nil }
 		local addon = {
 			GetDBValue = function(key)
@@ -49,15 +52,18 @@ return function(T)
 		}
 		_G.UIParent = {}
 		_G.CreateFrame = function()
-			return newFrame()
+			local frame = newFrame()
+			created[#created + 1] = frame
+			return frame
 		end
 		T.loadAddonFile("Core/HUDLayers.lua", addon)
-		return addon.HUDLayers, events, settings, state
+		return addon.HUDLayers, events, settings, state, created
 	end
 
-	local function assertAllRoots(HUDLayers, expected)
-		for _, name in ipairs(LAYERS) do
-			T.eq(HUDLayers:GetLayerFrame(name).scale, expected, "scale of " .. name)
+	local function assertAllRoots(created, expected)
+		T.eq(#created, #LAYERS, "root count")
+		for index, frame in ipairs(created) do
+			T.eq(frame.scale, expected, "scale of " .. LAYERS[index])
 		end
 	end
 
@@ -65,8 +71,9 @@ return function(T)
 		{
 			name = "roots receive the stored scale when created",
 			fn = function()
-				local HUDLayers = loadLayers({ hud_scale = 1.5 })
-				assertAllRoots(HUDLayers, 1.5)
+				local HUDLayers, _, _, _, created = loadLayers({ hud_scale = 1.5 })
+				HUDLayers:GetLayerFrame("CAST_BASE")
+				assertAllRoots(created, 1.5)
 				T.eq(HUDLayers:GetScale(), 1.5, "GetScale")
 			end,
 		},
@@ -74,11 +81,12 @@ return function(T)
 			name = "hud_scale callback re-applies the new value live",
 			fn = function()
 				local db = { hud_scale = 1 }
-				local HUDLayers, _, settings = loadLayers(db)
-				assertAllRoots(HUDLayers, 1)
+				local HUDLayers, _, settings, _, created = loadLayers(db)
+				HUDLayers:GetLayerFrame("CAST_BASE")
+				assertAllRoots(created, 1)
 				db.hud_scale = 0.75
 				settings.hud_scale()
-				assertAllRoots(HUDLayers, 0.75)
+				assertAllRoots(created, 0.75)
 				T.eq(HUDLayers:GetScale(), 0.75, "GetScale")
 			end,
 		},
@@ -92,20 +100,22 @@ return function(T)
 					{ "abc", 1 },
 				}
 				for _, case in ipairs(cases) do
-					local HUDLayers = loadLayers({ hud_scale = case[1] })
+					local HUDLayers, _, _, _, created = loadLayers({ hud_scale = case[1] })
+					HUDLayers:GetLayerFrame("CAST_BASE")
 					T.eq(HUDLayers:GetScale(), case[2], "GetScale for " .. tostring(case[1]))
-					assertAllRoots(HUDLayers, case[2])
+					assertAllRoots(created, case[2])
 				end
 			end,
 		},
 		{
 			name = "callback before roots exist is a no-op; roots created later get the stored scale",
 			fn = function()
-				local HUDLayers, events, settings, state = loadLayers({ hud_scale = 1.25 }, false)
+				local _, events, settings, state, created = loadLayers({ hud_scale = 1.25 }, false)
 				settings.hud_scale()
+				T.eq(#created, 0, "no roots before the anchor exists")
 				state.anchor = newFrame()
 				events.ADDON_LOADED()
-				assertAllRoots(HUDLayers, 1.25)
+				assertAllRoots(created, 1.25)
 			end,
 		},
 	}
