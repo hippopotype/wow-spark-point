@@ -585,8 +585,22 @@ local function AreInnerSlotsShown()
 	return moduleEnabled and IsCastVisibilityAllowed() and IsInnerSlotsVisibilityAllowed()
 end
 
+-- Fill opacity multiplier for a provider result flagged `dimmed` (e.g. swing target out
+-- of range); 0.4 matches Blizzard's swing bar.
+local DIMMED_FILL_ALPHA = 0.4
+
 local function GetConfiguredInnerSlotFillColor(slotIndex, providerResult)
 	local opacity = ClampOpacity(GetInnerSlotValue(slotIndex, "fillOpacity"), 0.18)
+	if providerResult and providerResult.dimmed then
+		opacity = opacity * DIMMED_FILL_ALPHA
+	end
+
+	-- A provider may override the fill colour (e.g. queued swing); the slot's opacity stays.
+	local override = providerResult and providerResult.barColor
+	if type(override) == "table" then
+		return { r = override.r or 1, g = override.g or 1, b = override.b or 1, a = opacity }
+	end
+
 	local source = tostring(GetInnerSlotValue(slotIndex, "fillColorSource") or "CUSTOM")
 	if source == "CLASS" then
 		local r, g, b = API.GetPlayerClassColor()

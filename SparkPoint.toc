@@ -48,6 +48,7 @@ Widgets\CooldownIconWidget.lua
 
 # Providers
 Providers\GCD.lua
+Providers\SwingTimer.lua
 Providers\HealthBar.lua
 Providers\ManaBar.lua
 Providers\ClassPower.lua

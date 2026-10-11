@@ -41,6 +41,7 @@ It currently includes:
 
 - Added compatibility for WoW 12.1.5
 - Added a HUD Scale slider (50%–200%) that resizes the whole SparkPoint HUD at once
+- WoW Forever: swing timer — choose Swing (Auto), Main Hand, Off Hand or Ranged Swing as a Ring Slot source; it turns gold while Heroic Strike, Cleave, Maul or Raptor Strike is queued and dims when your target is out of range
 - Early support for World of Warcraft: Forever (beta): one download now works on both Retail and Forever
 - On Forever, the cast ring, spell icon, GCD slot, health and mana bars, decorative ring, and settings work
 - Class resource pips and the class power bar are not available on Forever yet; they are coming in a later update

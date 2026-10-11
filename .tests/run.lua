@@ -72,6 +72,7 @@ local TEST_FILES = {
 	"test_hud_layers.lua",
 	"test_slot_providers.lua",
 	"test_swing_timer.lua",
+	"test_swing_providers.lua",
 }
 
 -- Cases install WoW stubs into _G; restoring after every case keeps them order-independent.

@@ -105,6 +105,7 @@ SparkPoint/
 │   └── CooldownIconWidget.lua # Pooled round cooldown icon (dormant renderer)
 ├── Providers/
 │   ├── GCD.lua              # Global cooldown slot provider
+│   ├── SwingTimer.lua       # Swing timer slot providers (WoW Forever)
 │   ├── HealthBar.lua        # Health bar provider
 │   ├── ManaBar.lua          # Mana bar provider
 │   └── ClassPower.lua       # Continuous class power bar provider
