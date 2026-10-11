@@ -72,6 +72,7 @@ SparkPoint/
 ├── Core/
 │   ├── Initialization.lua   # Namespace, CallbackRegistry, event loading
 │   ├── Util.lua             # Shared texture, numeric, copy, and layering helpers
+│   ├── FrameTint.lua        # Frame Theme tint (Silver / Copper) for metallic frame art
 │   ├── Flavor.lua           # Game detection + capability table (only flavor-aware file)
 │   ├── API.lua              # Utility functions (new WoW APIs)
 │   ├── EmpowerStageLayout.lua # Empowered cast stage geometry
@@ -100,7 +101,8 @@ SparkPoint/
 ├── Data/
 │   ├── ResourceModels_Standard.lua # Retail spec-keyed resource models
 │   ├── ResourceModels_Forever.lua  # Forever class-keyed resource models
-│   └── SwingQueueSpells_Forever.lua # Queued next-melee spells per class (Forever)
+│   ├── SwingQueueSpells_Forever.lua # Queued next-melee spells per class (Forever)
+│   └── FrameTheme_Forever.lua # Automatic Frame Theme = Copper (Forever)
 ├── Widgets/
 │   ├── DonutWidget.lua      # Ring/arc rendering widget
 │   ├── SlotRingWidget.lua   # Inner slot arc widget

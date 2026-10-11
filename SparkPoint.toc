@@ -11,6 +11,8 @@
 # Core (load order matters)
 Core\Initialization.lua
 Core\Util.lua
+Core\FrameTint.lua
+Data\FrameTheme_Forever.lua [AllowLoadGameType camelot]
 Core\Flavor.lua
 Core\API.lua
 Core\EmpowerStageLayout.lua

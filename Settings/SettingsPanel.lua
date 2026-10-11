@@ -23,6 +23,7 @@ local RELOAD_UI_CONFIRM_POPUP = "SPARKPOINT_CONFIRM_RELOAD_UI"
 local NEW_SETTINGS = {
 	hud_frameStrata = true,
 	hud_scale = true,
+	hud_frameTheme = true,
 	moduleEnabled_BarSlots = true,
 	barslot_top_enabled = true,
 	barslot_top_provider = true,
@@ -805,6 +806,18 @@ local function BuildSettingsPanel()
 		function(value)
 			return string.format("%d%%", math.floor((value or 1) * 100 + 0.5))
 		end
+	)
+	AddDropdown(
+		category,
+		"hud_frameTheme",
+		L["Frame Theme"] or "Frame Theme",
+		{
+			{ value = "AUTO", label = L["Frame Theme Automatic"] or "Automatic" },
+			{ value = "SILVER", label = L["Frame Theme Silver"] or "Silver" },
+			{ value = "COPPER", label = L["Frame Theme Copper"] or "Copper" },
+		},
+		L["Frame Theme Tooltip"]
+			or "Colour of SparkPoint's metallic frames. Automatic uses Silver on Retail and Copper on WoW Forever. Slot and bar Frame Colors left at the default white follow the theme; any other colour you pick there wins."
 	)
 
 	local visibilityCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Visibility"] or "Visibility")
