@@ -72,6 +72,7 @@ return function(T)
 				T.eq(addon.Has("specs"), true, "specs")
 				T.eq(addon.Has("assistedCombat"), true, "assistedCombat")
 				T.eq(addon.Has("cooldownViewer"), true, "cooldownViewer")
+				T.eq(addon.Has("swingTimer"), false, "swingTimer")
 			end,
 		},
 		{
@@ -81,6 +82,7 @@ return function(T)
 				T.eq(addon.Has("specs"), false, "specs")
 				T.eq(addon.Has("assistedCombat"), false, "assistedCombat")
 				T.eq(addon.Has("cooldownViewer"), true, "cooldownViewer")
+				T.eq(addon.Has("swingTimer"), true, "swingTimer")
 			end,
 		},
 		{
