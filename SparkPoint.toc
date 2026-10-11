@@ -1,8 +1,8 @@
-## Interface: 120000, 120001, 120005, 120007, 120100, 16001
+## Interface: 120000, 120001, 120005, 120007, 120100, 120105, 16001
 ## Title: SparkPoint
 ## Notes: Cursor-centered combat HUD with cast ring, bar slots, and resources.
 ## Author: Pink (EU-BurningLegion)
-## Version: 1.5.0
+## Version: 1.6.0
 ## X-Game: [Game]
 ## X-License: GPL-3.0
 ## SavedVariables: SparkPointDB

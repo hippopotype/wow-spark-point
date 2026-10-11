@@ -9,8 +9,8 @@
 </p>
 
 <p align="center">
-  <img alt="WoW Version" src="https://img.shields.io/badge/WoW-12.1.0-blue" />
-  <img alt="Version" src="https://img.shields.io/badge/version-1.5.0-green" />
+  <img alt="WoW Version" src="https://img.shields.io/badge/WoW-12.1.5%20%7C%20Forever-blue" />
+  <img alt="Version" src="https://img.shields.io/badge/version-1.6.0-green" />
   <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0-blue" />
   <a href="https://www.curseforge.com/wow/addons/sparkpoint">
     <img alt="CurseForge" src="https://img.shields.io/badge/CurseForge-SparkPoint-orange" />
@@ -37,7 +37,18 @@ It currently includes:
 - Shared visibility rules, per-module overrides, and optional HUD transitions
 - Cursor-attached mode, fixed anchor mode, minimap button, and profile support
 
-## New In v1.5.0
+## New In v1.6.0
+
+- Added compatibility for WoW 12.1.5
+- Early support for World of Warcraft: Forever (beta): one download now works on both Retail and Forever
+- On Forever, the cast ring, spell icon, GCD slot, health and mana bars, decorative ring, and settings work
+- Class resource pips and the class power bar are not available on Forever yet; they are coming in a later update
+- Assisted Highlight is Retail-only, because Blizzard's assisted combat is not available on Forever
+- Cooldown Manager support on Forever is still being tested
+- Added `/sparkpoint status`, which shows your game version and which modules are active; please include it in bug reports
+- Replaced outdated WoW API calls, so class resources no longer depend on Blizzard's deprecated-API fallback setting
+
+## Previously In v1.5.0
 
 - Added the Cooldown Manager module: Blizzard's Essential Cooldowns, Utility Cooldowns, and Tracked Buffs next to the cast ring
 - Each group can be shown in SparkPoint style, Blizzard style, or hidden, and placed right, left, above, or below the ring
@@ -282,7 +293,7 @@ Open the Blizzard Settings panel via `/sparkpoint`. SparkPoint provides sections
 
 ## Compatibility
 
-- Supported interface versions: `12.0.x` and `12.1.0`
+- Supported interface versions: `12.0.x`, `12.1.0` and `12.1.5` (Retail), `1.60.x` (World of Warcraft: Forever, beta)
 - No external libraries required
 
 ## License
