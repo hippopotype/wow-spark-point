@@ -21,7 +21,9 @@
 
 ## Overview
 
-SparkPoint is a lightweight, event-driven WoW addon that keeps important combat feedback near your cursor instead of pushing your eyes back to unit frames or action bars.
+**SparkPoint is a lightweight cursor HUD for World of Warcraft Retail and WoW Forever.** It wraps your cast bar around your mouse cursor as a ring, with latency, interrupt and empowered-cast feedback, and surrounds it with a GCD ring, a swing timer (main hand, off hand and ranged on WoW Forever), curved health, mana and class power bars, combo points, Holy Power, runes and other class resources, a spell icon with cooldown swipe, Blizzard's Assisted Highlight next spell, and your Cooldown Manager icons. Your eyes stay on the fight instead of your unit frames or action bars. No WeakAuras needed.
+
+Works on: Retail 12.1.5 · WoW Forever 1.60 (class resources coming soon on Forever)
 
 It currently includes:
 

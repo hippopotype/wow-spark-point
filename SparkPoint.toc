@@ -5,6 +5,7 @@
 ## Version: 1.6.0
 ## X-Game: [Game]
 ## X-License: GPL-3.0
+## X-Curse-Project-ID: 1469550
 ## SavedVariables: SparkPointDB
 ## IconTexture: Interface\AddOns\SparkPoint\Textures\icon.png
 
