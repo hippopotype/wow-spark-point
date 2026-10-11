@@ -1185,7 +1185,7 @@ local function BuildSettingsPanel()
 			slotAppearanceCategory,
 			prefix .. "_frameColor",
 			L["Bar Frame Color"] or "Frame Color",
-			L["Inner Slot Frame Color Tooltip"] or "Tint color for the ring slot frame texture.",
+			L["Inner Slot Frame Color Tooltip"] or "Tint color for the ring slot frame texture. White follows the Frame Theme.",
 			false
 		)
 		AddSlider(
@@ -1348,7 +1348,7 @@ local function BuildSettingsPanel()
 			appearanceCategory,
 			prefix .. "frameColor",
 			(L[slotLabel] or slotLabel) .. " " .. (L["Bar Frame Color"] or "Frame Color"),
-			L["Bar Frame Color Tooltip"] or "Tint color for the bar slot frame texture.",
+			L["Bar Frame Color Tooltip"] or "Tint color for the bar slot frame texture. White follows the Frame Theme.",
 			false
 		)
 		AddSlider(
