@@ -7,7 +7,7 @@ local _, addon = ...
 
 local THEMES = {
 	SILVER = { r = 1, g = 1, b = 1 },
-	COPPER = { r = 1.0, g = 0.70, b = 0.45 },
+	COPPER = { r = 1.0, g = 0.76, b = 0.52 },
 }
 addon.FrameThemeColors = THEMES
 
