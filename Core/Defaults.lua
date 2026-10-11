@@ -24,6 +24,7 @@ addon.DefaultValues = {
 	position_y = 400,
 	showMinimapButton = true,
 	hud_frameStrata = "HIGH",
+	hud_scale = 1,
 	fadeMinimapButtonWhenNotHovered = false,
 	minimapButtonFadeOpacity = 0,
 	minimapButtonAngle = 225,

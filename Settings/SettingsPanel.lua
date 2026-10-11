@@ -22,6 +22,7 @@ local RELOAD_UI_CONFIRM_POPUP = "SPARKPOINT_CONFIRM_RELOAD_UI"
 
 local NEW_SETTINGS = {
 	hud_frameStrata = true,
+	hud_scale = true,
 	moduleEnabled_BarSlots = true,
 	barslot_top_enabled = true,
 	barslot_top_provider = true,
@@ -792,6 +793,19 @@ local function BuildSettingsPanel()
 		{ value = "FULLSCREEN_DIALOG", label = L["HUD Frame Strata FullscreenDialog"] or "Fullscreen Dialog" },
 		{ value = "TOOLTIP", label = L["HUD Frame Strata Tooltip Layer"] or "Tooltip" },
 	}, L["HUD Frame Strata Tooltip"] or "Choose the WoW frame strata used by the entire SparkPoint HUD.")
+	AddSlider(
+		category,
+		"hud_scale",
+		L["HUD Scale"] or "HUD Scale",
+		0.5,
+		2,
+		0.05,
+		L["HUD Scale Tooltip"]
+			or "Scales the entire SparkPoint HUD around its center. Blizzard's Cooldown Manager groups keep their Edit Mode size and stay placed against the ring.",
+		function(value)
+			return string.format("%d%%", math.floor((value or 1) * 100 + 0.5))
+		end
+	)
 
 	local visibilityCategory = Settings.RegisterVerticalLayoutSubcategory(category, L["Visibility"] or "Visibility")
 	AddVisibilityRuleGroup(visibilityCategory, "visibility_mode", nil, L["Addon Visibility Tooltip"] or "Default visibility rule used by modules set to inherit")

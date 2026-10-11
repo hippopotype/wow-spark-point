@@ -40,6 +40,7 @@ It currently includes:
 ## New In v1.6.0
 
 - Added compatibility for WoW 12.1.5
+- Added a HUD Scale slider (50%–200%) that resizes the whole SparkPoint HUD at once
 - Early support for World of Warcraft: Forever (beta): one download now works on both Retail and Forever
 - On Forever, the cast ring, spell icon, GCD slot, health and mana bars, decorative ring, and settings work
 - Class resource pips and the class power bar are not available on Forever yet; they are coming in a later update

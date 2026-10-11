@@ -90,7 +90,9 @@ local function ComputeAnchor(group, placement, previous)
 		local c = spec.chain
 		return c[1], previous, c[2], c[3] * GAP + nudgeX, c[4] * GAP + nudgeY
 	end
-	local reach = (tonumber(GetDBValue("cast_radius")) or 40) + GAP
+	-- The ring scales with the HUD (HUDLayers); Blizzard's viewers do not, so only the
+	-- ring radius is multiplied. GAP and nudges stay in the viewer's own units.
+	local reach = (tonumber(GetDBValue("cast_radius")) or 40) * HUDLayers:GetScale() + GAP
 	local f = spec.first
 	return f[1], moduleFrame, f[2], f[3] * reach + nudgeX, f[4] * reach + nudgeY
 end
@@ -250,6 +252,7 @@ local settingKeys = {
 	"cooldownmanager_glowColor",
 	-- Groups are placed from the cast ring's outer edge; follow a resized ring.
 	"cast_radius",
+	"hud_scale",
 }
 for _, group in ipairs(GROUPS) do
 	for _, suffix in ipairs({ "mode", "placement", "nudgeX", "nudgeY" }) do
