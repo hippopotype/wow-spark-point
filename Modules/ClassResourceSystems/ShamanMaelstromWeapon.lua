@@ -11,9 +11,9 @@ local GetDBValue = addon.GetDBValue
 local SetTextureSmooth = addon.Util.SetTextureSmooth
 local Clamp01 = addon.Util.Clamp01
 
-local PIP_TEXTURE_FRAME_PATH = "Interface\\AddOns\\SparkPoint\\Textures\\class_resource_frame.png"
-local PIP_TEXTURE_BG_PATH = "Interface\\AddOns\\SparkPoint\\Textures\\class_resource_background.png"
-local PIP_TEXTURE_FILL_PATH = "Interface\\AddOns\\SparkPoint\\Textures\\class_resource_fill.png"
+local PIP_TEXTURE_FRAME_PATH = addon.addonFolder .. "\\Textures\\class_resource_frame.png"
+local PIP_TEXTURE_BG_PATH = addon.addonFolder .. "\\Textures\\class_resource_background.png"
+local PIP_TEXTURE_FILL_PATH = addon.addonFolder .. "\\Textures\\class_resource_fill.png"
 local PIP_TEXTURE_FALLBACK = "Interface\\Buttons\\WHITE8x8"
 
 local POINT_SIZE = 18

@@ -31,5 +31,8 @@ jobs:
       - name: Flavor isolation
         run: bash .scripts/check-flavor-isolation.sh && bash .tests/isolation_test.sh
 
+      - name: Asset paths
+        run: bash .scripts/check-asset-paths.sh && bash .tests/asset_paths_test.sh
+
       - name: Headless tests (Lua 5.1)
         run: lua5.1 .tests/run.lua
