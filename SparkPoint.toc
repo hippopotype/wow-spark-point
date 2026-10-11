@@ -24,6 +24,7 @@ Core\ClassResourceSystems.lua
 Core\IconMask.lua
 Core\IconGlow.lua
 Core\Defaults.lua
+Data\Defaults_Forever.lua [AllowLoadGameType camelot]
 Core\Database.lua
 Core\ResourceColors.lua
 Core\Transition.lua
