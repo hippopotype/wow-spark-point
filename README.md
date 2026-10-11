@@ -36,18 +36,19 @@ It currently includes:
 - Optional performance stats HUD
 - Shared visibility rules, per-module overrides, and optional HUD transitions
 - Cursor-attached mode, fixed anchor mode, minimap button, and profile support
+- HUD Scale and Frame Theme (Silver / Copper) settings
+- WoW: Forever support, including a swing timer in the ring slots
 
 ## New In v1.6.0
 
+- **New:** Early support for World of Warcraft: Forever (beta): one download now works on both Retail and Forever
+- **New:** WoW Forever swing timer: the Outer Ring Slot shows Swing (Auto) by default on new installs, and Main Hand, Off Hand or Ranged Swing can be chosen as any Ring Slot's source; it turns gold while Heroic Strike, Cleave, Maul or Raptor Strike is queued and dims when your target is out of range
+- **New:** Frame Theme setting (Automatic / Silver / Copper): SparkPoint's frames take WoW Forever's copper look automatically on Forever, or any theme on either game; slot and bar Frame Colors you've customised still win
+- **New:** HUD Scale slider (50%–200%) that resizes the whole SparkPoint HUD at once
 - Added compatibility for WoW 12.1.5
-- Added a HUD Scale slider (50%–200%) that resizes the whole SparkPoint HUD at once
-- WoW Forever: swing timer — choose Swing (Auto), Main Hand, Off Hand or Ranged Swing as a Ring Slot source; it turns gold while Heroic Strike, Cleave, Maul or Raptor Strike is queued and dims when your target is out of range
-- New Frame Theme setting (Automatic / Silver / Copper): SparkPoint's frames take WoW Forever's copper look automatically on Forever, or any theme on either game; slot and bar Frame Colors you've customised still win
-- Early support for World of Warcraft: Forever (beta): one download now works on both Retail and Forever
-- On Forever, the cast ring, spell icon, GCD slot, health and mana bars, decorative ring, and settings work
+- On Forever, the cast ring, spell icon, GCD slot, health and mana bars, decorative ring, and settings work; Cooldown Manager support on Forever is still being tested
 - Class resource pips and the class power bar are not available on Forever yet; they are coming in a later update
 - Assisted Highlight is Retail-only, because Blizzard's assisted combat is not available on Forever
-- Cooldown Manager support on Forever is still being tested
 - Added `/sparkpoint status`, which shows your game version and which modules are active; please include it in bug reports
 - Replaced outdated WoW API calls, so class resources no longer depend on Blizzard's deprecated-API fallback setting
 
@@ -132,7 +133,7 @@ The main cast ring renders around your cursor and supports:
 SparkPoint supports up to **3 concentric inner slots** inside the cast ring.
 
 - Each slot can be assigned independently
-- Current provider: **GCD**
+- Providers: **GCD**; on WoW: Forever also **Swing (Auto)**, **Main Hand**, **Off Hand** and **Ranged Swing** timers
 - Each slot has configurable bar color, background tint, opacity, and optional class-color override
 
 ### Bar Slots
@@ -246,6 +247,7 @@ Additional behavior:
 - Attach to cursor or use a fixed anchor
 - Minimap button with optional fade behavior
 - Global or class-specific profiles
+- HUD Scale (50%–200%) and Frame Theme (Automatic / Silver / Copper)
 - Standardized `/sparkpoint` slash commands for settings and anchor control
 
 ## Installation
@@ -273,6 +275,7 @@ https://www.curseforge.com/wow/addons/sparkpoint
 | `/sparkpoint unlock` | Unlock the anchor for manual drag placement |
 | `/sparkpoint lock` | Lock the anchor |
 | `/sparkpoint reset` | Reset to default cursor-attached positioning |
+| `/sparkpoint status` | Show game version, capabilities, and module status (for bug reports) |
 
 You can also open settings from the minimap button.
 

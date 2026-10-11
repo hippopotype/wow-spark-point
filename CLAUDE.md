@@ -99,6 +99,7 @@ SparkPoint/
 │   ├── MinimapButton.lua    # Native minimap button (no LibDBIcon)
 │   └── Diagnostics.lua      # /sparkpoint status (flavor, capabilities, modules)
 ├── Data/
+│   ├── Defaults_Forever.lua # Forever default overrides (Outer Ring Slot = Swing (Auto))
 │   ├── ResourceModels_Standard.lua # Retail spec-keyed resource models
 │   ├── ResourceModels_Forever.lua  # Forever class-keyed resource models
 │   ├── SwingQueueSpells_Forever.lua # Queued next-melee spells per class (Forever)

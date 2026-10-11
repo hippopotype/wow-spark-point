@@ -18,6 +18,8 @@ SparkPoint/
 ├── Core/                    # Core infrastructure
 │   ├── Initialization.lua   # Namespace, CallbackRegistry, event loading
 │   ├── Util.lua             # Shared texture, numeric, copy, and layering helpers
+│   ├── FrameTint.lua        # Frame Theme tint (Silver / Copper) for metallic frame art
+│   ├── Flavor.lua           # Game detection + capability table (only flavor-aware file)
 │   ├── API.lua              # Utility functions (new WoW APIs)
 │   ├── EmpowerStageLayout.lua # Empowered cast stage geometry
 │   ├── ResourceModel.lua    # Class/spec/form resource ownership
@@ -31,6 +33,7 @@ SparkPoint/
 │   ├── Visibility.lua       # Shared visibility policy (ALWAYS/IN_COMBAT/etc.)
 │   ├── ModuleRegistry.lua   # ControlCenter module registration
 │   ├── SlotProviders.lua    # Inner ring slot provider registry
+│   ├── SwingTimer.lua       # Swing state service (WoW Forever)
 │   ├── BarProviders.lua     # Horizontal bar slot data provider registry
 │   ├── AnchorFrame.lua      # Cursor-following anchor frame + slash commands
 │   ├── HUDLayers.lua        # Centralized z-order layer roots
@@ -39,7 +42,14 @@ SparkPoint/
 │   ├── CooldownViewerData.lua   # C_CooldownViewer entry model
 │   ├── CooldownViewerAnchor.lua # Anchors Blizzard viewers to the HUD
 │   ├── CooldownViewerSkin.lua   # SparkPoint skin for Blizzard cooldown icons
-│   └── MinimapButton.lua    # Native minimap button (no LibDBIcon)
+│   ├── MinimapButton.lua    # Native minimap button (no LibDBIcon)
+│   └── Diagnostics.lua      # /sparkpoint status (flavor, capabilities, modules)
+├── Data/                    # Per-game data, loaded by TOC game tags
+│   ├── Defaults_Forever.lua # Forever default overrides (Outer Ring Slot = Swing (Auto))
+│   ├── ResourceModels_Standard.lua # Retail spec-keyed resource models
+│   ├── ResourceModels_Forever.lua  # Forever class-keyed resource models
+│   ├── SwingQueueSpells_Forever.lua # Queued next-melee spells per class (Forever)
+│   └── FrameTheme_Forever.lua # Automatic Frame Theme = Copper (Forever)
 ├── Widgets/
 │   ├── DonutWidget.lua      # Ring/arc rendering widget
 │   ├── SlotRingWidget.lua   # Inner slot arc widget
@@ -47,6 +57,7 @@ SparkPoint/
 │   └── CooldownIconWidget.lua # Pooled round cooldown icon (dormant renderer)
 ├── Providers/
 │   ├── GCD.lua              # Global cooldown slot provider
+│   ├── SwingTimer.lua       # Swing timer slot providers (WoW Forever)
 │   ├── HealthBar.lua        # Health bar provider
 │   ├── ManaBar.lua          # Mana bar provider
 │   └── ClassPower.lua       # Continuous class power bar provider
@@ -78,15 +89,19 @@ SparkPoint/
 - Enable Lua error reporting: `/console scriptErrors 1`
 - Access settings: `/sparkpoint`
 - Unlock position: `/sparkpoint unlock` (right-click to lock)
+- Flavor, capabilities, module availability: `/sparkpoint status`
 
 ## Dev Tooling (CLI)
 
 Run before every commit:
 ```bash
 luacheck .                          # Must report 0 warnings / 0 errors
-stylua --check .                    # Preview formatting changes
+stylua --check . .tests             # Preview formatting changes (incl. hidden .tests)
 stylua .                            # Apply formatting
 bash .scripts/check-toc-sync.sh     # SparkPoint.toc / SparkPoint_Dev.toc must match
+lua .tests/run.lua                  # Headless logic tests
+bash .scripts/check-flavor-isolation.sh # Only Core/Flavor.lua and Data/*_{Standard,Forever}.lua know the game
+bash .scripts/check-asset-paths.sh  # Asset paths use addon.addonFolder
 ```
 
 - Config: `.luacheckrc` (lint rules + WoW globals), `.luarc.json` (LSP), `.stylua.toml` (formatter)
