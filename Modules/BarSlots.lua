@@ -383,12 +383,9 @@ local function GetConfiguredFrameColor(def)
 	if opacity == nil then
 		opacity = 1
 	end
-	return {
-		r = color.r or 1,
-		g = color.g or 1,
-		b = color.b or 1,
-		a = opacity,
-	}
+	-- A Frame Color left at the default white follows the Frame Theme; others win.
+	local r, g, b, a = addon.ResolvePickerFrameColor(color.r or 1, color.g or 1, color.b or 1, opacity)
+	return { r = r, g = g, b = b, a = a }
 end
 
 local function GetConfiguredTextColor(def, result)
@@ -804,7 +801,7 @@ for _, def in ipairs(SLOT_DEFS) do
 end
 
 -- Shared layout keys that affect all slots
-for _, key in ipairs({ "cast_radius", "moduleEnabled_Cast" }) do
+for _, key in ipairs({ "cast_radius", "moduleEnabled_Cast", "hud_frameTheme" }) do
 	CallbackRegistry:RegisterSettingCallback(key, function()
 		BarSlots:ApplyLayout()
 	end)

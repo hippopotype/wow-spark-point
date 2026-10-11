@@ -253,6 +253,7 @@ local settingKeys = {
 	-- Groups are placed from the cast ring's outer edge; follow a resized ring.
 	"cast_radius",
 	"hud_scale",
+	"hud_frameTheme",
 }
 for _, group in ipairs(GROUPS) do
 	for _, suffix in ipairs({ "mode", "placement", "nudgeX", "nudgeY" }) do

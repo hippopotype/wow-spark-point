@@ -279,7 +279,7 @@ local function ApplyOwnLayers(frame, state)
 	if r then
 		state.border:SetVertexColor(r, g, b, 1)
 	else
-		state.border:SetVertexColor(1, 1, 1, 1)
+		state.border:SetVertexColor(addon.TintFrameColor(1, 1, 1, 1))
 	end
 end
 

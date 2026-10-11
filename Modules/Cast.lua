@@ -630,12 +630,9 @@ end
 local function GetConfiguredInnerSlotFrameColor(slotIndex)
 	local opacity = ClampOpacity(GetInnerSlotValue(slotIndex, "frameOpacity"), 1)
 	local color = GetInnerSlotColorTable(slotIndex, "frameColor")
-	return {
-		r = color.r or 1,
-		g = color.g or 1,
-		b = color.b or 1,
-		a = opacity,
-	}
+	-- A Frame Color left at the default white follows the Frame Theme; others win.
+	local r, g, b, a = addon.ResolvePickerFrameColor(color.r or 1, color.g or 1, color.b or 1, opacity)
+	return { r = r, g = g, b = b, a = a }
 end
 
 local function GetCastProgressTextureBase()
@@ -1480,7 +1477,7 @@ function Cast:ApplyIconOptions()
 	end
 	if castFrame.iconFrame.frame then
 		SetTextureSmooth(castFrame.iconFrame.frame, SPELL_ICON_FRAME_PATH)
-		castFrame.iconFrame.frame:SetVertexColor(1, 1, 1, 1)
+		castFrame.iconFrame.frame:SetVertexColor(addon.TintFrameColor(1, 1, 1, 1))
 		castFrame.iconFrame.frame:Show()
 	end
 
@@ -2044,7 +2041,8 @@ local function OnUpdate(self, elapsed)
 		if frameOpacity == nil then
 			frameOpacity = 0.8
 		end
-		local activeFrameColor = { r = 1, g = 1, b = 1, a = frameOpacity }
+		local afr, afg, afb, afa = addon.TintFrameColor(1, 1, 1, frameOpacity)
+		local activeFrameColor = { r = afr, g = afg, b = afb, a = afa }
 		local empowerVisualsActive = isEmpowering and empowerRenderer and empowerLayout
 
 		if empowerVisualsActive then
@@ -2883,7 +2881,8 @@ function Cast:ApplyOptions()
 		b = backgroundColorSetting.b or 1,
 		a = backgroundOpacity,
 	}
-	local frameColor = { r = 1, g = 1, b = 1, a = frameOpacity }
+	local fr, fg, fb, fa = addon.TintFrameColor(1, 1, 1, frameOpacity)
+	local frameColor = { r = fr, g = fg, b = fb, a = fa }
 	local activeCastColor = GetActiveCastBarColor()
 	local glowColor = {
 		r = activeCastColor.r or 1,
@@ -3244,6 +3243,7 @@ end)
 --------------------------------------------------------------------------------
 local settingKeys = {
 	"cast_radius",
+	"hud_frameTheme",
 	"cast_barColor",
 	"cast_channelBarColor",
 	"cast_fillColorSource",

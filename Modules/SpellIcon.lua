@@ -53,6 +53,7 @@ local settingKeys = {
 	"spellicon_showTriggeredInstantCasts",
 	"spellicon_failedCastStyle",
 	"spellicon_showCooldownBlocked",
+	"hud_frameTheme",
 }
 
 for _, key in ipairs(settingKeys) do

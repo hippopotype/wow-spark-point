@@ -218,7 +218,7 @@ function AssistedHighlight:ApplyOptions()
 	if moduleFrame.iconFrame.frame then
 		IconMask:LayoutToIcon(moduleFrame.iconFrame.frame, moduleFrame.iconFrame.icon, ICON_MASK_BASE_EXPAND)
 		SetTextureSmooth(moduleFrame.iconFrame.frame, SPELL_ICON_FRAME_PATH)
-		moduleFrame.iconFrame.frame:SetVertexColor(1, 1, 1, 1)
+		moduleFrame.iconFrame.frame:SetVertexColor(addon.TintFrameColor(1, 1, 1, 1))
 		moduleFrame.iconFrame.frame:SetAlpha(iconOpacity)
 	end
 
@@ -442,6 +442,7 @@ for _, key in ipairs({
 	"assistedhighlight_glowTransitionEnabled",
 	"assistedhighlight_glowTransitionSpeed",
 	"assistedhighlight_glowTransitionStrength",
+	"hud_frameTheme",
 }) do
 	CallbackRegistry:RegisterSettingCallback(key, function()
 		AssistedHighlight:ApplyOptions()

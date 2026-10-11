@@ -259,7 +259,7 @@ function GenericPips:ConfigurePipTextures(pip, resource)
 	end
 
 	local usingDefaultBackgroundTint = br == 1 and bg == 1 and bb == 1 and ba == 1
-	pip.frame:SetVertexColor(1, 1, 1, 0.95)
+	pip.frame:SetVertexColor(addon.TintFrameColor(1, 1, 1, 0.95))
 	if usingDefaultBackgroundTint then
 		pip.bg:SetVertexColor(emptyColor.r, emptyColor.g, emptyColor.b, emptyColor.a)
 	else
