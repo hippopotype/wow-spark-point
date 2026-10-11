@@ -72,6 +72,26 @@ local function ApplyRootStrata()
 	CallbackRegistry:Trigger("HUDLayersChanged", strata)
 end
 
+-- Global HUD scale (hud_scale). Roots stay pinned to the unscaled anchor's corners, so
+-- scaling them keeps their screen rectangle and grows/shrinks content around the HUD
+-- centre. Never applied to the anchor or to Blizzard's cooldown viewers.
+local SCALE_MIN, SCALE_MAX = 0.5, 2
+
+local function GetRootScale()
+	local scale = tonumber(GetDBValue("hud_scale")) or 1
+	return math.min(SCALE_MAX, math.max(SCALE_MIN, scale))
+end
+
+local function ApplyRootScale()
+	local scale = GetRootScale()
+	for _, name in ipairs(LAYER_ORDER) do
+		local frame = layerRoots[name]
+		if frame then
+			frame:SetScale(scale)
+		end
+	end
+end
+
 local function EnsureLayerRoots()
 	local anchor = AnchorFrame:GetFrame()
 	if not anchor then
@@ -89,6 +109,7 @@ local function EnsureLayerRoots()
 	end
 
 	ApplyRootStrata()
+	ApplyRootScale()
 end
 
 function HUDLayers:GetLayerLevel(name)
@@ -100,10 +121,20 @@ function HUDLayers:GetLayerFrame(name)
 	return layerRoots[name]
 end
 
+function HUDLayers:GetScale()
+	return GetRootScale()
+end
+
 CallbackRegistry:Register("ADDON_LOADED", function()
 	EnsureLayerRoots()
 end)
 
 CallbackRegistry:RegisterSettingCallback("hud_frameStrata", function()
 	ApplyRootStrata()
+end)
+
+-- Fires once from LoadDatabase before any root exists (harmless no-op); EnsureLayerRoots
+-- applies the stored scale when the roots are created.
+CallbackRegistry:RegisterSettingCallback("hud_scale", function()
+	ApplyRootScale()
 end)
