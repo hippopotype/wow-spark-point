@@ -13,8 +13,8 @@
 Core\Initialization.lua
 Core\Util.lua
 Core\FrameTint.lua
-Data\FrameTheme_Forever.lua [AllowLoadGameType camelot]
 Core\Flavor.lua
+Data\FrameTheme_Forever.lua [AllowLoadGameType camelot]
 Core\API.lua
 Core\EmpowerStageLayout.lua
 Core\ResourceModel.lua

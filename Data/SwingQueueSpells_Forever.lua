@@ -5,6 +5,12 @@
 
 local _, addon = ...
 
+-- Retail clients that do not know the camelot game type ignore the TOC tag and load this
+-- file anyway; Core/Flavor.lua (loaded first) is the real gate.
+if addon.Flavor.game ~= "Forever" then
+	return
+end
+
 addon.SwingQueueSpells = {
 	WARRIOR = { 78, 845 }, -- Heroic Strike, Cleave
 	DRUID = { 6807 }, -- Maul

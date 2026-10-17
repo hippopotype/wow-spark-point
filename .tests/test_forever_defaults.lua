@@ -2,7 +2,7 @@
 
 return function(T)
 	local function loadDefaults(withForever)
-		local addon = {}
+		local addon = { Flavor = { game = withForever and "Forever" or "Standard" } }
 		T.loadAddonFile("Core/Defaults.lua", addon)
 		if withForever then
 			T.loadAddonFile("Data/Defaults_Forever.lua", addon)

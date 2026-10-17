@@ -75,6 +75,7 @@ local TEST_FILES = {
 	"test_swing_providers.lua",
 	"test_frame_theme.lua",
 	"test_forever_defaults.lua",
+	"test_forever_data_gate.lua",
 }
 
 -- Cases install WoW stubs into _G; restoring after every case keeps them order-independent.

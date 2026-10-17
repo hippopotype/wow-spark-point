@@ -3,6 +3,7 @@
 return function(T)
 	local function loadTheme(db, withForeverData)
 		local addon = {
+			Flavor = { game = withForeverData and "Forever" or "Standard" },
 			GetDBValue = function(key)
 				return db[key]
 			end,
