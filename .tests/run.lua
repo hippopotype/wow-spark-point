@@ -76,6 +76,7 @@ local TEST_FILES = {
 	"test_frame_theme.lua",
 	"test_forever_defaults.lua",
 	"test_forever_data_gate.lua",
+	"test_cdm_skin.lua",
 }
 
 -- Cases install WoW stubs into _G; restoring after every case keeps them order-independent.

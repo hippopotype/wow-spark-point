@@ -643,6 +643,18 @@ local function UnskinFrame(frame)
 	reasserting[frame] = nil
 end
 
+-- One coalesced Skin:Refresh per category on the next frame.
+local function QueueNextFramePass(category)
+	if secondPassQueued[category] then
+		return
+	end
+	secondPassQueued[category] = true
+	C_Timer.After(0, function()
+		secondPassQueued[category] = nil
+		Skin:Refresh(category)
+	end)
+end
+
 local function InstallViewerHooks(category)
 	if viewerHooked[category] then
 		return
@@ -652,9 +664,14 @@ local function InstallViewerHooks(category)
 		return
 	end
 	viewerHooked[category] = true
-	-- In-place updates that skip RefreshLayout (CooldownViewer.lua:2011-2023).
+	-- In-place updates that skip RefreshLayout (CooldownViewer.lua:2011-2023). Next frame,
+	-- never synchronous: RefreshLayout calls RefreshData (CooldownViewer.lua:2057) before
+	-- other addons' RefreshLayout post-hooks run, and MasqueBlizzBars takes the icon's first
+	-- mask as the button's IconMask on its first look at a new pool frame. Skinning here
+	-- would hand it our mask, which Masque then reshapes (square icon after a spec change).
+	-- New frames are still skinned in the same layout by the LayoutRefreshed pass below.
 	hooksecurefunc(viewer, "RefreshData", function()
-		Skin:Refresh(category)
+		QueueNextFramePass(category)
 	end)
 end
 
@@ -742,11 +759,5 @@ CallbackRegistry:Register("CooldownViewer.LayoutRefreshed", function(_, category
 	end
 	Skin:Refresh(category)
 	-- Second pass next frame: lands after any skinner that deferred its own work.
-	if not secondPassQueued[category] then
-		secondPassQueued[category] = true
-		C_Timer.After(0, function()
-			secondPassQueued[category] = nil
-			Skin:Refresh(category)
-		end)
-	end
+	QueueNextFramePass(category)
 end, Skin)
