@@ -10,7 +10,7 @@
 
 <p align="center">
   <img alt="WoW Version" src="https://img.shields.io/badge/WoW-12.1.5%20%7C%20Forever-blue" />
-  <img alt="Version" src="https://img.shields.io/badge/version-1.6.0-green" />
+  <img alt="Version" src="https://img.shields.io/badge/version-1.6.1-green" />
   <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0-blue" />
   <a href="https://www.curseforge.com/wow/addons/sparkpoint">
     <img alt="CurseForge" src="https://img.shields.io/badge/CurseForge-SparkPoint-orange" />
@@ -41,7 +41,12 @@ It currently includes:
 - HUD Scale and Frame Theme (Silver / Copper) settings
 - WoW: Forever support, including a swing timer in the ring slots
 
-## New In v1.6.0
+## New In v1.6.1
+
+- Fixed Cooldown Manager icons turning square after spec changes.
+- Fixed Forever-only defaults and data loading on Retail.
+
+## Previously In v1.6.0
 
 - **New:** Early support for World of Warcraft: Forever (beta): one download now works on both Retail and Forever
 - **New:** WoW Forever swing timer: the Outer Ring Slot shows Swing (Auto) by default on new installs, and Main Hand, Off Hand or Ranged Swing can be chosen as any Ring Slot's source; it turns gold while Heroic Strike, Cleave, Maul or Raptor Strike is queued and dims when your target is out of range

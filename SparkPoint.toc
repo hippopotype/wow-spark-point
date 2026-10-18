@@ -2,7 +2,7 @@
 ## Title: SparkPoint
 ## Notes: Cursor-centered combat HUD with cast ring, bar slots, and resources.
 ## Author: Pink (EU-BurningLegion)
-## Version: 1.6.0
+## Version: 1.6.1
 ## X-Game: [Game]
 ## X-License: GPL-3.0
 ## X-Curse-Project-ID: 1469550
