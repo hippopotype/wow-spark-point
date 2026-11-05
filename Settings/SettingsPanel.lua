@@ -337,6 +337,18 @@ local function BuildSettingsPanel()
 		return initializer
 	end
 
+	-- Notice rows carry SparkPoint shown predicates. Blizzard's settings search calls every
+	-- row's predicates inline (SettingsPanelMixin:FindInitializersMatchingSearchText), so a
+	-- SparkPoint predicate run there taints the whole search pass and Blizzard's own rows
+	-- (e.g. the Discord sign-in button) then trip ADDON_ACTION_FORBIDDEN. The search loop
+	-- checks IsSearchIgnoredInLayout before ShouldShow, so keep notice rows out of search.
+	local function ExcludeFromSearch(cat, initializer)
+		local layout = SettingsPanel and SettingsPanel.GetLayout and SettingsPanel:GetLayout(cat)
+		if layout then
+			initializer:SetSearchIgnoredInLayout(layout)
+		end
+	end
+
 	-- Top-of-page notice for a module's own settings page while that module is off. The
 	-- shown predicate is evaluated each time the page is displayed, so it follows the
 	-- toggle on the main page without a reload.
@@ -348,6 +360,7 @@ local function BuildSettingsPanel()
 		notice:AddShownPredicate(function()
 			return not GetDBBool(moduleKey)
 		end)
+		ExcludeFromSearch(cat, notice)
 		return notice
 	end
 
@@ -1941,6 +1954,7 @@ local function BuildSettingsPanel()
 		cdmDisabledNotice:AddShownPredicate(function()
 			return not CooldownData:IsBlizzardModeUsable() or CooldownData:HasPendingDisplayData()
 		end)
+		ExcludeFromSearch(cooldownCategory, cdmDisabledNotice)
 
 		AddCheckbox(
 			cooldownCategory,

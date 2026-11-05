@@ -73,6 +73,7 @@ globals = {
 	"ReloadUI",
 	"CreateSettingsListSectionHeaderInitializer",
 	"Settings",
+	"SettingsPanel",
 	"SettingsListElementMixin",
 	"SLASH_SPARKPOINT1",
 	"SLASH_SPARKPOINT2",
