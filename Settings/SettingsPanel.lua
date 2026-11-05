@@ -131,6 +131,18 @@ local function ApplyNewFeatureBadge(initializer, isNew)
 	end
 	initializer._sparkPointNewFeatureWrapped = true
 
+	-- Row frames are pooled and reused by other rows (including Blizzard's), so the badge
+	-- lives under a SparkPoint-only key and is hidden when this row releases its frame.
+	local originalResetter = initializer.Resetter
+	function initializer:Resetter(frame)
+		if frame and frame.SparkPointNewBadge then
+			frame.SparkPointNewBadge:Hide()
+		end
+		if originalResetter then
+			originalResetter(self, frame)
+		end
+	end
+
 	local originalInitFrame = initializer.InitFrame
 	function initializer:InitFrame(frame)
 		if originalInitFrame then
@@ -141,7 +153,7 @@ local function ApplyNewFeatureBadge(initializer, isNew)
 			return
 		end
 
-		local badge = frame.NewFeature
+		local badge = frame.SparkPointNewBadge
 		if not badge then
 			local anchor = frame.Text or frame.Label or (frame.Button and frame.Button.Text) or (frame.GetFontString and frame:GetFontString())
 			if not anchor then
@@ -149,7 +161,7 @@ local function ApplyNewFeatureBadge(initializer, isNew)
 			end
 
 			badge = CreateFrame("Frame", nil, frame, "NewFeatureLabelTemplate")
-			frame.NewFeature = badge
+			frame.SparkPointNewBadge = badge
 			badge:SetScale(0.8)
 			badge:SetFrameStrata("HIGH")
 			badge:SetFrameLevel((frame:GetFrameLevel() or 0) + 5)
