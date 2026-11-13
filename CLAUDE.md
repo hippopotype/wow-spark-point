@@ -88,6 +88,7 @@ SparkPoint/
 │   ├── ModuleRegistry.lua   # ControlCenter module registration
 │   ├── SlotProviders.lua    # Inner ring slot provider registry
 │   ├── SwingTimer.lua       # Swing state service (WoW Forever)
+│   ├── TargetRange.lua      # Target range state service (Decorative Ring range tint)
 │   ├── BarProviders.lua     # Horizontal bar slot data provider registry
 │   ├── AnchorFrame.lua      # Cursor-following anchor frame + slash commands
 │   ├── HUDLayers.lua        # Centralized z-order layer roots
@@ -102,6 +103,8 @@ SparkPoint/
 │   ├── Defaults_Forever.lua # Forever default overrides (Outer Ring Slot = Swing (Auto))
 │   ├── ResourceModels_Standard.lua # Retail spec-keyed resource models
 │   ├── ResourceModels_Forever.lua  # Forever class-keyed resource models
+│   ├── RangeSpells_Standard.lua # Retail range check spell candidates
+│   ├── RangeSpells_Forever.lua  # Forever range check spell candidates
 │   ├── SwingQueueSpells_Forever.lua # Queued next-melee spells per class (Forever)
 │   └── FrameTheme_Forever.lua # Automatic Frame Theme = Copper (Forever)
 ├── Widgets/
