@@ -50,6 +50,29 @@ function Diagnostics.BuildStatusLines()
 	lines[#lines + 1] = "Slot providers: " .. JoinOptionValues(addon.SlotProviders:GetDropdownOptions())
 	lines[#lines + 1] = "Bar providers: " .. JoinOptionValues(addon.BarProviders:GetDropdownOptions())
 	lines[#lines + 1] = "Class resource systems: " .. table.concat(addon.ClassResourceSystems:GetRegisteredIDs(), ", ")
+	if addon.TargetRange then
+		local targetKind = addon.TargetRange:GetTargetKind()
+		local activeID, activeName = addon.TargetRange:GetActiveSpell()
+		local function describe(kind)
+			local candidateID, name = addon.TargetRange:GetResolvedSpell(kind)
+			if activeID and targetKind == (kind or "HOSTILE") then
+				candidateID, name = activeID, activeName
+			end
+			if candidateID then
+				return tostring(name) .. " (" .. tostring(candidateID) .. ")"
+			end
+			return "none"
+		end
+		lines[#lines + 1] = string.format(
+			"Range tint: %s, friendly %s, spell %s, friendly spell %s, target %s, state %s",
+			addon.GetDBBool("ring_rangeTintEnabled") and "on" or "off",
+			addon.GetDBBool("targetRange_friendlyEnabled") and "on" or "off",
+			describe(),
+			describe("FRIENDLY"),
+			tostring(targetKind or "none"),
+			tostring(addon.TargetRange:GetState())
+		)
+	end
 	return lines
 end
 

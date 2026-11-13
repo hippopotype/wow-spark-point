@@ -55,6 +55,102 @@ return function(T)
 			end,
 		},
 		{
+			name = "status shows range tint state only when TargetRange exists",
+			fn = function()
+				local function build(targetRange, settings)
+					local addon = {
+						VERSION = "1.6.0",
+						GetDBBool = function(key)
+							return settings[key] == true
+						end,
+						TargetRange = targetRange,
+						Flavor = {
+							GetDiagnostics = function()
+								return { game = "Retail", interface = 120000, capabilities = {} }
+							end,
+						},
+						ControlCenter = {
+							GetAllModules = function()
+								return {}
+							end,
+							GetUnavailableReason = function() end,
+						},
+						SlotProviders = {
+							GetDropdownOptions = function()
+								return {}
+							end,
+						},
+						BarProviders = {
+							GetDropdownOptions = function()
+								return {}
+							end,
+						},
+						ClassResourceSystems = {
+							GetRegisteredIDs = function()
+								return {}
+							end,
+						},
+					}
+					T.loadAddonFile("Core/Diagnostics.lua", addon)
+					return addon.Diagnostics.BuildStatusLines()
+				end
+				local function stub(hostile, friendly, kind, state, active)
+					return {
+						GetActiveSpell = function()
+							if active then
+								return active[1], active[2]
+							end
+							return nil
+						end,
+						GetResolvedSpell = function(_, k)
+							if k == "FRIENDLY" then
+								if friendly then
+									return 8936, "Regrowth", "8936"
+								end
+								return nil
+							end
+							if hostile then
+								return 8921, "Moonfire", "8921"
+							end
+							return nil
+						end,
+						GetTargetKind = function()
+							return kind
+						end,
+						GetState = function()
+							return state
+						end,
+					}
+				end
+				local function last(lines)
+					return lines[#lines]
+				end
+				T.eq(
+					last(build(stub(true, true, "HOSTILE", "OUT_OF_RANGE"), { ring_rangeTintEnabled = true, targetRange_friendlyEnabled = true })),
+					"Range tint: on, friendly on, spell Moonfire (8921), friendly spell Regrowth (8936), target HOSTILE, state OUT_OF_RANGE",
+					"hostile line"
+				)
+				T.eq(last(build(stub(false, false, nil, "UNKNOWN"), {})), "Range tint: off, friendly off, spell none, friendly spell none, target none, state UNKNOWN", "off line")
+				T.eq(
+					last(build(stub(false, true, "FRIENDLY", "UNKNOWN"), { ring_rangeTintEnabled = true })),
+					"Range tint: on, friendly off, spell none, friendly spell Regrowth (8936), target FRIENDLY, state UNKNOWN",
+					"friendly line"
+				)
+				T.eq(
+					last(build(stub(true, false, "HOSTILE", "IN_RANGE", { 7918, "Shoot Gun" }), { ring_rangeTintEnabled = true })),
+					"Range tint: on, friendly off, spell Shoot Gun (7918), friendly spell none, target HOSTILE, state IN_RANGE",
+					"active hostile line"
+				)
+				T.eq(
+					last(build(stub(false, true, "FRIENDLY", "IN_RANGE", { 8936, "Rejuvenation" }), { ring_rangeTintEnabled = true, targetRange_friendlyEnabled = true })),
+					"Range tint: on, friendly on, spell none, friendly spell Rejuvenation (8936), target FRIENDLY, state IN_RANGE",
+					"active friendly line"
+				)
+				local none = table.concat(build(nil, {}), "\n")
+				T.eq(none:find("Range tint", 1, true), nil, "no line without TargetRange")
+			end,
+		},
+		{
 			name = "ClassResourceSystems:GetRegisteredIDs is sorted",
 			fn = function()
 				local addon = {}
