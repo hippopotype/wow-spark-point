@@ -24,6 +24,11 @@ local NEW_SETTINGS = {
 	hud_frameStrata = true,
 	hud_scale = true,
 	hud_frameTheme = true,
+	ring_rangeTintEnabled = true,
+	ring_rangeTintColor = true,
+	targetRange_spell = true,
+	targetRange_friendlyEnabled = true,
+	targetRange_friendlySpell = true,
 	moduleEnabled_BarSlots = true,
 	barslot_top_enabled = true,
 	barslot_top_provider = true,
@@ -286,6 +291,24 @@ local function BuildSettingsPanel()
 		end
 		local initializer = Settings.CreateDropdown(cat, setting, GetOptions, tooltip)
 		ApplyNewFeatureBadge(initializer, NEW_SETTINGS[dbKey] == true)
+		return setting, initializer
+	end
+
+	------------------------------------------------------------------------
+	-- Helper function to create a dropdown backed by a proxy setting
+	-- (value logic lives in the owning service, not the DB table)
+	------------------------------------------------------------------------
+	local function AddProxyDropdown(cat, variable, displayName, getOptions, getValue, setValue, tooltip)
+		local setting = Settings.RegisterProxySetting(cat, addonName .. "_" .. variable, Settings.VarType.String, displayName, "AUTO", getValue, setValue)
+		local function GetOptions()
+			local container = Settings.CreateControlTextContainer()
+			for _, entry in ipairs(getOptions() or {}) do
+				container:Add(entry.value, entry.label)
+			end
+			return container:GetData()
+		end
+		local initializer = Settings.CreateDropdown(cat, setting, GetOptions, tooltip)
+		ApplyNewFeatureBadge(initializer, NEW_SETTINGS[variable] == true)
 		return setting, initializer
 	end
 
@@ -1627,6 +1650,51 @@ local function BuildSettingsPanel()
 			return string.format("%.2f", value or 0)
 		end
 	)
+
+	local ringRangeCategory = Settings.RegisterVerticalLayoutSubcategory(ringCategory, L["Range Check"] or "Range Check")
+	local tintSetting, tintInitializer = AddCheckbox(
+		ringRangeCategory,
+		"ring_rangeTintEnabled",
+		L["Decorative Ring Range Tint"] or "Out of Range Tint",
+		L["Decorative Ring Range Tint Tooltip"]
+			or "Tint the ring when your attackable target is beyond the range of the chosen spell. Spells with a minimum range also check a melee spell when your class has one, so being too close counts as in range."
+	)
+	-- The color row is a custom element template that does not react to parent state, so it stays ungated.
+	AddColor(ringRangeCategory, "ring_rangeTintColor", L["Decorative Ring Range Tint Color"] or "Out of Range Color")
+	local targetRange = addon.TargetRange
+	local function IsTintOn()
+		return tintSetting:GetValue() == true
+	end
+	local _, rangeSpellInitializer = AddProxyDropdown(ringRangeCategory, "targetRange_spell", L["Range Spell"] or "Range Spell", function()
+		return targetRange and targetRange:GetDropdownOptions() or {}
+	end, function()
+		return targetRange and targetRange:GetDropdownValue() or "AUTO"
+	end, function(value)
+		if targetRange then
+			targetRange:SetDropdownValue(value)
+		end
+	end, L["Range Spell Tooltip"] or "Range is judged with this spell. Automatic picks a long-range spell for your class. Saved per class.")
+	rangeSpellInitializer:SetParentInitializer(tintInitializer, IsTintOn)
+	local friendlySetting, friendlyInitializer = AddCheckbox(
+		ringRangeCategory,
+		"targetRange_friendlyEnabled",
+		L["Range Check Friendly"] or "Check Friendly Targets",
+		L["Range Check Friendly Tooltip"]
+			or "Also tint the ring when your friendly target is out of range of the friendly spell. Needs a heal or buff spell; some classes have none."
+	)
+	friendlyInitializer:SetParentInitializer(tintInitializer, IsTintOn)
+	local _, friendlySpellInitializer = AddProxyDropdown(ringRangeCategory, "targetRange_friendlySpell", L["Range Friendly Spell"] or "Friendly Spell", function()
+		return targetRange and targetRange:GetDropdownOptions("FRIENDLY") or {}
+	end, function()
+		return targetRange and targetRange:GetDropdownValue("FRIENDLY") or "AUTO"
+	end, function(value)
+		if targetRange then
+			targetRange:SetDropdownValue(value, "FRIENDLY")
+		end
+	end, L["Range Friendly Spell Tooltip"] or "Range to friendly targets is judged with this spell. Automatic picks a long-range heal or buff for your class. Saved per class.")
+	friendlySpellInitializer:SetParentInitializer(friendlyInitializer, function()
+		return IsTintOn() and friendlySetting:GetValue() == true
+	end)
 
 	local ringVisibilityCategory = Settings.RegisterVerticalLayoutSubcategory(ringCategory, L["Visibility"] or "Visibility")
 	AddDropdown(
