@@ -74,6 +74,7 @@ local TEST_FILES = {
 	"test_swing_timer.lua",
 	"test_swing_providers.lua",
 	"test_target_range.lua",
+	"test_ring_range_tint.lua",
 	"test_frame_theme.lua",
 	"test_forever_defaults.lua",
 	"test_forever_data_gate.lua",

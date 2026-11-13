@@ -247,6 +247,8 @@ addon.DefaultValues = {
 	ring_rotate = true,
 	ring_useClassColor = false,
 	ring_classColorAlpha = 0.6,
+	ring_rangeTintEnabled = false,
+	ring_rangeTintColor = { r = 1, g = 0.2, b = 0.2, a = 0.6 },
 	ring_visibilitySource = "INHERIT",
 	ring_visibility = { ALWAYS = true },
 	ring_hideOnUIHover = false,

@@ -150,6 +150,40 @@ function Ring:UpdateVisibility()
 end
 
 --------------------------------------------------------------------------------
+-- Color (normal, class, or out-of-range tint)
+--------------------------------------------------------------------------------
+function Ring:ResolveColor()
+	local TargetRange = addon.TargetRange
+	if TargetRange and GetDBBool("ring_rangeTintEnabled") and TargetRange:GetState() == "OUT_OF_RANGE" then
+		return GetDBColor("ring_rangeTintColor")
+	end
+	if GetDBBool("ring_useClassColor") then
+		local r, g, b, a = API.GetPlayerClassColor()
+		return r, g, b, GetDBValue("ring_classColorAlpha") or a
+	end
+	return GetDBColor("ring_color")
+end
+
+function Ring:ApplyColor()
+	if not ringFrame then
+		return
+	end
+	ringFrame.texture:SetVertexColor(self:ResolveColor())
+end
+
+function Ring:SyncRangeService()
+	local TargetRange = addon.TargetRange
+	if not TargetRange then
+		return
+	end
+	if isEnabled and GetDBBool("ring_rangeTintEnabled") then
+		TargetRange:Acquire("ring")
+	else
+		TargetRange:Release("ring")
+	end
+end
+
+--------------------------------------------------------------------------------
 -- ApplyOptions: Update visuals from settings
 --------------------------------------------------------------------------------
 function Ring:ApplyOptions()
@@ -159,20 +193,13 @@ function Ring:ApplyOptions()
 
 	local textureID = GetDBValue("ring_texture")
 	local width = GetDBValue("ring_width")
-	local r, g, b, a
-	if GetDBBool("ring_useClassColor") then
-		r, g, b, a = API.GetPlayerClassColor()
-		a = GetDBValue("ring_classColorAlpha") or a
-	else
-		r, g, b, a = GetDBColor("ring_color")
-	end
 
 	local texture = ringFrame.texture
 	local textureKey = NormalizeTextureKey(textureID)
 	local texturePath = RING_TEXTURE_PATHS[textureKey] or RING_TEXTURE_PATHS[DEFAULT_TEXTURE_KEY]
 	SetTextureSmooth(texture, texturePath)
 
-	texture:SetVertexColor(r, g, b, a)
+	self:ApplyColor()
 	texture:SetBlendMode("ADD")
 	texture:SetSize(width, width)
 	texture:SetPoint("CENTER", ringFrame, "CENTER")
@@ -231,6 +258,7 @@ local function EnableModule(enabled)
 		isEnabled = false
 		HideRingFrame()
 	end
+	Ring:SyncRangeService()
 end
 
 --------------------------------------------------------------------------------
@@ -243,6 +271,7 @@ local settingKeys = {
 	"ring_rotate",
 	"ring_useClassColor",
 	"ring_classColorAlpha",
+	"ring_rangeTintColor",
 }
 
 for _, key in ipairs(settingKeys) do
@@ -250,6 +279,15 @@ for _, key in ipairs(settingKeys) do
 		Ring:ApplyOptions()
 	end)
 end
+
+CallbackRegistry:RegisterSettingCallback("ring_rangeTintEnabled", function()
+	Ring:SyncRangeService()
+	Ring:ApplyColor()
+end)
+
+CallbackRegistry:Register("TargetRangeChanged", function()
+	Ring:ApplyColor()
+end, Ring)
 
 for _, key in ipairs({
 	"visibility_mode",
