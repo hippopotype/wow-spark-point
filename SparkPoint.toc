@@ -21,6 +21,8 @@ Core\ResourceModel.lua
 Data\ResourceModels_Forever.lua [AllowLoadGameType camelot]
 Data\ResourceModels_Standard.lua [AllowLoadGameType standard]
 Data\SwingQueueSpells_Forever.lua [AllowLoadGameType camelot]
+Data\RangeSpells_Standard.lua [AllowLoadGameType standard]
+Data\RangeSpells_Forever.lua [AllowLoadGameType camelot]
 Core\ClassResourceSystems.lua
 Core\IconMask.lua
 Core\IconGlow.lua
@@ -33,6 +35,7 @@ Core\Visibility.lua
 Core\ModuleRegistry.lua
 Core\SlotProviders.lua
 Core\SwingTimer.lua
+Core\TargetRange.lua
 Core\BarProviders.lua
 Core\AnchorFrame.lua
 Core\HUDLayers.lua

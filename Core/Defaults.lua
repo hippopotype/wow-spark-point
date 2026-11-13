@@ -253,6 +253,13 @@ addon.DefaultValues = {
 	ring_hideInPetBattle = true,
 	ring_hideInSpecialActionBarContext = true,
 
+	-- Target range service: reference spell per class token ({ [class] = spellID }, missing = Automatic)
+	targetRange_spell = {},
+	-- Friendly-target reference spell per class token (same shape; missing = Automatic)
+	targetRange_friendlySpell = {},
+	-- Opt-in: also check range to friendly (assistable) targets with the friendly spell
+	targetRange_friendlyEnabled = false,
+
 	-- SpellIcon module settings
 	spellicon_size = 40,
 	spellicon_offsetX = 0,
