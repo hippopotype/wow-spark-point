@@ -107,6 +107,7 @@ globals = {
 	"UnitPowerDisplayMod",
 	"UnitPartialPower",
 	"UnitPowerMax",
+	"GetComboPoints",
 	"UnitPowerPercent",
 	"UnitPowerType",
 	"GetUnitChargedPowerPoints",

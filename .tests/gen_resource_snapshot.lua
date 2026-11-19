@@ -81,7 +81,7 @@ local function NewResolver(game, extraFiles)
 	for name, value in pairs(stubs) do
 		_G[name] = value
 	end
-	local files = { "Core/Flavor.lua", "Core/API.lua", "Core/ResourceModel.lua" }
+	local files = { "Core/Flavor.lua", "Core/Util.lua", "Core/API.lua", "Core/ResourceModel.lua" }
 	for _, path in ipairs(extraFiles or {}) do
 		files[#files + 1] = path
 	end

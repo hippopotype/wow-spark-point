@@ -274,3 +274,32 @@ end
 function API.FindBaseSpell(spellID)
 	return CallSpellBook("FindBaseSpellByID", spellID)
 end
+
+-- Combo points. With comboPointsOnTarget (Forever) the points live on the target, so they
+-- are read with GetComboPoints("player", "target"); retail reads UnitPower unchanged.
+-- Returns current, max; current is nil when unreadable. WoW globals and addon.Util are
+-- resolved at call time.
+function API.GetComboPoints(maxFallback)
+	local comboType = Enum and Enum.PowerType and Enum.PowerType.ComboPoints
+	if not addon.Has("comboPointsOnTarget") then
+		return UnitPower("player", comboType), UnitPowerMax("player", comboType)
+	end
+
+	local isAccessible = addon.Util.IsAccessibleNumber
+
+	local max = maxFallback
+	local okMax, rawMax = pcall(UnitPowerMax, "player", comboType)
+	if okMax and isAccessible(rawMax) then
+		max = rawMax
+	end
+
+	local ok, current = pcall(GetComboPoints, "player", "target")
+	if not ok or not isAccessible(current) then
+		return nil, max
+	end
+
+	if max ~= nil then
+		current = math.min(math.max(current, 0), max)
+	end
+	return current, max
+end

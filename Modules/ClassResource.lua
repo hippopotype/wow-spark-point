@@ -288,6 +288,18 @@ function ClassResource:RUNE_POWER_UPDATE(event)
 	end
 end
 
+function ClassResource:PLAYER_TARGET_CHANGED(event)
+	if CallPredicate(activeSystem, "WantsEvent", event) then
+		CallMethod(activeSystem, "HandleTargetEvent", event)
+	end
+end
+
+function ClassResource:COMBO_TARGET_CHANGED(event)
+	if CallPredicate(activeSystem, "WantsEvent", event) then
+		CallMethod(activeSystem, "HandleTargetEvent", event)
+	end
+end
+
 local function EnableModule(enabled)
 	isEnabled = enabled and true or false
 
@@ -302,6 +314,10 @@ local function EnableModule(enabled)
 		EL:RegisterUnitEvent("UNIT_MAXPOWER", "player")
 		EL:RegisterUnitEvent("UNIT_AURA", "player")
 		EL:RegisterUnitEvent("UNIT_POWER_POINT_CHARGE", "player")
+		if addon.Has("comboPointsOnTarget") then
+			EL:RegisterEvent("PLAYER_TARGET_CHANGED")
+			EL:RegisterEvent("COMBO_TARGET_CHANGED")
+		end
 
 		ClassResource:Refresh()
 	else

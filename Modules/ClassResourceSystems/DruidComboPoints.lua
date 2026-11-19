@@ -2,11 +2,9 @@
 -- Dedicated Druid implementation with cat-form visuals driven by the shared resource model.
 
 local _, addon = ...
+local API = addon.API
 local ResourceModel = addon.ResourceModel
 local ClassResourceSystems = addon.ClassResourceSystems
-
-local UnitPower = UnitPower
-local UnitPowerMax = UnitPowerMax
 
 local POINT_SIZE = 20
 local POINT_SPACING = 4
@@ -290,7 +288,13 @@ function DruidComboPoints:ReadState()
 		return 0, 0
 	end
 
-	return UnitPower("player", self.activeResource.powerEnum) or 0, UnitPowerMax("player", self.activeResource.powerEnum) or 0
+	local current, maxPoints = API.GetComboPoints(self.activeResource.maxCount)
+	if addon.Has("comboPointsOnTarget") then
+		-- Forever: current is nil when the target's points are unreadable; Sync hides the points.
+		return current, maxPoints or 0
+	end
+
+	return current or 0, maxPoints or 0
 end
 
 function DruidComboPoints:ApplyPointState(point, isActive)
@@ -323,7 +327,8 @@ function DruidComboPoints:Sync()
 	end
 
 	local current, maxPoints = self:ReadState()
-	if maxPoints < 1 then
+	-- Unreadable count or no max: hide the points only (the controller owns the root).
+	if current == nil or maxPoints < 1 then
 		for i = 1, #self.points do
 			if self.points[i] then
 				self.points[i]:Hide()
@@ -344,6 +349,12 @@ function DruidComboPoints:Sync()
 end
 
 function DruidComboPoints:WantsEvent(event)
+	if addon.Has("comboPointsOnTarget") then
+		if event == "UNIT_POWER_FREQUENT" or event == "PLAYER_TARGET_CHANGED" or event == "COMBO_TARGET_CHANGED" then
+			return true
+		end
+	end
+
 	return event == "UNIT_POWER_UPDATE" or event == "UNIT_MAXPOWER"
 end
 
@@ -353,6 +364,16 @@ function DruidComboPoints:HandleEvent(event, unit, powerToken)
 	end
 
 	if powerToken and self.activeResource and self.activeResource.powerToken and powerToken ~= self.activeResource.powerToken then
+		return
+	end
+
+	self:Sync()
+end
+
+-- Target events (Forever combo points live on the target). Re-read and sync; points animate
+-- to the new target's count like a normal power change.
+function DruidComboPoints:HandleTargetEvent(event)
+	if not self.activeResource then
 		return
 	end
 

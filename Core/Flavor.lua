@@ -21,8 +21,20 @@ local function DetectGame()
 end
 
 local CAPABILITIES = {
-	Standard = { specs = true, assistedCombat = true, cooldownViewer = true, swingTimer = false },
-	Forever = { specs = false, assistedCombat = false, cooldownViewer = true, swingTimer = true },
+	Standard = {
+		specs = true,
+		assistedCombat = true,
+		cooldownViewer = true,
+		swingTimer = false,
+		comboPointsOnTarget = false,
+	},
+	Forever = {
+		specs = false,
+		assistedCombat = false,
+		cooldownViewer = true,
+		swingTimer = true,
+		comboPointsOnTarget = true,
+	},
 }
 
 local game = DetectGame()

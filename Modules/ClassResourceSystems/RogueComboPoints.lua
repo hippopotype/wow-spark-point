@@ -2,12 +2,11 @@
 -- Dedicated Rogue implementation with charged-point support and native animation groups.
 
 local _, addon = ...
+local API = addon.API
 local ResourceModel = addon.ResourceModel
 local ClassResourceSystems = addon.ClassResourceSystems
 
 local GetUnitChargedPowerPoints = GetUnitChargedPowerPoints
-local UnitPower = UnitPower
-local UnitPowerMax = UnitPowerMax
 
 local POINT_SIZE = 20
 local POINT_SPACING = 4
@@ -442,8 +441,15 @@ function RogueComboPoints:ReadState()
 		return 0, 0, nil
 	end
 
-	local current = UnitPower("player", self.activeResource.powerEnum) or 0
-	local maxPoints = UnitPowerMax("player", self.activeResource.powerEnum) or 0
+	local current, maxPoints = API.GetComboPoints(self.activeResource.maxCount)
+	if addon.Has("comboPointsOnTarget") then
+		-- Forever: points live on the target and there are no charged points. current is nil
+		-- when the target's points are unreadable; Sync hides the points.
+		return current, maxPoints or 0, nil
+	end
+
+	current = current or 0
+	maxPoints = maxPoints or 0
 	local chargedMap = nil
 
 	if GetUnitChargedPowerPoints then
@@ -486,7 +492,8 @@ function RogueComboPoints:Sync()
 	end
 
 	local current, maxPoints, chargedMap = self:ReadState()
-	if maxPoints < 1 then
+	-- Unreadable count or no max: hide the points only (the controller owns the root).
+	if current == nil or maxPoints < 1 then
 		for i = 1, #self.points do
 			if self.points[i] then
 				self.points[i]:Hide()
@@ -507,6 +514,12 @@ function RogueComboPoints:Sync()
 end
 
 function RogueComboPoints:WantsEvent(event)
+	if addon.Has("comboPointsOnTarget") then
+		if event == "UNIT_POWER_FREQUENT" or event == "PLAYER_TARGET_CHANGED" or event == "COMBO_TARGET_CHANGED" then
+			return true
+		end
+	end
+
 	return event == "UNIT_POWER_UPDATE" or event == "UNIT_MAXPOWER"
 end
 
@@ -516,6 +529,16 @@ function RogueComboPoints:HandleEvent(event, unit, powerToken)
 	end
 
 	if powerToken and self.activeResource and self.activeResource.powerToken and powerToken ~= self.activeResource.powerToken then
+		return
+	end
+
+	self:Sync()
+end
+
+-- Target events (Forever combo points live on the target). Re-read and sync; points animate
+-- to the new target's count like a normal power change.
+function RogueComboPoints:HandleTargetEvent(event)
+	if not self.activeResource then
 		return
 	end
 

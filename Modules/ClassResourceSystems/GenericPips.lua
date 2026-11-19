@@ -494,6 +494,15 @@ function GenericPips:ReadPower()
 		return 0, 0
 	end
 
+	if resource.comboPoints then
+		local current, maxValue = API.GetComboPoints(resource.maxCount)
+		if addon.Has("comboPointsOnTarget") then
+			-- Forever: current is nil when the target's points are unreadable; Sync hides the pips.
+			return current, maxValue or 0
+		end
+		return NormalizePowerValue(current), NormalizePowerValue(maxValue)
+	end
+
 	local current = NormalizePowerValue(UnitPower("player", resource.powerEnum))
 	local maxValue = NormalizePowerValue(UnitPowerMax("player", resource.powerEnum))
 	return current, maxValue
@@ -557,6 +566,12 @@ function GenericPips:Sync()
 	end
 
 	local current, maxValue = self:ReadPower()
+	if current == nil then
+		-- Unreadable count: hide the pips only (the controller owns the root) and snap on recovery.
+		self:HideAllPips()
+		self.suppressTransitions = true
+		return
+	end
 	self:ApplyPipState(current, maxValue)
 end
 
@@ -579,6 +594,12 @@ function GenericPips:WantsEvent(event)
 
 	if event == "UNIT_POWER_POINT_CHARGE" then
 		return self.activeResource.needsPointCharge and true or false
+	end
+
+	if self.activeResource.comboPoints and addon.Has("comboPointsOnTarget") then
+		if event == "UNIT_POWER_FREQUENT" or event == "PLAYER_TARGET_CHANGED" or event == "COMBO_TARGET_CHANGED" then
+			return true
+		end
 	end
 
 	if event == "UNIT_POWER_FREQUENT" then
@@ -619,6 +640,19 @@ function GenericPips:HandleEvent(event, unit, powerToken)
 		return
 	end
 
+	self:Sync()
+end
+
+-- Target events (Forever combo points live on the target). A new target snaps without
+-- transitions; COMBO_TARGET_CHANGED animates like a normal power change.
+function GenericPips:HandleTargetEvent(event)
+	if not self.activeResource then
+		return
+	end
+
+	if event == "PLAYER_TARGET_CHANGED" then
+		self.suppressTransitions = true
+	end
 	self:Sync()
 end
 
