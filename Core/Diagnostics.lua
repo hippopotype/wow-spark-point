@@ -17,6 +17,35 @@ local function JoinOptionValues(options)
 	return table.concat(values, ", ")
 end
 
+-- Resolved class resources, the Druid form and (when a combo resource is active) the combo reading.
+function Diagnostics.BuildResourceLine()
+	local resolved = addon.ResourceModel:Resolve("player")
+	local context = resolved.context or {}
+	local keys = {}
+	local comboDef
+	for _, entry in ipairs(resolved.resources or {}) do
+		keys[#keys + 1] = entry.key
+		if not comboDef and entry.def and entry.def.comboPoints then
+			comboDef = entry.def
+		end
+	end
+	local form = "n/a"
+	if context.classTag == "DRUID" and context.druidForm then
+		form = tostring(context.druidForm)
+	end
+	local line = string.format("Class resources: %s; form %s", #keys > 0 and table.concat(keys, ", ") or "none", form)
+	if comboDef then
+		local cur, max = addon.API.GetComboPoints(comboDef.maxCount)
+		local Util = addon.Util
+		if Util.IsAccessibleNumber(cur) and Util.IsAccessibleNumber(max) then
+			line = line .. string.format("; combo %d/%d (%s)", cur, max, addon.Has("comboPointsOnTarget") and "target-bound" or "player")
+		else
+			line = line .. "; combo unreadable"
+		end
+	end
+	return line
+end
+
 function Diagnostics.BuildStatusLines()
 	local lines = {}
 	local info = addon.Flavor.GetDiagnostics()
@@ -50,6 +79,9 @@ function Diagnostics.BuildStatusLines()
 	lines[#lines + 1] = "Slot providers: " .. JoinOptionValues(addon.SlotProviders:GetDropdownOptions())
 	lines[#lines + 1] = "Bar providers: " .. JoinOptionValues(addon.BarProviders:GetDropdownOptions())
 	lines[#lines + 1] = "Class resource systems: " .. table.concat(addon.ClassResourceSystems:GetRegisteredIDs(), ", ")
+	if addon.ResourceModel then
+		lines[#lines + 1] = Diagnostics.BuildResourceLine()
+	end
 	if addon.TargetRange then
 		local targetKind = addon.TargetRange:GetTargetKind()
 		local activeID, activeName = addon.TargetRange:GetActiveSpell()

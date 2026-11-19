@@ -151,6 +151,94 @@ return function(T)
 			end,
 		},
 		{
+			name = "status shows resolved class resources and combo points",
+			fn = function()
+				local function build(entries, druidForm, classTag, opts)
+					opts = opts or {}
+					local addon = {
+						VERSION = "1.6.0",
+						Has = function()
+							return opts.targetBound == true
+						end,
+						API = {
+							GetComboPoints = function(maxFallback)
+								opts.fallbackSeen = maxFallback
+								return opts.cur, opts.max
+							end,
+						},
+						ResourceModel = {
+							Resolve = function()
+								return { context = { classTag = classTag, druidForm = druidForm }, resources = entries }
+							end,
+						},
+						Flavor = {
+							GetDiagnostics = function()
+								return { game = "Forever", interface = 16001, capabilities = {} }
+							end,
+						},
+						ControlCenter = {
+							GetAllModules = function()
+								return {}
+							end,
+							GetUnavailableReason = function() end,
+						},
+						SlotProviders = {
+							GetDropdownOptions = function()
+								return {}
+							end,
+						},
+						BarProviders = {
+							GetDropdownOptions = function()
+								return {}
+							end,
+						},
+						ClassResourceSystems = {
+							GetRegisteredIDs = function()
+								return {}
+							end,
+						},
+					}
+					T.loadAddonFile("Core/Util.lua", addon)
+					T.loadAddonFile("Core/Diagnostics.lua", addon)
+					for _, line in ipairs(addon.Diagnostics.BuildStatusLines()) do
+						if line:find("^Class resources:") then
+							return line
+						end
+					end
+				end
+				local combo = { key = "ROGUE_COMBO_POINTS", def = { comboPoints = true, maxCount = 5 } }
+				local druidCombo = { key = "DRUID_COMBO_POINTS", def = { comboPoints = true, maxCount = 5 } }
+				local opts = { targetBound = true, cur = 3, max = 5 }
+				T.eq(build({ { key = "ENERGY", def = {} }, combo }, nil, "ROGUE", opts), "Class resources: ENERGY, ROGUE_COMBO_POINTS; form n/a; combo 3/5 (target-bound)", "rogue")
+				T.eq(opts.fallbackSeen, 5, "reader gets maxCount")
+				T.eq(
+					build({ { key = "ENERGY", def = {} }, druidCombo }, "CAT", "DRUID", { targetBound = true, cur = nil, max = 5 }),
+					"Class resources: ENERGY, DRUID_COMBO_POINTS; form CAT; combo unreadable",
+					"unreadable"
+				)
+				T.eq(build({ { key = "MANA", def = {} } }, "HUMANOID", "DRUID"), "Class resources: MANA; form HUMANOID", "druid caster")
+				T.eq(build({ { key = "MANA", def = {} } }, nil, "MAGE"), "Class resources: MANA; form n/a", "mage")
+				T.eq(build({}, nil, "WARLOCK"), "Class resources: none; form n/a", "none")
+				T.eq(build({ combo }, nil, "ROGUE", { targetBound = false, cur = 2, max = 5 }), "Class resources: ROGUE_COMBO_POINTS; form n/a; combo 2/5 (player)", "player bound")
+				local secret = setmetatable({}, {
+					__tostring = function()
+						error("secret")
+					end,
+				})
+				T.withGlobals({
+					issecretvalue = function(v)
+						return v == secret
+					end,
+				}, function()
+					T.eq(
+						build({ combo }, nil, "ROGUE", { targetBound = false, cur = secret, max = 5 }),
+						"Class resources: ROGUE_COMBO_POINTS; form n/a; combo unreadable",
+						"secret"
+					)
+				end)
+			end,
+		},
+		{
 			name = "ClassResourceSystems:GetRegisteredIDs is sorted",
 			fn = function()
 				local addon = {}
