@@ -482,6 +482,37 @@ function ResourceModel:GetCurrentClassPower(unit)
 	return resource, resolved
 end
 
+-- Every resource key some registered model can resolve, including Druid form overrides.
+function ResourceModel:GetReachableResourceKeys()
+	local keys = {}
+	if not modelData then
+		return keys
+	end
+	local function addModel(model)
+		if type(model) ~= "table" then
+			return
+		end
+		for _, ref in ipairs(model.resources or {}) do
+			keys[ref.key] = true
+		end
+		for _, formModel in pairs(model.formOverrides or {}) do
+			for _, ref in ipairs(formModel.resources or {}) do
+				keys[ref.key] = true
+			end
+		end
+	end
+	for _, classModels in pairs(modelData.models) do
+		if modelData.keyedBy == "class" then
+			addModel(classModels)
+		else
+			for _, specModel in pairs(classModels) do
+				addModel(specModel)
+			end
+		end
+	end
+	return keys
+end
+
 function ResourceModel:GetResourceDefinition(key)
 	return RESOURCE_DEFS[key]
 end

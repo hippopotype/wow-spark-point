@@ -224,11 +224,15 @@ function ResourceColors:GetSettingEntries()
 	local entries = {}
 	local L = addon.L or {}
 
+	local reachable = addon.ResourceModel and addon.ResourceModel:GetReachableResourceKeys() or {}
+
 	for _, key in ipairs(SETTINGS_ORDER) do
-		entries[#entries + 1] = {
-			key = key,
-			label = L[LABEL_KEYS[key]] or LABEL_FALLBACKS[key] or key,
-		}
+		if key == "HEALTH" or reachable[key] then
+			entries[#entries + 1] = {
+				key = key,
+				label = L[LABEL_KEYS[key]] or LABEL_FALLBACKS[key] or key,
+			}
+		end
 	end
 
 	return entries

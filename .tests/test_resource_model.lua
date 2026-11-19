@@ -53,7 +53,11 @@ return function(T)
 			fn = function()
 				local resolveFor = Snapshot.NewResolver("Camelot", { "Data/ResourceModels_Forever.lua" })
 				local actual = Snapshot.BuildResourceSnapshot(resolveFor, Snapshot.FOREVER_CLASSES, { 0 }, Snapshot.FOREVER_TOKENS)
-				T.eq(actual == readFile(".tests/fixtures/resource_model_snapshot_forever.txt"), true, "Forever snapshot drifted; diff with gen_resource_snapshot.lua forever output")
+				T.eq(
+					actual == readFile(".tests/fixtures/resource_model_snapshot_forever.txt"),
+					true,
+					"Forever snapshot drifted; diff with gen_resource_snapshot.lua forever output"
+				)
 			end,
 		},
 		{
@@ -72,6 +76,33 @@ return function(T)
 				})
 				T.eq(resolveFor("DRUID", 0, "MANA").resources[1].key, "MANA", "caster form")
 				T.eq(resolveFor("DRUID", 0, "ENERGY").resources[1].key, "ENERGY", "cat form")
+			end,
+		},
+		{
+			name = "colour settings list only reachable resources",
+			fn = function()
+				local function keysFor(game, files)
+					local _, addon = Snapshot.NewResolver(game, files)
+					T.loadAddonFile("Core/Util.lua", addon)
+					T.loadAddonFile("Core/ResourceColors.lua", addon)
+					local keys = {}
+					for _, entry in ipairs(addon.ResourceColors:GetSettingEntries()) do
+						keys[#keys + 1] = entry.key
+					end
+					return keys, addon
+				end
+				local retail = keysFor("Standard", { "Data/ResourceModels_Standard.lua" })
+				T.eq(
+					table.concat(retail, ","),
+					"HEALTH,MANA,ENERGY,RAGE,FOCUS,FURY,RUNIC_POWER,LUNAR_POWER,INSANITY,MAELSTROM,RUNES,ROGUE_COMBO_POINTS,DRUID_COMBO_POINTS,HOLY_POWER,CHI,ARCANE_CHARGES,SOUL_SHARDS,ESSENCE,MAELSTROM_WEAPON",
+					"retail unchanged"
+				)
+				T.eq(#retail, 19, "retail count")
+				local forever = keysFor("Camelot", { "Data/ResourceModels_Forever.lua" })
+				T.eq(table.concat(forever, ","), "HEALTH,MANA,ENERGY,RAGE,ROGUE_COMBO_POINTS,DRUID_COMBO_POINTS", "forever")
+				local none, addon = keysFor("Standard")
+				T.eq(next(addon.ResourceModel:GetReachableResourceKeys()), nil, "no reachable keys")
+				T.eq(table.concat(none, ","), "HEALTH", "health only")
 			end,
 		},
 		{
