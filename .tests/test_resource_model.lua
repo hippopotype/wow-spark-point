@@ -1,4 +1,4 @@
--- ResourceModel behavior: retail snapshot must never change; no-spec flavors resolve empty.
+-- ResourceModel behavior: retail and Forever snapshots are golden; no-data flavors resolve empty.
 
 local Snapshot = dofile(".tests/gen_resource_snapshot.lua")
 
@@ -49,12 +49,11 @@ return function(T)
 			end,
 		},
 		{
-			name = "Forever data is class-keyed and empty -> empty resources",
+			name = "Forever resolution matches the golden snapshot",
 			fn = function()
 				local resolveFor = Snapshot.NewResolver("Camelot", { "Data/ResourceModels_Forever.lua" })
-				local resolved = resolveFor("ROGUE", 0, "ENERGY")
-				T.eq(#resolved.resources, 0, "resources")
-				T.eq(resolved.specModel, nil, "specModel")
+				local actual = Snapshot.BuildResourceSnapshot(resolveFor, Snapshot.FOREVER_CLASSES, { 0 }, Snapshot.FOREVER_TOKENS)
+				T.eq(actual == readFile(".tests/fixtures/resource_model_snapshot_forever.txt"), true, "Forever snapshot drifted; diff with gen_resource_snapshot.lua forever output")
 			end,
 		},
 		{

@@ -17,6 +17,10 @@ return function(T)
 		local addon = {
 			Flavor = { game = game },
 			ResourceModel = {
+				Roles = { MANA = "MANA", SECONDARY = "SECONDARY" },
+				ResourceRef = function(key, role)
+					return { key = key, role = role }
+				end,
 				SetModelData = function(_, data)
 					calls[#calls + 1] = data
 				end,

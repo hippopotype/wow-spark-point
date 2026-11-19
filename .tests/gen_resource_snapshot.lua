@@ -1,6 +1,7 @@
 -- Builds a deterministic text snapshot of ResourceModel:Resolve for every class, spec
--- (0-4) and display power token. Shared by the snapshot test and its regeneration command:
+-- (0-4) and display power token. Shared by the snapshot test and its regeneration commands:
 --   lua .tests/gen_resource_snapshot.lua > .tests/fixtures/resource_model_snapshot.txt
+--   lua .tests/gen_resource_snapshot.lua forever > .tests/fixtures/resource_model_snapshot_forever.txt
 
 local CLASSES = {
 	"DEATHKNIGHT",
@@ -19,11 +20,15 @@ local CLASSES = {
 }
 local TOKENS = { "MANA", "ENERGY", "RAGE", "LUNAR_POWER", "FOCUS", "RUNIC_POWER", "FURY", "INSANITY", "MAELSTROM" }
 
-local function BuildResourceSnapshot(resolveFor)
+local FOREVER_CLASSES = { "DRUID", "HUNTER", "MAGE", "PALADIN", "PRIEST", "ROGUE", "SHAMAN", "WARLOCK", "WARRIOR" }
+local FOREVER_TOKENS = { "MANA", "ENERGY", "RAGE", "LUNAR_POWER" }
+local DEFAULT_SPECS = { 0, 1, 2, 3, 4 }
+
+local function BuildResourceSnapshot(resolveFor, classes, specs, tokens)
 	local lines = {}
-	for _, classTag in ipairs(CLASSES) do
-		for spec = 0, 4 do
-			for _, token in ipairs(TOKENS) do
+	for _, classTag in ipairs(classes or CLASSES) do
+		for _, spec in ipairs(specs or DEFAULT_SPECS) do
+			for _, token in ipairs(tokens or TOKENS) do
 				local resolved = resolveFor(classTag, spec, token)
 				local parts = {}
 				for _, entry in ipairs(resolved.resources) do
@@ -90,17 +95,27 @@ local function NewResolver(game, extraFiles)
 	end, addon
 end
 
-local M = { BuildResourceSnapshot = BuildResourceSnapshot, NewResolver = NewResolver }
+local M = {
+	BuildResourceSnapshot = BuildResourceSnapshot,
+	NewResolver = NewResolver,
+	FOREVER_CLASSES = FOREVER_CLASSES,
+	FOREVER_TOKENS = FOREVER_TOKENS,
+}
 
 -- Only write the snapshot when executed directly (dofile from the tests must not).
 if arg and arg[0] and arg[0]:find("gen_resource_snapshot", 1, true) then
-	local extra = {}
-	local f = io.open("Data/ResourceModels_Standard.lua", "r")
-	if f then
-		f:close()
-		extra = { "Data/ResourceModels_Standard.lua" }
+	if arg[1] == "forever" then
+		local resolveFor = NewResolver("Camelot", { "Data/ResourceModels_Forever.lua" })
+		io.write(BuildResourceSnapshot(resolveFor, FOREVER_CLASSES, { 0 }, FOREVER_TOKENS))
+	else
+		local extra = {}
+		local f = io.open("Data/ResourceModels_Standard.lua", "r")
+		if f then
+			f:close()
+			extra = { "Data/ResourceModels_Standard.lua" }
+		end
+		io.write(BuildResourceSnapshot((NewResolver("Standard", extra))))
 	end
-	io.write(BuildResourceSnapshot((NewResolver("Standard", extra))))
 end
 
 return M
