@@ -10,7 +10,7 @@
 
 <p align="center">
   <img alt="WoW Version" src="https://img.shields.io/badge/WoW-12.1.5%20%7C%20Forever-blue" />
-  <img alt="Version" src="https://img.shields.io/badge/version-1.6.1-green" />
+  <img alt="Version" src="https://img.shields.io/badge/version-1.7.0-green" />
   <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0-blue" />
   <a href="https://www.curseforge.com/wow/addons/sparkpoint">
     <img alt="CurseForge" src="https://img.shields.io/badge/CurseForge-SparkPoint-orange" />
@@ -23,7 +23,7 @@
 
 **SparkPoint is a lightweight cursor HUD for World of Warcraft Retail and WoW Forever.** It wraps your cast bar around your mouse cursor as a ring, with latency, interrupt and empowered-cast feedback, and surrounds it with a GCD ring, a swing timer (main hand, off hand and ranged on WoW Forever), curved health, mana and class power bars, combo points, Holy Power, runes and other class resources, a spell icon with cooldown swipe, Blizzard's Assisted Highlight next spell, and your Cooldown Manager icons. Your eyes stay on the fight instead of your unit frames or action bars. No WeakAuras needed.
 
-Works on: Retail 12.1.5 · WoW Forever 1.60 (class resources coming soon on Forever)
+Works on: Retail 12.1.5 · WoW Forever 1.60
 
 It currently includes:
 
@@ -31,7 +31,7 @@ It currently includes:
 - Up to 3 assignable ring slots
 - Top and bottom bar slots with health, mana, and class power providers
 - Class resource display with dedicated per-class systems
-- Decorative rotating ring
+- Decorative rotating ring with an optional out-of-range tint
 - Spell icon with cast swipe, instant-cast feedback, and cooldown-blocked feedback
 - Assisted Highlight support for Blizzard's suggested-spell system
 - Cooldown Manager groups placed around the cast ring
@@ -39,9 +39,14 @@ It currently includes:
 - Shared visibility rules, per-module overrides, and optional HUD transitions
 - Cursor-attached mode, fixed anchor mode, minimap button, and profile support
 - HUD Scale and Frame Theme (Silver / Copper) settings
-- WoW: Forever support, including a swing timer in the ring slots
+- WoW: Forever support, including class resources and a swing timer in the ring slots
 
-## New In v1.6.1
+## New In v1.7.0
+
+- **New:** Class resources on WoW Forever: your Energy, Rage or Mana bar, plus Rogue and Druid combo points
+- **New:** Out of Range Tint for the Decorative Ring: the ring changes color when your target is out of range (Range Check tab)
+
+## Previously In v1.6.1
 
 - Fixed Cooldown Manager icons turning square after spec changes.
 - Fixed Forever-only defaults and data loading on Retail.
@@ -161,6 +166,8 @@ Displays class-specific resources near your cursor with dedicated per-class rend
 
 **Generic pips:** fallback for simple discrete resources
 
+**WoW Forever:** Energy, Rage and Mana bars by class, Rogue and Druid (Cat Form) combo points read from your current target, and Druid resources that follow your form
+
 Configurable options include:
 
 - Scale and opacity
@@ -178,6 +185,7 @@ A stylized ring rendered around the cursor with:
 - Optional rotation
 - Configurable size and color
 - Optional class-color tint with opacity control
+- Optional out-of-range tint when your target is beyond the range of a chosen spell (Automatic per class, or a spell you pick), with an optional friendly-target check, set on the Range Check tab
 - Per-module visibility override
 
 ### Spell Icon

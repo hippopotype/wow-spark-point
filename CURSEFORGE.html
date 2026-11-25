@@ -75,7 +75,7 @@
 <p>
   <strong>SparkPoint is a lightweight cursor HUD for World of Warcraft Retail and WoW Forever.</strong> It wraps your cast bar around your mouse cursor as a ring, with latency, interrupt and empowered-cast feedback, and surrounds it with a GCD ring, a swing timer (main hand, off hand and ranged on WoW Forever), curved health, mana and class power bars, combo points, Holy Power, runes and other class resources, a spell icon with cooldown swipe, Blizzard&rsquo;s Assisted Highlight next spell, and your Cooldown Manager icons. Your eyes stay on the fight instead of your unit frames or action bars. No WeakAuras needed.
 </p>
-<p><em>Works on: Retail 12.1.5 &middot; WoW Forever 1.60 (class resources coming soon on Forever)</em></p>
+<p><em>Works on: Retail 12.1.5 &middot; WoW Forever 1.60 </em></p>
 <p>It currently includes:</p>
 <ul>
   <li>
@@ -85,7 +85,7 @@
   <li>Up to 3 assignable ring slots</li>
   <li>Top and bottom bar slots with health, mana, and class power providers</li>
   <li>Class resource display with dedicated per-class systems</li>
-  <li>Decorative rotating ring</li>
+  <li>Decorative rotating ring with an optional out-of-range tint</li>
   <li>
     Spell icon with cast swipe, instant-cast feedback, and cooldown-blocked
     feedback
@@ -100,9 +100,15 @@
     Cursor-attached mode, fixed anchor mode, minimap button, and profile support
   </li>
   <li>HUD Scale and Frame Theme (Silver / Copper) settings</li>
-  <li>WoW: Forever support, including a swing timer in the ring slots</li>
+  <li>WoW: Forever support, including class resources and a swing timer in the ring slots</li>
 </ul>
-<h2><strong>New In v1.6.1</strong></h2>
+<h2><strong>New In v1.7.0</strong></h2>
+<ul>
+  <li><strong>New:</strong> Class resources on WoW Forever: your Energy, Rage or Mana bar, plus Rogue and Druid combo points</li>
+  <li><strong>New:</strong> Out of Range Tint for the Decorative Ring: the ring changes color when your target is out of range (Range Check tab)</li>
+</ul>
+
+<h2><strong>Previously In v1.6.1</strong></h2>
 <ul>
   <li>Fixed Cooldown Manager icons turning square after spec changes.</li>
   <li>Fixed Forever-only defaults and data loading on Retail.</li>
@@ -336,6 +342,11 @@
 <p>
   <strong>Generic pips:</strong> fallback for simple discrete resources
 </p>
+<p>
+  <strong>WoW Forever:</strong> Energy, Rage and Mana bars by class, Rogue and
+  Druid (Cat Form) combo points read from your current target, and Druid
+  resources that follow your form
+</p>
 <p>Configurable options include:</p>
 <ul>
   <li>Scale and opacity</li>
@@ -352,6 +363,11 @@
   <li>Optional rotation</li>
   <li>Configurable size and color</li>
   <li>Optional class-color tint with opacity control</li>
+  <li>
+    Optional out-of-range tint when your target is beyond the range of a
+    chosen spell (Automatic per class, or a spell you pick), with an optional
+    friendly-target check, set on the Range Check tab
+  </li>
   <li>Per-module visibility override</li>
 </ul>
 <h3>Spell Icon</h3>
